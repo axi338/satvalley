@@ -10,6 +10,9 @@ CREATE TABLE tests (
   mathQ TEXT DEFAULT '0',
   readingQ TEXT DEFAULT '0',
   writingQ TEXT DEFAULT '0',
+  is_olympiad BOOLEAN DEFAULT false,
+  olympiad_end_date TIMESTAMPTZ,
+  status TEXT DEFAULT 'draft', -- 'draft', 'published', 'archived'
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -43,6 +46,7 @@ CREATE TABLE results (
   note TEXT,
   photo_url TEXT,
   test_id UUID REFERENCES tests(id) ON DELETE SET NULL,
+  is_olympiad BOOLEAN DEFAULT false,
   responses JSONB,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -63,3 +67,25 @@ CREATE TABLE profiles (
 -- ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE results ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- 5. OLYMPIAD REGISTRATIONS TABLE
+CREATE TABLE olympiad_registrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_email TEXT,
+  test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
+  registered_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, test_id)
+);
+
+-- 6. OLYMPIAD PROFILES TABLE
+CREATE TABLE olympiad_profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  phone TEXT,
+  phone_verified BOOLEAN DEFAULT false,
+  country_code TEXT,
+  full_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+

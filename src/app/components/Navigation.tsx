@@ -28,7 +28,7 @@ export function Navigation({ currentPage, onNavigate, userEmail, onLogout, isAdm
     { label: 'Practice Tests', id: 'practice' },
     { label: 'Score Calculator', id: 'calculator' },
     { label: 'Review', id: 'review' },
-    { label: 'FAQ', id: 'faq' },
+    { label: 'Olympiad', id: 'olympiad' },
     ...(isAdmin ? [{ label: 'Admin', id: 'admin' }] : []),
   ];
 

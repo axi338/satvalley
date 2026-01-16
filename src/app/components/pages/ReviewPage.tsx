@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Award, ChevronRight, BookOpen, Calculator, ExternalLink, Zap, Globe, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Award, ChevronRight, BookOpen, Calculator, ExternalLink, Zap, Globe, ArrowLeft, Loader2, AlertCircle, Trophy } from 'lucide-react';
 
 export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page: string) => void }) {
   const [results, setResults] = useState<any[]>([]);
@@ -7,7 +7,7 @@ export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page:
   const [error, setError] = useState<string | null>(null);
   const [isDetailedReview, setIsDetailedReview] = useState(false);
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
-  const apiBase = import.meta.env.VITE_BACKEND_URL || '';
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
 
   useEffect(() => {
     fetch(`${apiBase}/api/results?userEmail=${user?.email}`)
@@ -39,8 +39,8 @@ export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page:
     const rwCorrect = rwQuestions.filter(r => r.userAnswer === r.answer).length;
     const mathCorrect = mathQuestions.filter(r => r.userAnswer === r.answer).length;
 
-    const rwScore = rwQuestions.length > 0 ? Math.round((rwCorrect / rwQuestions.length) * 400) + 400 : 400;
-    const mathScore = mathQuestions.length > 0 ? Math.round((mathCorrect / mathQuestions.length) * 400) + 400 : 400;
+    const rwScore = rwQuestions.length > 0 ? Math.round((rwCorrect / rwQuestions.length) * 600) + 200 : 200;
+    const mathScore = mathQuestions.length > 0 ? Math.round((mathCorrect / mathQuestions.length) * 600) + 200 : 200;
 
     return {
       rw: rwScore,
@@ -53,7 +53,7 @@ export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page:
     };
   };
 
-  const scores = latestResult ? calculateSectionScores(latestResult.responses || []) : { rw: 0, math: 0, total: 0, rwCorrect: 0, rwTotal: 0, mathCorrect: 0, mathTotal: 0 };
+  const scores = latestResult ? calculateSectionScores(latestResult.responses || []) : { rw: 200, math: 200, total: 400, rwCorrect: 0, rwTotal: 0, mathCorrect: 0, mathTotal: 0 };
 
   if (loading) {
     return (
@@ -120,14 +120,14 @@ export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page:
                         </div>
                         {r.imageUrl && (
                           <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                            <img src={`${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
+                            <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
                           </div>
                         )}
                       </div>
                     )}
                     {!r.passage && r.imageUrl && (
                       <div className="mb-6 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                        <img src={`${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
+                        <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
                       </div>
                     )}
                     <p className="text-xl text-white font-bold tracking-tight leading-relaxed">{r.text}</p>
@@ -168,7 +168,7 @@ export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page:
                             </span>
                             {r.optionImages?.[i] && (
                               <div className="mt-1 rounded-lg border border-white/10 overflow-hidden bg-black/40 max-w-xs">
-                                <img src={`${apiBase}${r.optionImages[i]}`} alt={`Option ${letter}`} className="w-full h-auto" />
+                                <img src={r.optionImages[i].startsWith('http') ? r.optionImages[i] : `${apiBase}${r.optionImages[i]}`} alt={`Option ${letter}`} className="w-full h-auto" />
                               </div>
                             )}
                           </div>
@@ -258,63 +258,45 @@ export function ReviewPage({ user, onNavigate }: { user: any; onNavigate: (page:
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Main Results Area */}
-          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Reading and Writing Card */}
+          <div className="lg:col-span-8 grid grid-cols-1 gap-10">
+            {/* Consolidated Total Score Card */}
             <div className="glass-card hover:bg-white/5 transition-all duration-700 overflow-hidden flex flex-col group border-white/10">
               <div className="bg-gradient-to-br from-indigo-900/50 to-indigo-800/50 p-10 text-white flex items-center justify-between border-b border-white/5">
-                <span className="text-3xl font-black tracking-tighter italic">SAT</span>
-                <BookOpen className="w-8 h-8 opacity-50" />
+                <span className="text-3xl font-black tracking-tighter italic">SAT | VALLEY</span>
+                <Trophy className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
               </div>
-              <div className="p-12 text-center">
-                <p className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em] mb-8">Reading and Writing Core</p>
+              <div className="p-16 text-center">
+                <p className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em] mb-10">Consolidated Performance Index</p>
                 <div className="relative inline-block">
-                  <span className="text-9xl font-black text-white tracking-tighter italic group-hover:scale-105 transition-transform duration-700 block">{scores.rw}</span>
-                  <div className="h-2 w-full bg-indigo-500/20 absolute -bottom-4 rounded-full" />
+                  <span className="text-[12rem] font-black text-white tracking-tighter italic group-hover:scale-105 transition-transform duration-700 block drop-shadow-2xl">{scores.total}</span>
+                  <div className="h-4 w-full bg-indigo-500/20 absolute -bottom-8 rounded-full blur-sm" />
                 </div>
-                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mt-12">Scale range 200–800</p>
-              </div>
-              <div className="p-10 space-y-6 pt-4">
-                <button
-                  onClick={() => setIsDetailedReview(true)}
-                  className="w-full bg-white text-black font-black text-[10px] py-6 rounded-2xl shadow-xl hover:scale-[1.02] transition-all uppercase tracking-widest hover:bg-indigo-50"
-                >
-                  Review Answers
-                </button>
-                <button
-                  onClick={() => window.open('https://www.khanacademy.org/test-prep/digital-sat', '_blank')}
-                  className="w-full border border-white/10 text-white/60 hover:text-white font-black text-[10px] py-6 rounded-2xl hover:bg-white/5 transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
-                >
-                  External Practice <ExternalLink className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
 
-            {/* Math Card */}
-            <div className="glass-card hover:bg-white/5 transition-all duration-700 overflow-hidden flex flex-col group border-white/10">
-              <div className="bg-gradient-to-br from-indigo-900/50 to-indigo-800/50 p-10 text-white flex items-center justify-between border-b border-white/5">
-                <span className="text-3xl font-black tracking-tighter italic">SAT</span>
-                <Calculator className="w-8 h-8 opacity-50" />
-              </div>
-              <div className="p-12 text-center">
-                <p className="text-[10px] font-black text-amber-200/40 uppercase tracking-[0.4em] mb-8">Mathematics Core</p>
-                <div className="relative inline-block">
-                  <span className="text-9xl font-black text-white tracking-tighter italic group-hover:scale-105 transition-transform duration-700 block">{scores.math}</span>
-                  <div className="h-2 w-full bg-amber-500/20 absolute -bottom-4 rounded-full" />
+                <div className="mt-20 grid grid-cols-2 gap-8 max-w-xl mx-auto">
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="text-[10px] font-black text-indigo-300/40 uppercase tracking-widest mb-2">Reading & Writing</div>
+                    <div className="text-4xl font-black text-white italic">{scores.rw}</div>
+                  </div>
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="text-[10px] font-black text-amber-300/40 uppercase tracking-widest mb-2">Mathematics</div>
+                    <div className="text-4xl font-black text-white italic">{scores.math}</div>
+                  </div>
                 </div>
-                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mt-12">Scale range 200–800</p>
+
+                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mt-16 italic">Scale: 400 — 1600</p>
               </div>
-              <div className="p-10 space-y-6 pt-4">
+              <div className="p-12 grid grid-cols-1 sm:grid-cols-2 gap-6 pt-0">
                 <button
                   onClick={() => setIsDetailedReview(true)}
-                  className="w-full bg-white text-black font-black text-[10px] py-6 rounded-2xl shadow-xl hover:scale-[1.02] transition-all uppercase tracking-widest hover:bg-amber-50"
+                  className="w-full bg-white text-black font-black text-xs py-6 rounded-2xl shadow-xl hover:scale-[1.02] transition-all uppercase tracking-widest hover:bg-indigo-50"
                 >
-                  Review Answers
+                  Detailed Question Review
                 </button>
                 <button
                   onClick={() => window.open('https://www.khanacademy.org/test-prep/digital-sat', '_blank')}
-                  className="w-full border border-white/10 text-white/60 hover:text-white font-black text-[10px] py-6 rounded-2xl hover:bg-white/5 transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
+                  className="w-full border border-white/10 text-white/60 hover:text-white font-black text-xs py-6 rounded-2xl hover:bg-white/5 transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
                 >
-                  External Practice <ExternalLink className="w-4 h-4" />
+                  Khan Academy Prep <ExternalLink className="w-4 h-4" />
                 </button>
               </div>
             </div>

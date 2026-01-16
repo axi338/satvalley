@@ -1,21 +1,31 @@
-# Use official Node.js image
-FROM node:18-alpine
+# Stage 1: Build the frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /build
+COPY package*.json ./
+RUN npm install
+COPY . .
+# We pass empty env vars during build so the app uses relative paths/env at runtime if needed
+# However, Vite embeds VITE_ variables at build time. 
+# We'll assume the backend URL is relative or correctly set in Render env.
+RUN npm run build
 
-# Set working directory
+# Stage 2: Setup the backend
+FROM node:18-alpine
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
+# Copy backend package files
+COPY backend/package*.json ./
 RUN npm install --production
 
-# Copy application source
-COPY . .
+# Copy backend source
+COPY backend/ .
 
-# Expose the port (Cloud Run uses 8080 by default, but we can configure it)
-ENV PORT=8080
-EXPOSE 8080
+# Copy frontend build from Stage 1
+COPY --from=frontend-builder /build/dist ./dist
+
+# Expose the port
+ENV PORT=10000
+EXPOSE 10000
 
 # Start the application
 CMD ["node", "server.js"]

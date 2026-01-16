@@ -1,15 +1,23 @@
 services:
   - type: web
-    name: satvalley-backend
+    name: satvalley
     env: docker
-    plan: free # or your preferred plan
-    region: oregon # or your preferred region
+    plan: free
+    region: oregon
     envVars:
       - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: ADMIN_EMAILS
         sync: false
       - key: PORT
-        value: 8080
+        value: 10000
+      - key: VITE_SUPABASE_URL
+        fromContext: SUPABASE_URL
+      - key: VITE_SUPABASE_ANON_KEY
+        fromContext: SUPABASE_ANON_KEY
+      - key: VITE_BACKEND_URL
+        value: "" # Empty means use relative paths

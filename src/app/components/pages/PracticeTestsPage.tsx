@@ -9,16 +9,23 @@ export function PracticeTestsPage({ onNavigate }: PracticeTestsPageProps) {
   const [tests, setTests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const apiBase = import.meta.env.VITE_BACKEND_URL || '';
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
+
+  const loadTests = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${apiBase}/api/tests?isOlympiad=false`);
+      const data = await res.json();
+      setTests(data.tests || []);
+    } catch (error) {
+      console.error("Failed to fetch tests:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(`${apiBase}/api/tests`)
-      .then(res => res.json())
-      .then(data => {
-        setTests(data.tests || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    loadTests();
   }, [apiBase]);
 
   const getDifficultyColor = (difficulty: string) => {

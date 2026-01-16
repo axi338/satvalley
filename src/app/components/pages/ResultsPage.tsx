@@ -16,22 +16,28 @@ const staticResults = [
   { name: 'Ava N.', score: 1540, improvement: '+145', note: 'Focused practice on weak areas' },
   { name: 'Ethan S.', score: 1600, improvement: '+230', note: 'Third perfect score this year' },
   { name: 'Mia J.', score: 1570, improvement: '+170', note: 'Exceeded my own expectations' },
-  { name: 'Noah D.', score: 1550, improvement: '+160', note: 'Engineered success step by step' },
+  { name: 'Noah D.', score: 1550, improvement: '+160', note: 'Engineered success step by step', photoUrl: undefined },
 ];
 
 export function ResultsPage() {
-  const [results, setResults] = useState(staticResults);
+  const [results, setResults] = useState<any[]>(staticResults);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const apiBase = import.meta.env.VITE_BACKEND_URL || '';
+  const [siteSettings, setSiteSettings] = useState({ high_scores: 5, score_variance: "+178", architectural_mean: 1500 });
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        const res = await fetch(`${apiBase}/api/results`);
+        const [res, settingsRes] = await Promise.all([
+          fetch(`${apiBase}/api/results`),
+          fetch(`${apiBase}/api/settings`)
+        ]);
+
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const body = await res.json();
+
         if (active && body.results && body.results.length > 0) {
           setResults(
             body.results.map((r: any) => ({
@@ -42,6 +48,11 @@ export function ResultsPage() {
               photoUrl: r.photo_url,
             })),
           );
+        }
+
+        if (settingsRes.ok) {
+          const sBody = await settingsRes.json();
+          if (active && sBody.settings) setSiteSettings(sBody.settings);
         }
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : 'Failed to load results');
@@ -76,18 +87,18 @@ export function ResultsPage() {
         {/* Stats Banner */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-24 hidden lg:grid">
           <div className="glass-card p-14 hover:bg-white/5 transition-all group border-white/10">
-            <div className="text-[10px] font-black text-indigo-300/40 uppercase tracking-[0.4em] mb-10">Perfect Executions</div>
-            <div className="text-8xl font-black text-white tracking-tighter mb-4 group-hover:scale-110 transition-transform">42</div>
+            <div className="text-[10px] font-black text-indigo-300/40 uppercase tracking-[0.4em] mb-10">High Scores</div>
+            <div className="text-8xl font-black text-white tracking-tighter mb-4 group-hover:scale-110 transition-transform">{siteSettings.high_scores}</div>
             <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">Global Standard</div>
           </div>
           <div className="glass-card p-14 hover:bg-white/5 transition-all group border-white/10">
-            <div className="text-[10px] font-black text-emerald-400/40 uppercase tracking-[0.4em] mb-10">Delta Variance</div>
-            <div className="text-8xl font-black text-emerald-400 tracking-tighter mb-4 group-hover:scale-110 transition-transform">+178</div>
+            <div className="text-[10px] font-black text-emerald-400/40 uppercase tracking-[0.4em] mb-10">Variance of Scores</div>
+            <div className="text-8xl font-black text-emerald-400 tracking-tighter mb-4 group-hover:scale-110 transition-transform">{siteSettings.score_variance}</div>
             <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">Average Growth</div>
           </div>
           <div className="glass-card p-14 hover:bg-white/5 transition-all group border-white/10">
             <div className="text-[10px] font-black text-indigo-300/40 uppercase tracking-[0.4em] mb-10">Architectural Mean</div>
-            <div className="text-8xl font-black text-white tracking-tighter mb-4 group-hover:scale-110 transition-transform">1547</div>
+            <div className="text-8xl font-black text-white tracking-tighter mb-4 group-hover:scale-110 transition-transform">{siteSettings.architectural_mean}</div>
             <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">Elite Tier Final</div>
           </div>
         </div>

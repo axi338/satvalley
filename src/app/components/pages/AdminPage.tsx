@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Shield, Plus, FileText, Award, Database, UserRound, RefreshCw, Trash2, Edit, Save, X as CloseIcon } from 'lucide-react';
+import { OlympiadAdminPage } from './OlympiadAdminPage';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -19,7 +20,10 @@ export function AdminPage() {
   const [studentScore, setStudentScore] = useState('');
   const [studentPhoto, setStudentPhoto] = useState<File | null>(null);
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
-  const [tests, setTests] = useState<Array<{ id: string; title: string; difficulty: string; mathq?: string; readingq?: string; writingq?: string }>>([]);
+  const [studentNote, setStudentNote] = useState('');
+  const [isOlympiad, setIsOlympiad] = useState(false);
+  const [olympiadEndDate, setOlympiadEndDate] = useState('');
+  const [tests, setTests] = useState<Array<{ id: string; title: string; difficulty: string; mathq?: string; readingq?: string; writingq?: string; is_olympiad?: boolean; olympiad_end_date?: string }>>([]);
   const [questions, setQuestions] = useState<Array<any>>([]);
   const [results, setResults] = useState<Array<any>>([]);
   const [selectedTestId, setSelectedTestId] = useState('');
@@ -28,6 +32,7 @@ export function AdminPage() {
   const [optionB, setOptionB] = useState('');
   const [optionC, setOptionC] = useState('');
   const [optionD, setOptionD] = useState('');
+  const [showUploadInfo, setShowUploadInfo] = useState(false);
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'numeric'>('multiple-choice');
   const [moduleType, setModuleType] = useState<'m1' | 'm2-easy' | 'm2-hard'>('m1');
   const [testedSkill, setTestedSkill] = useState('');
@@ -41,6 +46,9 @@ export function AdminPage() {
 
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [highScores, setHighScores] = useState('42');
+  const [scoreVariance, setScoreVariance] = useState('+178');
+  const [architecturalMean, setArchitecturalMean] = useState('1547');
   const [questionFilterTestId, setQuestionFilterTestId] = useState<string>('');
   const [questionFilterSubject, setQuestionFilterSubject] = useState<string>('');
   const [flash, setFlash] = useState<string | null>(null);
@@ -48,7 +56,11 @@ export function AdminPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [usersLoading, setUsersLoading] = useState(false);
 
-  const apiBase = import.meta.env.VITE_BACKEND_URL || '';
+  // Site Content Management
+  const [siteContent, setSiteContent] = useState<any>({});
+  const [contentLoading, setContentLoading] = useState(false);
+
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
   const adminUsersEndpoint = `${apiBase}/listUsers`;
 
   const fetchUsers = async () => {
@@ -109,11 +121,18 @@ export function AdminPage() {
 
   const loadData = async () => {
     try {
-      const [testsRes, questionsRes, resultsRes] = await Promise.all([
+      const [testsRes, questionsRes, resultsRes, settingsRes] = await Promise.all([
         fetch(`${apiBase}/api/tests`).then((r) => r.json()).catch(() => ({ tests: [] })),
         fetch(`${apiBase}/api/questions`).then((r) => r.json()).catch(() => ({ questions: [] })),
         fetch(`${apiBase}/api/results`).then((r) => r.json()).catch(() => ({ results: [] })),
+        fetch(`${apiBase}/api/settings`).then((r) => r.json()).catch(() => ({ settings: null })),
       ]);
+      const s = settingsRes.settings;
+      if (s) {
+        setHighScores(String(s.high_scores));
+        setScoreVariance(String(s.score_variance));
+        setArchitecturalMean(String(s.architectural_mean));
+      }
       setTests(testsRes.tests || []);
       setQuestions((questionsRes.questions || []).map((q: any) => ({
         ...q,
@@ -152,7 +171,9 @@ export function AdminPage() {
       sections: [`Math: ${mathq}Q`, `Reading: ${readingq}Q`, `Writing: ${writingq}Q`],
       mathq,
       readingq,
-      writingq
+      writingq,
+      is_olympiad: isOlympiad,
+      olympiad_end_date: olympiadEndDate || null
     };
 
     if (editingTestId) {
@@ -189,6 +210,8 @@ export function AdminPage() {
     setMathq('58');
     setReadingq('52');
     setWritingq('44');
+    setIsOlympiad(false);
+    setOlympiadEndDate('');
     setEditingTestId(null);
   };
 
@@ -200,6 +223,8 @@ export function AdminPage() {
     setMathq(t.mathq || '58');
     setReadingq(t.readingq || '52');
     setWritingq(t.writingq || '44');
+    setIsOlympiad(t.is_olympiad || false);
+    setOlympiadEndDate(t.olympiad_end_date ? t.olympiad_end_date.split('T')[0] : '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -381,7 +406,7 @@ export function AdminPage() {
       showFlash('Student name and score are required.');
       return;
     }
-    const payload = { name: studentName, score: studentScore, photoUrl: studentPhotoPreview || undefined };
+    const payload = { name: studentName, score: studentScore, note: studentNote, photoUrl: studentPhotoPreview || undefined };
 
     if (editingResultId) {
       authedRequest(`/api/results/${editingResultId}`, {
@@ -415,6 +440,7 @@ export function AdminPage() {
     setStudentScore('');
     setStudentPhoto(null);
     setStudentPhotoPreview(null);
+    setStudentNote('');
     setEditingResultId(null);
   };
 
@@ -422,6 +448,7 @@ export function AdminPage() {
     setEditingResultId(r.id);
     setStudentName(r.name || '');
     setStudentScore(r.score || '');
+    setStudentNote(r.note || '');
     setStudentPhotoPreview(r.photoUrl || null);
     window.scrollTo({ top: 300, behavior: 'smooth' });
   };
@@ -436,6 +463,22 @@ export function AdminPage() {
         showFlash('Result deleted.');
       })
       .catch((err) => showFlash(err.message));
+  };
+
+  const handleUpdateSettings = async () => {
+    try {
+      await authedRequest('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          high_scores: parseInt(highScores) || 0,
+          score_variance: scoreVariance,
+          architectural_mean: parseInt(architecturalMean) || 0
+        }),
+      });
+      showFlash('Settings updated.');
+    } catch (err: any) {
+      showFlash(err.message);
+    }
   };
 
   return (
@@ -458,8 +501,35 @@ export function AdminPage() {
             <Shield className="w-4 h-4 text-red-400" />
             <span className="text-sm text-muted-foreground">Administrative Access</span>
           </div>
-          <h1 className="text-5xl lg:text-6xl mb-4 text-white">Admin Panel</h1>
-          <p className="text-xl text-muted-foreground">Manage tests, questions, and student results.</p>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-5xl lg:text-6xl text-white">Admin Panel</h1>
+            <Button
+              onClick={() => window.location.href = '/admin-olympiad'}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-6 rounded-xl text-lg relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <Award className="w-6 h-6 mr-3 relative z-10" />
+              <span className="relative z-10">Manage Olympiad</span>
+            </Button>
+          </div>
+          <p className="text-xl text-muted-foreground mr-auto">Manage tests, questions, and student results.</p>
+          <button
+            onClick={() => setShowUploadInfo(!showUploadInfo)}
+            className="mt-4 text-xs font-bold text-primary hover:underline flex items-center gap-1"
+          >
+            How do I upload pictures? {showUploadInfo ? '↑' : '↓'}
+          </button>
+
+          {showUploadInfo && (
+            <div className="mt-4 p-4 rounded-xl bg-primary/10 border border-primary/20 text-xs text-muted-foreground animate-in slide-in-from-top-2">
+              <p className="font-bold text-white mb-2 underline">Picture Upload Protocol:</p>
+              <ul className="space-y-1 list-disc ml-4">
+                <li><span className="text-white">Questions/Passages:</span> Use the "Graph/Figure" file input. It automatically uploads to our secure storage.</li>
+                <li><span className="text-white">Math Options:</span> Click the [+] icon next to the option text to upload an image for that specific choice.</li>
+                <li><span className="text-white">Student Results:</span> Paste the direct link to the image in the "Photo URL" field. You can use services like PostImages or Imgur.</li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {flash && (
@@ -479,22 +549,30 @@ export function AdminPage() {
             <TabsTrigger value="results" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <Award className="w-4 h-4 mr-2" /> Results
             </TabsTrigger>
+            <TabsTrigger value="olympiad" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              <Award className="w-4 h-4 mr-2" /> Olympiad
+            </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <UserRound className="w-4 h-4 mr-2" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              <RefreshCw className="w-4 h-4 mr-2" /> Settings
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tests">
             <div className="bg-card border border-white/10 rounded-3xl p-8 lg:p-12">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl text-white">Manage Practice Tests</h2>
-                  <p className="text-muted-foreground">Create or edit practice tests</p>
+              <div className="flex items-center justify-between mb-12">
+                <h1 className="text-4xl font-black tracking-tight text-white flex items-center gap-4">
+                  <Shield className="w-10 h-10 text-indigo-500" />
+                  Command Center
+                </h1>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-white">Admin Access</div>
+                  <div className="text-xs text-indigo-400 font-mono">SECURE_MODE_ACTIVE</div>
                 </div>
               </div>
+
 
               <div className="space-y-6 max-w-3xl">
                 <div className="space-y-2">
@@ -528,6 +606,31 @@ export function AdminPage() {
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Description</label>
                   <Textarea value={testDescription} onChange={e => setTestDescription(e.target.value)} className="bg-white/5 border-white/10 min-h-24 text-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm text-indigo-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isOlympiad}
+                        onChange={e => setIsOlympiad(e.target.checked)}
+                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      Mark as SAT Olympiad Test
+                    </label>
+                    <p className="text-[10px] text-indigo-200/40 uppercase tracking-widest pl-6">This test will appear in the Olympiad section.</p>
+                  </div>
+                  {isOlympiad && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                      <label className="text-sm text-muted-foreground">Olympiad End Date</label>
+                      <Input
+                        type="date"
+                        value={olympiadEndDate}
+                        onChange={e => setOlympiadEndDate(e.target.value)}
+                        className="bg-white/5 border-white/10 h-10 text-white"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-4">
                   <Button onClick={handleAddTest} className="bg-primary text-primary-foreground">
@@ -752,6 +855,10 @@ export function AdminPage() {
                   <label className="text-sm text-muted-foreground">Photo URL (Preview)</label>
                   <Input value={studentPhotoPreview || ''} onChange={e => setStudentPhotoPreview(e.target.value)} placeholder="https://..." className="bg-white/5 border-white/10 text-white h-12" />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Description (Note)</label>
+                  <Textarea value={studentNote} onChange={e => setStudentNote(e.target.value)} placeholder="e.g., Improved Math from 680 to 790" className="bg-white/5 border-white/10 text-white min-h-24" />
+                </div>
                 <Button onClick={handleAddResult} className="bg-primary text-primary-foreground min-w-[140px]">
                   {editingResultId ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                   {editingResultId ? 'Update' : 'Add'}
@@ -808,6 +915,223 @@ export function AdminPage() {
               </div>
             </div>
           </TabsContent>
+          <TabsContent value="olympiad">
+            <div className="bg-card border border-white/10 rounded-3xl p-8 lg:p-12">
+              <OlympiadAdminPage embedded={true} />
+            </div>
+          </TabsContent>
+          <TabsContent value="settings">
+            <div className="bg-card border border-white/10 rounded-3xl p-8 lg:p-12">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <RefreshCw className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl text-white">Site Content & Settings</h2>
+                  <p className="text-muted-foreground">Customize all text content and prize stickers</p>
+                </div>
+                <Button onClick={async () => {
+                  setContentLoading(true);
+                  try {
+                    const res = await authedRequest('/api/content');
+                    const data = await res.json();
+                    setSiteContent(data.content || {});
+                  } catch (err) {
+                    showFlash('Failed to load content');
+                  } finally {
+                    setContentLoading(false);
+                  }
+                }} className="ml-auto">
+                  <RefreshCw className="w-4 h-4 mr-2" /> Load Content
+                </Button>
+              </div>
+
+              <div className="space-y-8 max-w-4xl">
+                {/* General Site Content */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">General Site</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Site Title</label>
+                      <Input
+                        value={siteContent.site_title || ''}
+                        onChange={e => setSiteContent({ ...siteContent, site_title: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                        placeholder="SAT Valley"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Site Tagline</label>
+                      <Input
+                        value={siteContent.site_tagline || ''}
+                        onChange={e => setSiteContent({ ...siteContent, site_tagline: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                        placeholder="Master the Digital SAT"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hero Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Hero Section</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Hero Title</label>
+                      <Input
+                        value={siteContent.hero_title || ''}
+                        onChange={e => setSiteContent({ ...siteContent, hero_title: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Hero Subtitle</label>
+                      <Input
+                        value={siteContent.hero_subtitle || ''}
+                        onChange={e => setSiteContent({ ...siteContent, hero_subtitle: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">Hero Description</label>
+                    <Textarea
+                      value={siteContent.hero_description || ''}
+                      onChange={e => setSiteContent({ ...siteContent, hero_description: e.target.value })}
+                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Olympiad Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Olympiad Section</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Olympiad Title</label>
+                      <Input
+                        value={siteContent.home_olympiad_title || ''}
+                        onChange={e => setSiteContent({ ...siteContent, home_olympiad_title: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Olympiad Subtitle</label>
+                      <Input
+                        value={siteContent.home_olympiad_subtitle || ''}
+                        onChange={e => setSiteContent({ ...siteContent, home_olympiad_subtitle: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">Olympiad Description</label>
+                    <Textarea
+                      value={siteContent.home_olympiad_desc || ''}
+                      onChange={e => setSiteContent({ ...siteContent, home_olympiad_desc: e.target.value })}
+                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Prize Stickers */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">🏆 Prize Stickers</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Prize Text</label>
+                      <Input
+                        value={siteContent.prize_text || ''}
+                        onChange={e => setSiteContent({ ...siteContent, prize_text: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                        placeholder="🏆 Win $500 Cash Prize"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Badge Text</label>
+                      <Input
+                        value={siteContent.prize_badge || ''}
+                        onChange={e => setSiteContent({ ...siteContent, prize_badge: e.target.value })}
+                        className="bg-white/5 border-white/10 text-white h-12"
+                        placeholder="GRAND PRIZE"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Badge Style</label>
+                      <select
+                        value={siteContent.prize_badge_style || 'gold'}
+                        onChange={e => setSiteContent({ ...siteContent, prize_badge_style: e.target.value })}
+                        className="w-full h-12 bg-white/5 border border-white/10 rounded-md px-3 text-white"
+                      >
+                        <option value="gold">🥇 Gold</option>
+                        <option value="silver">🥈 Silver</option>
+                        <option value="bronze">🥉 Bronze</option>
+                        <option value="diamond">💎 Diamond</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* Preview */}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`px-4 py-2 rounded-full font-bold text-sm ${siteContent.prize_badge_style === 'gold' ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black' :
+                          siteContent.prize_badge_style === 'silver' ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-black' :
+                            siteContent.prize_badge_style === 'bronze' ? 'bg-gradient-to-r from-amber-600 to-orange-700 text-white' :
+                              'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
+                        }`}>
+                        {siteContent.prize_badge || 'GRAND PRIZE'}
+                      </div>
+                      <span className="text-white">{siteContent.prize_text || '🏆 Win $500 Cash Prize'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Statistics */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Statistics (Results Page)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">High Scores</label>
+                      <Input value={highScores} onChange={e => setHighScores(e.target.value)} className="bg-white/5 border-white/10 text-white h-12" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Variance of Scores</label>
+                      <Input value={scoreVariance} onChange={e => setScoreVariance(e.target.value)} className="bg-white/5 border-white/10 text-white h-12" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Architectural Mean</label>
+                      <Input value={architecturalMean} onChange={e => setArchitecturalMean(e.target.value)} className="bg-white/5 border-white/10 text-white h-12" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Buttons */}
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await authedRequest('/api/content', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(siteContent)
+                        });
+                        showFlash('Site content updated successfully!');
+                      } catch (err) {
+                        showFlash('Failed to update content');
+                      }
+                    }}
+                    className="bg-primary text-primary-foreground"
+                    disabled={contentLoading}
+                  >
+                    <Save className="w-4 h-4 mr-2" /> Save All Content
+                  </Button>
+                  <Button onClick={handleUpdateSettings} variant="outline" className="border-white/10">
+                    <Save className="w-4 h-4 mr-2" /> Save Statistics
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
 
         <div className="mt-12 bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
@@ -820,6 +1144,6 @@ export function AdminPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

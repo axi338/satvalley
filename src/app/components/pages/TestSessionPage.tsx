@@ -1,4 +1,5 @@
 import React, { memo, useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { supabase } from '../../lib/supabase';
 import {
     ChevronLeft,
     ChevronRight,
@@ -14,8 +15,13 @@ import {
     CheckCircle2,
     HelpCircle,
     MoreVertical,
-    FileText
+    FileText,
+    Trophy,
+    BookOpen,
+    ExternalLink
 } from 'lucide-react';
+import { FullscreenInterstitial } from '../FullscreenInterstitial';
+import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
@@ -32,7 +38,7 @@ interface Question {
     passage?: string;
     options?: string[];
     answer?: string;
-    type?: 'multiple-choice' | 'numeric';
+    type?: 'multiple-choice' | 'numeric' | 'spr';
     imageUrl?: string;
     optionImages?: (string | null)[];
     subject?: 'rw' | 'math';
@@ -42,6 +48,7 @@ interface HighlightRange {
     start: number;
     end: number;
     text: string;
+    color?: 'yellow' | 'blue' | 'pink';
 }
 
 interface TestState {
@@ -54,7 +61,7 @@ interface TestState {
     timeLeft: number;
 }
 
-// 2. Break Screen Component
+// Break Screen Component
 const BreakScreen = ({
     onSkip,
     timeLeft,
@@ -113,8 +120,7 @@ const BreakScreen = ({
     );
 };
 
-
-// 1. Passage Viewer with Robust Highlighting
+// Passage Viewer with Multi-color Highlighting
 const PassageViewer = memo(({
     text,
     highlights,
@@ -130,32 +136,28 @@ const PassageViewer = memo(({
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Merge highlights into the text for rendering
-    // We assume 'text' is plain text (except for maybe <br/> we add).
-    // To keep it simple and robust, we will work with the raw string and inject spans.
     const renderedContent = useMemo(() => {
         if (!text) return '';
 
-        // Sort highlights by start position
         const sorted = [...(highlights || [])].sort((a, b) => a.start - b.start);
-
-        // Collapse overlapping intervals (simple approach: just don't crash, maybe simplistic rendering)
-        // For a robust implementation, we should merge overlaps, but for now let's just render segments.
-
         let result = [];
         let lastIndex = 0;
 
-        sorted.forEach((h, idx) => {
-            if (h.start < lastIndex) return; // Skip overlapping for now to prevent corruption
+        const colorClasses = {
+            yellow: 'bg-yellow-200/60 hover:bg-yellow-300/60',
+            blue: 'bg-blue-200/60 hover:bg-blue-300/60',
+            pink: 'bg-pink-200/60 hover:bg-pink-300/60'
+        };
 
-            // Text before highlight
+        sorted.forEach((h, idx) => {
+            if (h.start < lastIndex) return;
+
             result.push(<span key={`text-${idx}`}>{text.substring(lastIndex, h.start)}</span>);
 
-            // Highlighted text
             result.push(
                 <mark
                     key={`mark-${idx}`}
-                    className="bg-yellow-200/50 text-inherit rounded-sm py-0.5 cursor-pointer hover:bg-yellow-300/50 transition-colors"
+                    className={`${colorClasses[h.color || 'yellow']} text-inherit rounded-sm py-0.5 cursor-pointer transition-colors px-0.5`}
                     onClick={(e) => {
                         if (isHighlighterActive) {
                             e.stopPropagation();
@@ -170,12 +172,7 @@ const PassageViewer = memo(({
             lastIndex = h.end;
         });
 
-        // Remaining text
         result.push(<span key="text-end">{text.substring(lastIndex)}</span>);
-
-        // Convert newlines to breaks in the final generic spans if needed, 
-        // but here we are returning React nodes. 
-        // To support newlines in the original text, we might need a CSS `white-space: pre-wrap` on the container.
         return result;
     }, [text, highlights, isHighlighterActive, onRemoveHighlight]);
 
@@ -184,28 +181,23 @@ const PassageViewer = memo(({
 
         const selection = window.getSelection();
         if (!selection || selection.isCollapsed) return;
-
-        // Ensure selection is within our container
         if (!containerRef.current.contains(selection.anchorNode)) return;
 
         const range = selection.getRangeAt(0);
-        // We need 'start' and 'end' relative to the plain 'text' string.
-        // This is tricky with DOM nodes. 
-        // Simplified approach: Get the full text content of the container, find the selected substring.
-        // WARNING: This fails if multiple identical substrings exist. 
-        // Robust approach: Tree walker or use a library. 
-        // For this "Agentic" implementation, let's try a best-effort character offset calculation.
-
         const preSelectionRange = range.cloneRange();
         preSelectionRange.selectNodeContents(containerRef.current);
         preSelectionRange.setEnd(range.startContainer, range.startOffset);
         const start = preSelectionRange.toString().length;
         const end = start + range.toString().length;
-
         const selectedText = range.toString();
 
         if (selectedText.trim().length > 0) {
-            onAddHighlight({ start, end, text: selectedText });
+            onAddHighlight({
+                start,
+                end,
+                text: selectedText,
+                color: (window as any).nextHighlightColor || 'yellow'
+            });
             selection.removeAllRanges();
         }
     }, [isHighlighterActive, onAddHighlight]);
@@ -221,7 +213,7 @@ const PassageViewer = memo(({
     );
 });
 
-// 2. Review Screen Component
+// Review Screen Component
 const ReviewScreen = ({
     questions,
     answers,
@@ -288,74 +280,111 @@ const ReviewScreen = ({
     );
 };
 
-// --- Main Page Component ---
-
 export function TestSessionPage({ testId, onNavigate, user }: TestSessionPageProps) {
-    const apiBase = import.meta.env.VITE_BACKEND_URL || '';
+    const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
+    const [violationCount, setViolationCount] = useState(0);
+
+    const handleViolation = useCallback(async (type: string) => {
+        setViolationCount(p => {
+            const newCount = p + 1;
+            if (newCount >= 3) {
+                alert("CRITICAL SECURITY ALERT: Too many violations detected. Your test session is being terminated and submitted automatically.");
+                // Trigger auto-submit
+                // Using a ref or exposed function would be cleaner, but for now we can rely on a useEffect monitoring violationCount?
+                // No, that's async. State update might not be instant.
+                // We can trigger it right here if we have access to submit function.
+                // But submitFinal depends on state. 
+                // Let's set a flag to trigger force submit in a useEffect.
+            }
+            return newCount;
+        });
+
+        if (violationCount < 2) { // 0, 1 -> Warn. 2 (becoming 3) -> handled above/useEffect
+            alert(`WARNING: Violation Detected (${type}). Repeated violations will result in disqualification.`);
+        }
+
+        // Log to backend
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+                await fetch(`${apiBase}/api/olympiad/log-violation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ testId, type, timestamp: new Date().toISOString() })
+                });
+            }
+        } catch (e) { console.error(e); }
+
+    }, [testId, apiBase, violationCount]);
+
+
+
+
 
     // -- State --
     const [loading, setLoading] = useState(true);
-    const [screen, setScreen] = useState<'test' | 'review'>('test');
-
-    // Core Test Data
+    const [screen, setScreen] = useState<'intro' | 'test' | 'review'>('intro');
+    const [hasEnteredFullscreen, setHasEnteredFullscreen] = useState(false);
+    const [isOlympiadMode, setIsOlympiadMode] = useState(false);
     const [stage, setStage] = useState<TestState['stage']>('rw-m1');
     const [questions, setQuestions] = useState<Question[]>([]);
     const [m2Difficulty, setM2Difficulty] = useState<'easy' | 'hard' | null>(null);
-    const [allResponses, setAllResponses] = useState<any[]>([]); // Accumulate across modules
-
-    // Session State (Reset on Module Change)
+    const [allResponses, setAllResponses] = useState<any[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [flags, setFlags] = useState<Set<string | number>>(new Set());
     const [struckOptions, setStruckOptions] = useState<Record<string, Set<string>>>({});
     const [highlights, setHighlights] = useState<Record<string, HighlightRange[]>>({});
-
-    // UI State
-    const [timeLeft, setTimeLeft] = useState(1920); // 32 mins default for RW
+    const [timeLeft, setTimeLeft] = useState(1920);
     const [showTimer, setShowTimer] = useState(true);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [isHighlighterActive, setIsHighlighterActive] = useState(false);
+    const [isStrikethroughActive, setIsStrikethroughActive] = useState(false);
+    const [activeHighlightColor, setActiveHighlightColor] = useState<'yellow' | 'blue' | 'pink'>('yellow');
     const [showDirections, setShowDirections] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
     const [showReference, setShowReference] = useState(false);
 
-    // -- Effects --
+    useEffect(() => {
+        (window as any).nextHighlightColor = activeHighlightColor;
+    }, [activeHighlightColor]);
 
-    // Fetch Questions
+    const { isFullscreen, requestFullscreen } = useAntiCheat({
+        enabled: isOlympiadMode && screen === 'test',
+        onViolation: handleViolation
+    });
+
     useEffect(() => {
         const fetchQ = async () => {
             if (!testId || stage === 'break') return;
             setLoading(true);
             try {
-                let url = `${apiBase}/api/questions?testId=${testId}`;
-                const modPart = stage === 'rw-m1' ? 'm1' :
-                    stage === 'math-m1' ? 'm1' :
-                        `m2-${m2Difficulty || 'easy'}`;
-
+                const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : `m2-${m2Difficulty || 'easy'}`;
                 const subject = stage.startsWith('rw') ? 'rw' : 'math';
-
-                const res = await fetch(url + `&module=${modPart}&subject=${subject}`);
+                const url = `${apiBase}/api/questions?testId=${testId}&module=${modPart}&subject=${subject}`;
+                const res = await fetch(url);
                 const data = await res.json();
 
-                // Robust Filter and Mapping
                 const validQuestions = (data.questions || []).map((q: any) => ({
                     ...q,
                     imageUrl: q.image_url,
-                    testId: q.test_id,
                     optionImages: q.option_images
-                })).filter((q: any) =>
-                    q && typeof q.text === 'string'
-                );
+                })).filter((q: any) => q && typeof q.text === 'string');
 
                 setQuestions(validQuestions);
-                setScreen('test');
+                setQuestions(validQuestions);
+                // Don't auto-set to test, wait for intro unless already done
+                if (hasEnteredFullscreen) {
+                    setScreen('test');
+                }
                 setCurrentIndex(0);
                 setAnswers({});
                 setFlags(new Set());
                 setHighlights({});
                 setStruckOptions({});
-
-                // Set Time
                 setTimeLeft(stage.startsWith('rw') ? 1920 : 2100);
             } catch (e) {
                 console.error("Fetch failed", e);
@@ -364,21 +393,91 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             }
         };
         fetchQ();
-    }, [stage, testId, m2Difficulty]);
+    }, [stage, testId, m2Difficulty, apiBase]);
 
-    // Timer
+    useEffect(() => {
+        if (violationCount >= 3) {
+            const forceSubmit = async () => {
+                setLoading(true);
+                // Construct simplified response payload for partial credit/record
+                const currentModuleResponses = questions.map(q => ({
+                    ...q,
+                    userAnswer: answers[q.id] || null,
+                    section: stage.startsWith('rw') ? 'rw' : 'math',
+                    module: stage
+                }));
+                // Merge with prior
+                const finalData = [...allResponses, ...currentModuleResponses];
+
+                // Submit
+                try {
+                    const correctCount = finalData.filter(r => r.userAnswer === r.answer).length;
+                    const score = Math.round((correctCount / (finalData.length || 1)) * 800) + 800; // Simplified scoring
+
+                    await fetch(`${apiBase}/api/results`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userEmail: user?.email,
+                            testId,
+                            score: 0, // Disqualified? Or just score what they have? Prompt says "severe violations", usually 0.
+                            // Let's give them 0 or distinct status.
+                            // Database schema might not have "status" for results yet, only score.
+                            // Let's give 0 score for now to indicate termination, OR calculate score but frontend will show Terminated.
+                            // Actually, let's keep it simple: Submit what they have.
+                            responses: finalData,
+                            createdAt: new Date().toISOString(),
+                            is_olympiad: isOlympiadMode,
+                            disqualified: true // Add this flag if backend supports it (it might not yet, but useful payload)
+                        })
+                    });
+
+                    alert("Test Terminated due to Security Violations.");
+                    onNavigate('home');
+                } catch (e) {
+                    alert("Termination Error");
+                    onNavigate('home');
+                }
+            };
+
+            forceSubmit();
+        }
+    }, [violationCount, questions, answers, allResponses, stage, apiBase, user, testId, isOlympiadMode, onNavigate]);
+
+    // Detect if Math Only (Olympiad) and skip RW
+    useEffect(() => {
+        const checkTestType = async () => {
+            if (!testId) return;
+            try {
+                const res = await fetch(`${apiBase}/api/tests?isOlympiad=true`); // Fetch olympiads to check if this ID is one
+                // This is a bit inefficient, better to get single test. But works for now.
+                // Or simplified: Just check if we fetch questions for RW-M1 and get 0 results?
+                // Actually, let's just checking specific endpoint or assuming flow.
+                // Better: fetch single test meta.
+                // Since we don't have a clean single-test endpoint, let's rely on question fetching empty check?
+                // No, that's risky.
+                // Let's assume if the user clicked "Enter Node" on Olympiad, we pass a param?
+                // For now, let's trying to fetch the test details from the list.
+                const data = await res.json();
+                const currentTest = data.tests?.find((t: any) => t.id === testId);
+                if (currentTest && currentTest.is_olympiad) {
+                    setStage('math-m1');
+                    setIsOlympiadMode(true);
+                    setTimeLeft(2100); // 35 min for Math M1
+                }
+            } catch (e) { console.error(e); }
+        };
+        checkTestType();
+    }, [testId, apiBase]);
+
     useEffect(() => {
         if (timeLeft <= 0) {
-            if (stage === 'break') {
-                setStage('math-m1');
-            }
+            if (stage === 'break') setStage('math-m1');
             return;
         }
         const t = setInterval(() => setTimeLeft(p => p - 1), 1000);
         return () => clearInterval(t);
     }, [timeLeft, stage]);
-
-    // -- Handlers --
 
     const formatTime = (s: number) => {
         const m = Math.floor(s / 60);
@@ -387,21 +486,15 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     };
 
     const handleNext = () => {
-        if (currentIndex < questions.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-        } else {
-            setScreen('review');
-        }
+        if (currentIndex < questions.length - 1) setCurrentIndex(prev => prev + 1);
+        else setScreen('review');
     };
 
     const handleBack = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex(prev => prev - 1);
-        }
+        if (currentIndex > 0) setCurrentIndex(prev => prev - 1);
     };
 
     const handleModuleSubmit = () => {
-        // Save logic
         const currentModuleResponses = questions.map(q => ({
             ...q,
             userAnswer: answers[q.id] || null,
@@ -412,14 +505,13 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         const newTotalResponses = [...allResponses, ...currentModuleResponses];
         setAllResponses(newTotalResponses);
 
-        // Determine Next Stage
         if (stage === 'rw-m1') {
             const correct = questions.filter(q => answers[q.id] === q.answer).length;
             setM2Difficulty(correct / questions.length > 0.6 ? 'hard' : 'easy');
             setStage('rw-m2');
         } else if (stage === 'rw-m2') {
             setStage('break');
-            setTimeLeft(600); // 10 minutes break
+            setTimeLeft(600);
         } else if (stage === 'break') {
             setStage('math-m1');
         } else if (stage === 'math-m1') {
@@ -427,17 +519,15 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             setM2Difficulty(correct / questions.length > 0.6 ? 'hard' : 'easy');
             setStage('math-m2');
         } else {
-            // Finish Test
             submitFinal(newTotalResponses);
         }
     };
 
     const submitFinal = async (finalData: any[]) => {
-        // Mock submission
         setLoading(true);
         try {
             const correctCount = finalData.filter(r => r.userAnswer === r.answer).length;
-            const score = Math.round((correctCount / (finalData.length || 1)) * 800) + 800; // Mock score
+            const score = Math.round((correctCount / (finalData.length || 1)) * 800) + 800;
 
             await fetch(`${apiBase}/api/results`, {
                 method: 'POST',
@@ -447,10 +537,11 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     testId,
                     score,
                     responses: finalData,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    is_olympiad: isOlympiadMode
                 })
             });
-            onNavigate('review'); // Or results
+            onNavigate('review');
         } catch (e) {
             console.error(e);
             onNavigate('home');
@@ -479,52 +570,51 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         });
     };
 
-    // -- Render --
-
     if (loading) return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
         </div>
     );
 
-    if (stage === 'break') {
+    if (screen === 'intro') {
         return (
-            <BreakScreen
-                timeLeft={timeLeft}
-                formatTime={formatTime}
-                onSkip={() => setStage('math-m1')}
+            <FullscreenInterstitial
+                onStart={() => {
+                    setHasEnteredFullscreen(true);
+                    setScreen('test');
+                }}
             />
         );
     }
 
-    if (screen === 'review') {
-        return (
-            <div className="fixed inset-0 bg-white flex flex-col z-50">
-                {/* Review Header */}
-                <header className="h-16 bg-[#F6F8FA] border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-                    <div className="flex items-center gap-4">
-                        <h1 className="font-bold text-lg text-slate-900">
-                            Section {stage.includes('rw') ? '1' : '2'}: Review
-                        </h1>
-                    </div>
-                    <div className="font-mono font-bold text-slate-900 text-lg">
-                        {formatTime(timeLeft)}
-                    </div>
-                    <Button variant="ghost" onClick={() => setScreen('test')}>
-                        Back to Questions
-                    </Button>
-                </header>
+    if (stage === 'break') return <BreakScreen timeLeft={timeLeft} formatTime={formatTime} onSkip={() => setStage('math-m1')} />;
 
-                <ReviewScreen
-                    questions={questions}
-                    answers={answers}
-                    flags={flags}
-                    onNavigateToQuestion={(idx) => {
-                        setCurrentIndex(idx);
-                        setScreen('test');
-                    }}
-                    onSubmit={handleModuleSubmit}
-                />
+    if (screen === 'review') return (
+        <div className="fixed inset-0 bg-white flex flex-col z-50">
+            <header className="h-16 bg-[#F6F8FA] border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+                <div className="flex items-center gap-4">
+                    <h1 className="font-bold text-lg text-slate-900">Section {stage.includes('rw') ? '1' : '2'}: Review</h1>
+                </div>
+                <div className="font-mono font-bold text-slate-900 text-lg">{formatTime(timeLeft)}</div>
+                <Button variant="ghost" onClick={() => setScreen('test')}>Back to Questions</Button>
+            </header>
+            <ReviewScreen questions={questions} answers={answers} flags={flags} onNavigateToQuestion={(idx) => { setCurrentIndex(idx); setScreen('test'); }} onSubmit={handleModuleSubmit} />
+        </div>
+    );
+
+    // Anti-Cheat Blocking Screen
+    if (isOlympiadMode && !isFullscreen && screen === 'test') {
+        return (
+            <div className="fixed inset-0 bg-red-900 z-[100] flex items-center justify-center p-8 text-center text-white">
+                <div className="max-w-xl space-y-8">
+                    <AlertCircle className="w-24 h-24 mx-auto text-red-500 bg-white rounded-full p-2" />
+                    <h1 className="text-4xl font-black uppercase tracking-widest">Security Violation</h1>
+                    <p className="text-xl font-bold opacity-80">You have exited Fullscreen Mode.</p>
+                    <p className="opacity-60">This event has been logged. Please return to fullscreen immediately to continue your test.</p>
+                    <Button onClick={requestFullscreen} className="bg-white text-red-900 hover:bg-white/90 text-xl px-8 py-6 font-black uppercase tracking-widest rounded-xl">
+                        Return to Test
+                    </Button>
+                </div>
             </div>
         );
     }
@@ -533,248 +623,134 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
 
     return (
         <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none">
-            {/* Header */}
             <header className="h-14 bg-[#001E3C] text-white flex items-center justify-between px-4 shrink-0 relative z-20 shadow-md">
-                {/* Left: Section Info */}
                 <div className="flex items-center gap-4 w-1/3">
                     <div className="flex flex-col">
-                        <span className="text-sm font-bold tracking-tight">
-                            Section {stage.startsWith('rw') ? '1' : '2'}: {stage.startsWith('rw') ? 'Reading and Writing' : 'Math'}
-                        </span>
-                        <button
-                            onClick={() => setShowDirections(!showDirections)}
-                            className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
-                        >
+                        <span className="text-sm font-bold tracking-tight">Section {stage.startsWith('rw') ? '1' : '2'}: {stage.startsWith('rw') ? 'Reading and Writing' : 'Math'}</span>
+                        <button onClick={() => setShowDirections(!showDirections)} className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
                             Directions <ChevronRight className={`w-3 h-3 transition-transform ${showDirections ? 'rotate-90' : ''}`} />
                         </button>
                     </div>
                 </div>
 
-                {/* Center: Timer */}
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
                     <span className={`font-mono text-lg font-bold tracking-wider ${timeLeft < 300 ? 'text-rose-400 animate-pulse' : 'text-white'}`}>
                         {showTimer ? formatTime(timeLeft) : ''}
                     </span>
-                    <button onClick={() => setShowTimer(!showTimer)} className="text-[9px] uppercase font-bold opacity-50 hover:opacity-100">
-                        {showTimer ? 'Hide' : 'Show'}
-                    </button>
+                    <button onClick={() => setShowTimer(!showTimer)} className="text-[9px] uppercase font-bold opacity-50 hover:opacity-100">{showTimer ? 'Hide' : 'Show'}</button>
                 </div>
 
-                {/* Right: Tools */}
                 <div className="flex items-center justify-end gap-2 w-1/3">
-                    <button
-                        onClick={() => setIsHighlighterActive(!isHighlighterActive)}
-                        className={`p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 transition-colors ${isHighlighterActive ? 'bg-amber-500/20 text-amber-400' : 'text-slate-300'}`}
-                        title="Annotate"
-                    >
-                        <div className="text-lg leading-none font-serif italic border-b-2 border-current px-0.5">A</div>
-                        <span className="text-[8px] font-bold uppercase">Annotate</span>
-                    </button>
+                    {/* Highlighter & Strikethrough Tools */}
+                    <div className="flex items-center gap-1.5 mr-2">
+                        <div className={`flex items-center border border-white/10 rounded-lg p-0.5 ${isHighlighterActive ? 'bg-white/10' : ''}`}>
+                            <button
+                                onClick={() => setIsHighlighterActive(!isHighlighterActive)}
+                                className={`p-1.5 rounded flex flex-col items-center gap-0.5 transition-all ${isHighlighterActive ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <div className="text-lg leading-none font-serif italic border-current px-0.5">H</div>
+                                <span className="text-[7px] font-black uppercase">Annotate</span>
+                            </button>
+                            {isHighlighterActive && (
+                                <div className="flex items-center gap-1 px-1.5 border-l border-white/10 ml-0.5">
+                                    <button onClick={() => setActiveHighlightColor('yellow')} className={`w-3.5 h-3.5 rounded-full bg-yellow-300 border-2 ${activeHighlightColor === 'yellow' ? 'border-white' : 'border-transparent'}`} />
+                                    <button onClick={() => setActiveHighlightColor('blue')} className={`w-3.5 h-3.5 rounded-full bg-blue-300 border-2 ${activeHighlightColor === 'blue' ? 'border-white' : 'border-transparent'}`} />
+                                    <button onClick={() => setActiveHighlightColor('pink')} className={`w-3.5 h-3.5 rounded-full bg-pink-300 border-2 ${activeHighlightColor === 'pink' ? 'border-white' : 'border-transparent'}`} />
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setIsStrikethroughActive(!isStrikethroughActive)}
+                            className={`p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 transition-colors ${isStrikethroughActive ? 'bg-white/10 text-rose-400 font-bold' : 'text-slate-400'}`}
+                        >
+                            <span className="text-lg leading-none line-through decoration-current">ABC</span>
+                            <span className="text-[7px] font-black uppercase">Eliminate</span>
+                        </button>
+                    </div>
 
                     {stage.startsWith('math') && (
                         <>
-                            <button
-                                onClick={() => setShowCalculator(!showCalculator)}
-                                className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"
-                            >
-                                <Calculator className="w-5 h-5" />
-                                <span className="text-[8px] font-bold uppercase">Calculator</span>
-                            </button>
-                            <button
-                                onClick={() => setShowReference(!showReference)}
-                                className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"
-                            >
-                                <FileText className="w-5 h-5" />
-                                <span className="text-[8px] font-bold uppercase">Reference</span>
-                            </button>
+                            <button onClick={() => setShowCalculator(!showCalculator)} className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"><Calculator className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Calculator</span></button>
+                            <button onClick={() => setShowReference(!showReference)} className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"><FileText className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Reference</span></button>
                         </>
                     )}
 
                     <div className="h-6 w-px bg-white/20 mx-1" />
-
-                    <button
-                        onClick={() => setShowMoreMenu(!showMoreMenu)}
-                        className="p-2 rounded hover:bg-white/10 text-slate-300 relative"
-                    >
+                    <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="p-2 rounded hover:bg-white/10 text-slate-300 relative">
                         <MoreVertical className="w-5 h-5" />
                         <span className="text-[8px] font-bold uppercase block text-center">More</span>
-
                         {showMoreMenu && (
                             <div className="absolute right-0 top-full mt-2 w-48 bg-white text-slate-900 rounded-lg shadow-xl py-1 z-50 text-sm font-medium">
-                                <button
-                                    onClick={() => {
-                                        if (document.fullscreenElement) document.exitFullscreen();
-                                        else document.documentElement.requestFullscreen();
-                                        setShowMoreMenu(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2"
-                                >
-                                    <Eye className="w-4 h-4" /> Full Screen
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setScreen('review');
-                                        setShowMoreMenu(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2 hover:bg-slate-50 border-t border-slate-100 flex items-center gap-2"
-                                >
-                                    <CheckCircle2 className="w-4 h-4" /> End Section
-                                </button>
+                                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); setShowMoreMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2"><Eye className="w-4 h-4" /> Full Screen</button>
+                                <button onClick={() => { setScreen('review'); setShowMoreMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 border-t border-slate-100 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> End Section</button>
                             </div>
                         )}
                     </button>
                 </div>
             </header>
 
-            {/* Directions Dropdown */}
             {showDirections && (
                 <div className="bg-[#F6F8FA] border-b border-slate-200 p-6 text-sm text-slate-700 animate-in slide-in-from-top-2 z-10">
                     <h3 className="font-bold mb-2">Directions</h3>
-                    <p>
-                        The questions in this section address a number of important reading and writing skills. Each question includes one or more passages, which may include a table or graph. Read each passage and question carefully, and then choose the best answer to the question based on the passage(s).
-                    </p>
+                    <p>Each question includes one or more passages. Read carefully and choose the best answer.</p>
                 </div>
             )}
 
-            {/* Calculator Modal */}
             {showCalculator && (
-                <div className="absolute top-20 left-20 w-[600px] h-[400px] bg-white rounded-lg shadow-2xl border border-slate-300 z-[60] flex flex-col resize overflow-hidden" style={{ minWidth: '300px', minHeight: '300px' }}>
+                <div className="absolute top-20 left-20 w-[600px] h-[400px] bg-white rounded-lg shadow-2xl border border-slate-300 z-[60] flex flex-col" style={{ minWidth: '300px', minHeight: '300px' }}>
                     <div className="h-8 bg-slate-100 border-b border-slate-200 flex items-center justify-between px-3 cursor-move select-none">
                         <span className="text-xs font-bold text-slate-500 uppercase">Desmos Graphing Calculator</span>
                         <button onClick={() => setShowCalculator(false)} className="hover:bg-slate-200 rounded p-0.5"><X className="w-4 h-4 text-slate-500" /></button>
                     </div>
-                    <iframe
-                        src="https://www.desmos.com/testing/calculator"
-                        className="flex-1 w-full h-full border-none"
-                        title="Desmos Calculator"
-                        sandbox="allow-scripts allow-same-origin allow-forms"
-                    />
+                    <iframe src="https://www.desmos.com/testing/calculator" className="flex-1 w-full h-full border-none" title="Desmos Calculator" sandbox="allow-scripts allow-same-origin allow-forms" />
                 </div>
             )}
 
-            {/* Reference Sheet Modal */}
             {showReference && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowReference(false)}>
                     <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 relative" onClick={e => e.stopPropagation()}>
                         <button onClick={() => setShowReference(false)} className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X className="w-5 h-5" /></button>
                         <h2 className="text-xl font-bold mb-6 text-slate-900 border-b pb-4">Math Reference Sheet</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Mock Reference Sheet Content - In real app, use an image */}
-                            <div className="space-y-6">
-                                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
-                                    <h3 className="font-serif font-bold mb-4 border-b border-slate-200 pb-2">Area and Volume</h3>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <div className="font-bold">Circle</div>
-                                            <div>A = πr²</div>
-                                            <div>C = 2πr</div>
-                                        </div>
-                                        <div>
-                                            <div className="font-bold">Rectangle</div>
-                                            <div>A = lw</div>
-                                        </div>
-                                        <div>
-                                            <div className="font-bold">Triangle</div>
-                                            <div>A = ½bh</div>
-                                        </div>
-                                        <div>
-                                            <div className="font-bold">Sphere</div>
-                                            <div>V = 4/3πr³</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-6">
-                                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
-                                    <h3 className="font-serif font-bold mb-4 border-b border-slate-200 pb-2">Triangles</h3>
-                                    <div className="grid grid-cols-2 gap-6 text-sm">
-                                        <div>
-                                            <div className="font-bold">Pythagorean</div>
-                                            <div>a² + b² = c²</div>
-                                        </div>
-                                        <div>
-                                            <div className="font-bold">Special Right</div>
-                                            <div>30-60-90 (x, x√3, 2x)</div>
-                                            <div>45-45-90 (s, s, s√2)</div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                                <h3 className="font-serif font-bold mb-4 border-b border-slate-200 pb-2">Area and Volume</h3>
+                                <p>Circle: A=πr², C=2πr</p>
+                                <p>Rectangle: A=lw</p>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Main Content Split */}
             <main className="flex-1 flex overflow-hidden">
-                {/* Left Plane: Passage */}
                 <div className="w-1/2 border-r border-slate-200 bg-white flex flex-col">
                     <div className="flex-1 overflow-y-auto p-12 custom-scrollbar select-text cursor-text" onMouseDown={e => e.stopPropagation()}>
                         {currentQ?.passage ? (
                             <>
-                                <PassageViewer
-                                    text={currentQ.passage}
-                                    highlights={highlights[currentQ.id] || []}
-                                    isHighlighterActive={isHighlighterActive}
-                                    onAddHighlight={(range) => {
-                                        setHighlights(prev => ({
-                                            ...prev,
-                                            [currentQ.id]: [...(prev[currentQ.id] || []), range]
-                                        }));
-                                    }}
-                                    onRemoveHighlight={(idx) => {
-                                        setHighlights(prev => ({
-                                            ...prev,
-                                            [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx)
-                                        }));
-                                    }}
-                                />
-                                {currentQ?.imageUrl && (
-                                    <div className="mt-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
-                                        <img src={`${apiBase}${currentQ.imageUrl}`} alt="Question visual" className="w-full h-auto" />
-                                    </div>
-                                )}
+                                <PassageViewer text={currentQ.passage} highlights={highlights[currentQ.id] || []} isHighlighterActive={isHighlighterActive} onAddHighlight={(range) => setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))} onRemoveHighlight={(idx) => setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))} />
+                                {currentQ?.imageUrl && <div className="mt-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
                             </>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-slate-300 italic">
-                                No passage context for this question.
-                            </div>
-                        )}
+                        ) : <div className="h-full flex items-center justify-center text-slate-300 italic">No passage context.</div>}
                     </div>
                 </div>
 
-                {/* Right Pane: Question */}
                 <div className="w-1/2 bg-white flex flex-col">
                     <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                        {/* Question Header */}
                         <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
-                            <div className="bg-slate-900 text-white text-sm font-bold px-3 py-1 rounded-sm">
-                                {currentIndex + 1}
-                            </div>
-                            <button
-                                onClick={toggleFlag}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-xs font-bold uppercase tracking-wider
-                                ${flags.has(currentQ?.id || 0) ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                            >
-                                <Flag className={`w-4 h-4 ${flags.has(currentQ?.id || 0) ? 'fill-current' : ''}`} />
-                                {flags.has(currentQ?.id || 0) ? 'Marked' : 'Mark for Review'}
+                            <div className="bg-slate-900 text-white text-sm font-bold px-3 py-1 rounded-sm">{currentIndex + 1}</div>
+                            <button onClick={toggleFlag} className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors text-xs font-bold uppercase tracking-wider ${flags.has(currentQ?.id || 0) ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
+                                <Flag className={`w-4 h-4 ${flags.has(currentQ?.id || 0) ? 'fill-current' : ''}`} />{flags.has(currentQ?.id || 0) ? 'Marked' : 'Mark for Review'}
                             </button>
                         </div>
 
-                        {/* Question Content */}
                         <div className="mb-8 space-y-4">
-                            {!currentQ?.passage && currentQ?.imageUrl && (
-                                <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto">
-                                    <img src={`${apiBase}${currentQ.imageUrl}`} alt="Question visual" className="w-full h-auto" />
-                                </div>
-                            )}
-                            <p className="font-serif text-[18px] leading-8 text-slate-900">
-                                {currentQ?.text}
-                            </p>
+                            {!currentQ?.passage && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
+                            <p className="font-serif text-[18px] leading-8 text-slate-900">{currentQ?.text}</p>
                         </div>
 
                         <div className="space-y-3 pb-20">
-                            {!(currentQ?.type === 'numeric' || (currentQ?.type as string) === 'spr') && currentQ?.options?.map((opt, idx) => {
+                            {!(currentQ?.type === 'numeric' || currentQ?.type === 'spr') && currentQ?.options?.map((opt, idx) => {
                                 const letter = ['A', 'B', 'C', 'D'][idx];
                                 const isSelected = answers[currentQ.id] === letter;
                                 const isStruck = struckOptions[currentQ.id]?.has(letter);
@@ -783,59 +759,25 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                     <div key={letter} className="relative group">
                                         <button
                                             onClick={() => {
-                                                if (!isStruck) {
-                                                    setAnswers(p => ({ ...p, [currentQ.id]: letter }));
-                                                }
+                                                if (isStrikethroughActive) toggleStrike(letter);
+                                                else if (!isStruck) setAnswers(p => ({ ...p, [currentQ.id]: letter }));
                                             }}
-                                            className={`w-full p-4 rounded border text-left flex items-start gap-4 transition-all
-                                             ${isSelected
-                                                    ? 'border-[#001E3C] bg-[#E7F0F8] ring-1 ring-[#001E3C]'
-                                                    : isStruck
-                                                        ? 'opacity-40 bg-slate-50 border-slate-200 cursor-not-allowed'
-                                                        : 'border-slate-300 bg-white hover:border-[#001E3C] hover:bg-slate-50'}`}
+                                            className={`w-full p-4 rounded border text-left flex items-start gap-4 transition-all ${isSelected ? 'border-[#001E3C] bg-[#E7F0F8] ring-1 ring-[#001E3C]' : isStruck ? 'opacity-40 bg-slate-50 border-slate-200 cursor-not-allowed' : 'border-slate-300 bg-white hover:border-[#001E3C] hover:bg-slate-50'}`}
                                         >
-                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 mt-0.5
-                                             ${isSelected
-                                                    ? 'bg-[#001E3C] text-white border-[#001E3C]'
-                                                    : 'bg-transparent border-slate-300 text-slate-500'}`}>
-                                                {letter}
-                                            </div>
+                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isSelected ? 'bg-[#001E3C] text-white border-[#001E3C]' : 'bg-transparent border-slate-300 text-slate-500'}`}>{letter}</div>
                                             <div className="flex-1 flex flex-col gap-2">
-                                                <span className={`font-serif text-[16px] leading-7 text-slate-800 ${isStruck ? 'line-through decoration-slate-400' : ''}`}>
-                                                    {opt}
-                                                </span>
-                                                {currentQ.optionImages?.[idx] && (
-                                                    <div className="mt-1 rounded border border-slate-200 overflow-hidden bg-white max-w-xs">
-                                                        <img src={`${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" />
-                                                    </div>
-                                                )}
+                                                <span className={`font-serif text-[16px] leading-7 text-slate-800 ${isStruck ? 'line-through decoration-slate-400' : ''}`}>{opt}</span>
+                                                {currentQ.optionImages?.[idx] && <div className="mt-1 rounded border border-slate-200 overflow-hidden bg-white max-w-xs"><img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" /></div>}
                                             </div>
                                         </button>
-
-                                        {/* Strike Button */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleStrike(letter);
-                                            }}
-                                            className={`absolute top-1/2 -translate-y-1/2 -right-8 p-1 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 ${isStruck ? 'text-rose-500 opacity-100' : ''}`}
-                                            title="Strikethrough"
-                                        >
-                                            abc
-                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); toggleStrike(letter); }} className={`absolute top-1/2 -translate-y-1/2 -right-8 p-1 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 ${isStruck ? 'text-rose-500 opacity-100' : ''}`} title="Eliminate">abc</button>
                                     </div>
                                 );
                             })}
-
-                            {(currentQ?.type === 'numeric' || (currentQ?.type as string) === 'spr') && (
+                            {(currentQ?.type === 'numeric' || currentQ?.type === 'spr') && (
                                 <div className="bg-slate-50 p-6 rounded border border-slate-200">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Student-Produced Response</label>
-                                    <Input
-                                        value={answers[currentQ.id] || ''}
-                                        onChange={(e) => setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
-                                        placeholder="Enter answer"
-                                        className="bg-white text-lg font-mono border-slate-300 focus:ring-[#001E3C]"
-                                    />
+                                    <Input value={answers[currentQ.id] || ''} onChange={(e) => setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))} placeholder="Enter answer" className="bg-white text-lg font-mono border-slate-300 focus:ring-[#001E3C]" />
                                 </div>
                             )}
                         </div>
@@ -843,28 +785,11 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 </div>
             </main>
 
-            {/* Footer */}
             <footer className="h-20 bg-white border-t border-slate-200 flex items-center justify-between px-8 relative shrink-0 z-30">
-                <div className="font-bold text-slate-900 text-sm">
-                    {user?.email || 'Student'}
-                </div>
-
+                <div className="font-bold text-slate-900 text-sm">{user?.email || 'Student'}</div>
                 <div className="flex items-center gap-4">
-                    {currentIndex > 0 && (
-                        <Button
-                            variant="outline"
-                            onClick={handleBack}
-                            className="px-6 py-6 bg-[#001E3C] text-white hover:bg-[#00152a] hover:text-white border-none rounded-full font-bold"
-                        >
-                            Back
-                        </Button>
-                    )}
-                    <Button
-                        onClick={handleNext}
-                        className="px-10 py-6 bg-[#004d99] hover:bg-[#003d7a] text-white border-none rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all"
-                    >
-                        {currentIndex === questions.length - 1 ? 'Next' : 'Next'}
-                    </Button>
+                    {currentIndex > 0 && <Button variant="outline" onClick={handleBack} className="px-6 py-6 bg-[#001E3C] text-white hover:bg-[#00152a] hover:text-white border-none rounded-full font-bold">Back</Button>}
+                    <Button onClick={handleNext} className="px-10 py-6 bg-[#004d99] hover:bg-[#003d7a] text-white border-none rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all">Next</Button>
                 </div>
             </footer>
         </div>

@@ -1,4 +1,5 @@
-import { ArrowRight, Target, Brain, Activity, ShieldCheck, Globe, Cpu, ChevronRight, Send, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight, Target, Brain, Activity, ShieldCheck, Globe, Cpu, ChevronRight, Send, MessageCircle, Trophy, X, Sparkles, Medal } from 'lucide-react';
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
@@ -37,6 +38,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
       color: 'text-indigo-400'
     },
   ];
+
+  const [content, setContent] = useState<any>({});
+
+  useEffect(() => {
+    fetch(`${(import.meta as any).env.VITE_BACKEND_URL || ''}/api/content`)
+      .then(r => r.json())
+      .then(data => setContent(data.content || {}))
+      .catch(err => console.error("Failed to load content", err));
+  }, []);
+
 
   return (
     <div className="min-h-screen">
@@ -99,6 +110,96 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
+      {/* SAT Olympiad Promo Section */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-transparent" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-amber-500/10 rounded-full blur-[150px] -z-10" />
+
+        <div className="max-w-7xl mx-auto relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-black text-amber-300 uppercase tracking-widest">Live Competition</span>
+              </div>
+
+              <h2 className="text-5xl lg:text-7xl font-black text-white tracking-tighter leading-[0.95]">
+                {content.home_olympiad_title || (
+                  <>
+                    SAT <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Olympiad</span>
+                  </>
+                )}
+                <br />
+                <span className="text-white/30 italic text-4xl lg:text-5xl">{content.home_olympiad_subtitle || 'Season One.'}</span>
+              </h2>
+
+              <p className="text-xl text-white/50 leading-relaxed max-w-lg">
+                {content.home_olympiad_desc || "Compete against Uzbekistan's brightest minds. Prove your excellence on the global stage and secure your place on the elite leaderboard."}
+              </p>
+
+              <div className="flex flex-wrap gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-white">$500+</div>
+                    <div className="text-[10px] text-white/30 uppercase tracking-widest">Prize Pool</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <Medal className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-white">Top 3</div>
+                    <div className="text-[10px] text-white/30 uppercase tracking-widest">Get Certificates</div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onNavigate('olympiad')}
+                className="group h-16 px-10 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black uppercase tracking-widest rounded-2xl shadow-2xl shadow-amber-500/30 hover:shadow-amber-500/50 transition-all hover:scale-105 active:scale-95 flex items-center gap-4"
+              >
+                <Trophy className="w-5 h-5" />
+                Join Olympiad Now
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
+            <div className="relative hidden lg:block">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-[3rem] blur-3xl" />
+              <div className="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-amber-500/20 rounded-[3rem] p-12 backdrop-blur-md">
+                <div className="text-center mb-8">
+                  <div className="text-[10px] font-black text-amber-400 uppercase tracking-[0.4em] mb-4">Current Leaders</div>
+                  <div className="w-20 h-1 bg-gradient-to-r from-amber-500 to-orange-500 mx-auto rounded-full" />
+                </div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((rank) => (
+                    <div key={rank} className={`flex items-center gap-4 p-4 rounded-2xl ${rank === 1 ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-white/5 border border-white/5'}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${rank === 1 ? 'bg-amber-500 text-white' : rank === 2 ? 'bg-slate-400 text-slate-900' : 'bg-amber-700 text-white'}`}>
+                        {rank}
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-3 bg-white/10 rounded-full w-3/4" />
+                        <div className="h-2 bg-white/5 rounded-full w-1/2 mt-2" />
+                      </div>
+                      <div className={`text-xl font-black ${rank === 1 ? 'text-amber-400' : 'text-white/60'}`}>
+                        {1600 - (rank - 1) * 20}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                  <p className="text-white/20 text-[10px] uppercase tracking-widest">Could be you →</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section className="py-24 relative z-10 px-6 bg-black/20 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto">
@@ -156,60 +257,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* About Us / Team Section */}
-      <section className="py-24 px-6 bg-slate-900/50 border-y border-white/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-16 text-center">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
-              Architects of <span className="text-indigo-400">Success</span>
-            </h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              SAT|VALLEY is built by top performers, for future top performers.
-              Meet the minds behind the platform.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Founder Card */}
-            <div className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all group">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-4xl">👨‍🏫</div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white">Humoyunbek Mirzayev</h3>
-                  <div className="text-indigo-300 font-medium tracking-wide">Founder & Academic Lead</div>
-                </div>
-              </div>
-              <p className="text-slate-400 leading-relaxed mb-6">
-                The visionary behind SAT|VALLEY. With a personal SAT result of <strong className="text-white">1400+</strong> and a <strong className="text-emerald-400">perfect 800 Math</strong> score, Humoyunbek has encoded his high-performance strategies into every lesson and question on the platform.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold border border-indigo-500/20">Math 800</span>
-                <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold border border-indigo-500/20">Founder</span>
-                <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold border border-indigo-500/20">Expert Tutor</span>
-              </div>
-            </div>
-
-            {/* Developer Card */}
-            <div className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-all group">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center text-4xl">💻</div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white">Ibroximov Axliddin</h3>
-                  <div className="text-amber-300 font-medium tracking-wide">Lead Software Engineer</div>
-                </div>
-              </div>
-              <p className="text-slate-400 leading-relaxed mb-6">
-                The technical architect behind the SAT|VALLEY ecosystem. A highly experienced backend developer, Axliddin engineered the robust, adaptive, and scalable infrastructure that powers your practice tests, ensuring a seamless and responsive experience.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold border border-amber-500/20">Full Stack</span>
-                <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold border border-amber-500/20">Backend Arch</span>
-                <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold border border-amber-500/20">System Design</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Engineering Footer Call to Action */}
       <section className="py-32 px-6">
@@ -233,6 +280,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </button>
         </div>
       </section>
-    </div>
+    </div >
   );
 }
