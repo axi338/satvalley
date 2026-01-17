@@ -107,7 +107,7 @@ const DraggableCalculator = ({ onClose }: { onClose: () => void }) => {
     return (
         <div
             ref={panelRef}
-            className="fixed w-[650px] h-[450px] bg-white rounded-xl shadow-2xl border border-slate-300 z-[60] flex flex-col overflow-hidden"
+            className="fixed w-[650px] h-[450px] bg-white rounded-xl shadow-2xl border border-slate-300 z-[60] flex flex-col overflow-hidden allow-anticheat-focus"
             style={{
                 left: position.x,
                 top: position.y,
@@ -364,25 +364,29 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const [violationCount, setViolationCount] = useState(0);
 
     const handleViolation = useCallback(async (type: string) => {
+        // Ignore minor focus losses or iframes interactions if handled by hook, 
+        // but hook calls this on confirmed violation.
+
         setViolationCount(p => {
             const newCount = p + 1;
+            // Only severe penalty after multiple warnings
             if (newCount >= 3) {
-                alert("CRITICAL SECURITY ALERT: Too many violations detected. Your test session is being terminated and submitted automatically.");
-                // Trigger auto-submit
-                // Using a ref or exposed function would be cleaner, but for now we can rely on a useEffect monitoring violationCount?
-                // No, that's async. State update might not be instant.
-                // We can trigger it right here if we have access to submit function.
-                // But submitFinal depends on state. 
-                // Let's set a flag to trigger force submit in a useEffect.
+                // Trigger terminal violation state
             }
             return newCount;
         });
 
-        if (violationCount < 2) { // 0, 1 -> Warn. 2 (becoming 3) -> handled above/useEffect
-            alert(`WARNING: Violation Detected (${type}). Repeated violations will result in disqualification.`);
-        }
+        // Show soft warning in UI instead of alert
+        const warningMsg = type === 'fullscreen_exit' ? "Please return to fullscreen" :
+            type === 'window_blur' ? "Keep focus on the test window" :
+                "Security Check";
 
-        // Log to backend
+        // We can use a toast or local state to show this. 
+        // For now, let's use a custom variable on window or a new state if we want to avoid re-renders?
+        // Actually, state is fine.
+        setLastWarning({ message: warningMsg, time: Date.now() });
+
+        // Log to backend (silent)
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.access_token) {
@@ -397,7 +401,19 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             }
         } catch (e) { console.error(e); }
 
-    }, [testId, apiBase, violationCount]);
+    }, [testId, apiBase]);
+
+    // ... (keep state)
+    const [lastWarning, setLastWarning] = useState<{ message: string, time: number } | null>(null);
+
+    // Auto-clear warning
+    useEffect(() => {
+        if (lastWarning) {
+            const t = setTimeout(() => setLastWarning(null), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [lastWarning]);
+
 
 
 
@@ -702,6 +718,15 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
 
     return (
         <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none">
+            {/* Soft Warning Toast */}
+            {lastWarning && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="bg-amber-100 border border-amber-200 text-amber-800 px-6 py-3 rounded-full shadow-xl flex items-center gap-3 font-bold text-sm">
+                        <AlertCircle className="w-5 h-5 text-amber-600" />
+                        {lastWarning.message}
+                    </div>
+                </div>
+            )}
             <header className="h-14 bg-[#001E3C] text-white flex items-center justify-between px-4 shrink-0 relative z-20 shadow-md">
                 <div className="flex items-center gap-4 w-1/3">
                     <div className="flex flex-col">

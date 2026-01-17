@@ -1,106 +1,83 @@
 import { useEffect, useState, useCallback } from 'react';
 
 interface AntiCheatOptions {
-    onViolation: (type: string, details?: string) => void;
-    enabled?: boolean;
+    enabled: boolean;
+    onViolation: (type: string) => void;
 }
 
-export function useAntiCheat({ onViolation, enabled = true }: AntiCheatOptions) {
-    const [isFullscreen, setIsFullscreen] = useState(true); // Assume true initially to avoid flicker, or check doc
-    const [violations, setViolations] = useState<string[]>([]);
+export function useAntiCheat({ enabled, onViolation }: AntiCheatOptions) {
+    const [isFullscreen, setIsFullscreen] = useState(true); // Default to true to avoid initial flash
 
-    const logViolation = useCallback((type: string) => {
-        if (!enabled) return;
-        setViolations(prev => [...prev, `${type} at ${new Date().toLocaleTimeString()}`]);
-        onViolation(type);
-    }, [enabled, onViolation]);
-
-    // 1. Visibility / Tab Focus
-    useEffect(() => {
-        if (!enabled) return;
-
-        const handleVisibilityChange = () => {
-            if (document.hidden) {
-                logViolation('TAB_SWITCH_DETECTED');
-            }
-        };
-
-        const handleBlur = () => {
-            logViolation('WINDOW_BLUR_DETECTED');
-        };
-
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        window.addEventListener("blur", handleBlur);
-
-        return () => {
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-            window.removeEventListener("blur", handleBlur);
-        };
-    }, [enabled, logViolation]);
-
-    // 2. Fullscreen Enforcement
-    useEffect(() => {
-        if (!enabled) return;
-
-        const checkFullscreen = () => {
-            const isFull = !!document.fullscreenElement;
-            setIsFullscreen(isFull);
-            if (!isFull) {
-                logViolation('FULLSCREEN_EXITED');
-            }
-        };
-
-        document.addEventListener('fullscreenchange', checkFullscreen);
-
-        // Initial check
-        // checkFullscreen(); // Don't log violation on mount immediately allow them to enter it manually first via UI
-
-        return () => document.removeEventListener('fullscreenchange', checkFullscreen);
-    }, [enabled, logViolation]);
-
-    // 3. Disable Context Menu & Copy/Paste
-    useEffect(() => {
-        if (!enabled) return;
-
-        const preventDefault = (e: Event) => e.preventDefault();
-
-        const handleKeydown = (e: KeyboardEvent) => {
-            // Block specific shortcuts if needed? 
-            // Common: Ctrl+C, Ctrl+V, Alt+Tab (browser catches alt-tab usually)
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'p' || e.key === 's')) {
-                e.preventDefault();
-                logViolation('KEYBOARD_SHORTCUT_ATTEMPT');
-            }
-        };
-
-        document.addEventListener('contextmenu', preventDefault);
-        document.addEventListener('copy', preventDefault);
-        document.addEventListener('paste', preventDefault);
-        document.addEventListener('cut', preventDefault);
-        document.addEventListener('keydown', handleKeydown);
-
-        return () => {
-            document.removeEventListener('contextmenu', preventDefault);
-            document.removeEventListener('copy', preventDefault);
-            document.removeEventListener('paste', preventDefault);
-            document.removeEventListener('cut', preventDefault);
-            document.removeEventListener('keydown', handleKeydown);
-        };
-    }, [enabled, logViolation]);
-
-    const requestFullscreen = async () => {
+    // Request fullscreen helper
+    const requestFullscreen = useCallback(async () => {
         try {
             if (!document.fullscreenElement) {
                 await document.documentElement.requestFullscreen();
             }
         } catch (e) {
-            console.error("Fullscreen blocked", e);
+            console.error("Fullscreen request failed", e);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (!enabled) return;
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                onViolation('tab_switch');
+            }
+        };
+
+        const handleBlur = () => {
+            // Check if focus moved to an allowed iframe (like Desmos)
+            // document.activeElement will point to the iframe if it received focus
+            const activeElement = document.activeElement;
+            const isAhllowedIframe = activeElement && (
+                activeElement.tagName === 'IFRAME' ||
+                activeElement.closest('.allow-anticheat-focus') // Add this class to allowed containers
+            );
+
+            if (!isAhllowedIframe) {
+                // Slight delay to allow valid focus transitions
+                setTimeout(() => {
+                    if (!document.hasFocus()) {
+                        onViolation('window_blur');
+                    }
+                }, 100);
+            }
+        };
+
+        const handleFullscreenChange = () => {
+            const isFull = !!document.fullscreenElement;
+            setIsFullscreen(isFull);
+            if (!isFull) {
+                onViolation('fullscreen_exit');
+            }
+        };
+
+        // Initial check
+        if (!document.fullscreenElement) {
+            setIsFullscreen(false);
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+        // Prevent context menu (right click)
+        const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+        document.addEventListener('contextmenu', handleContextMenu);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('contextmenu', handleContextMenu);
+        };
+    }, [enabled, onViolation]);
 
     return {
         isFullscreen,
-        violations,
         requestFullscreen
     };
 }
