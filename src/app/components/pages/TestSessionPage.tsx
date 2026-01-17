@@ -457,6 +457,21 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             if (!testId || stage === 'break') return;
             setLoading(true);
             try {
+                // Access Control Check for Olympiad
+                if (isOlympiadMode && user?.email) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const statusRes = await fetch(`${apiBase}/api/olympiad/status?testId=${testId}&userEmail=${user.email}`, {
+                        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
+                    });
+                    const statusData = await statusRes.json();
+
+                    if (statusData.completed) {
+                        alert("You have already completed this Olympiad test.");
+                        onNavigate('home');
+                        return;
+                    }
+                }
+
                 const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : `m2-${m2Difficulty || 'easy'}`;
                 const subject = stage.startsWith('rw') ? 'rw' : 'math';
                 const url = `${apiBase}/api/questions?testId=${testId}&module=${modPart}&subject=${subject}`;
