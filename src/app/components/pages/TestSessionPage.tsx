@@ -61,7 +61,86 @@ interface TestState {
     timeLeft: number;
 }
 
-// Break Screen Component
+// Draggable Calculator Component
+const DraggableCalculator = ({ onClose }: { onClose: () => void }) => {
+    const [position, setPosition] = useState({ x: 80, y: 80 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (panelRef.current) {
+            const rect = panelRef.current.getBoundingClientRect();
+            setDragOffset({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            });
+            setIsDragging(true);
+        }
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isDragging) {
+                setPosition({
+                    x: Math.max(0, e.clientX - dragOffset.x),
+                    y: Math.max(0, e.clientY - dragOffset.y)
+                });
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, dragOffset]);
+
+    return (
+        <div
+            ref={panelRef}
+            className="fixed w-[650px] h-[450px] bg-white rounded-xl shadow-2xl border border-slate-300 z-[60] flex flex-col overflow-hidden"
+            style={{
+                left: position.x,
+                top: position.y,
+                minWidth: '400px',
+                minHeight: '350px'
+            }}
+        >
+            <div
+                className="h-10 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 cursor-move select-none"
+                onMouseDown={handleMouseDown}
+            >
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Calculator className="w-4 h-4" />
+                    Desmos Graphing Calculator
+                </span>
+                <button
+                    onClick={onClose}
+                    className="hover:bg-slate-700 rounded p-1 transition-colors"
+                >
+                    <X className="w-4 h-4 text-white" />
+                </button>
+            </div>
+            <iframe
+                src="https://www.desmos.com/calculator"
+                className="flex-1 w-full h-full border-none bg-white"
+                title="Desmos Calculator"
+                allow="clipboard-read; clipboard-write"
+            />
+        </div>
+    );
+};
+
+
 const BreakScreen = ({
     onSkip,
     timeLeft,
@@ -698,13 +777,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             )}
 
             {showCalculator && (
-                <div className="absolute top-20 left-20 w-[600px] h-[400px] bg-white rounded-lg shadow-2xl border border-slate-300 z-[60] flex flex-col" style={{ minWidth: '300px', minHeight: '300px' }}>
-                    <div className="h-8 bg-slate-100 border-b border-slate-200 flex items-center justify-between px-3 cursor-move select-none">
-                        <span className="text-xs font-bold text-slate-500 uppercase">Desmos Graphing Calculator</span>
-                        <button onClick={() => setShowCalculator(false)} className="hover:bg-slate-200 rounded p-0.5"><X className="w-4 h-4 text-slate-500" /></button>
-                    </div>
-                    <iframe src="https://www.desmos.com/testing/calculator" className="flex-1 w-full h-full border-none" title="Desmos Calculator" sandbox="allow-scripts allow-same-origin allow-forms" />
-                </div>
+                <DraggableCalculator onClose={() => setShowCalculator(false)} />
             )}
 
             {showReference && (
