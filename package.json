@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "postinstall": "npm install --prefix backend && npm run build"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

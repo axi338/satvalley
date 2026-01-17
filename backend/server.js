@@ -737,7 +737,17 @@ app.post("/api/content", async (req, res) => {
 // Serve static files from the 'dist' directory (Vite build)
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-app.use(express.static(path.join(__dirname, "dist")));
+
+// Serve static files from 'dist' (root) or '../dist' (if running from backend/)
+// Try root dist first (Docker/local standard)
+let distPath = path.join(__dirname, "dist");
+// Check if it exists, if not try ../dist (Node native deployment)
+import fs from 'fs';
+if (!fs.existsSync(distPath)) {
+  distPath = path.join(__dirname, "../dist");
+}
+
+app.use(express.static(distPath));
 
 app.get("/api/settings", async (_req, res) => {
   try {
