@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import multer from "multer";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
@@ -742,9 +743,17 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 // Try root dist first (Docker/local standard)
 let distPath = path.join(__dirname, "dist");
 // Check if it exists, if not try ../dist (Node native deployment)
-import fs from 'fs';
+
 if (!fs.existsSync(distPath)) {
   distPath = path.join(__dirname, "../dist");
+}
+
+console.log("DEBUG: Current __dirname:", __dirname);
+console.log("DEBUG: Resolved distPath:", distPath);
+if (fs.existsSync(distPath)) {
+  console.log("DEBUG: Dist contents:", fs.readdirSync(distPath));
+} else {
+  console.error("DEBUG: DIST FOLDER NOT FOUND!");
 }
 
 app.use(express.static(distPath));
@@ -846,8 +855,8 @@ app.get("/health", (_req, res) => {
 });
 
 // All other GET requests should return the index.html from 'dist'
-// All other GET requests should return the index.html from 'dist'
 app.get("*", (req, res) => {
+  console.log("DEBUG: Hit catch-all route. Serving:", path.join(distPath, "index.html"));
   res.sendFile(path.join(distPath, "index.html"));
 });
 
