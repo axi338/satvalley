@@ -402,10 +402,37 @@ app.post("/api/results", async (req, res) => {
         .select("id")
         .eq("test_id", testId)
         .eq("user_email", userEmail)
-        .maybeSingle(); // Use maybeSingle to avoid error if not found
+        .maybeSingle();
 
       if (existing) {
         return res.status(400).json({ error: "already_submitted", message: "You have already submitted this Olympiad test." });
+      }
+
+      // 1. Get user_id and profile to capture full_name
+      const { data: regData } = await supabase
+        .from("olympiad_registrations")
+        .select("user_id")
+        .eq("test_id", testId)
+        .eq("user_email", userEmail)
+        .maybeSingle();
+
+      if (regData?.user_id) {
+        const { data: profile } = await supabase
+          .from("olympiad_profiles")
+          .select("full_name")
+          .eq("id", regData.user_id)
+          .maybeSingle();
+
+        if (profile?.full_name) {
+          name = profile.full_name;
+        }
+
+        // 2. Mark registration as completed
+        await supabase
+          .from("olympiad_registrations")
+          .update({ completed: true })
+          .eq("user_id", regData.user_id)
+          .eq("test_id", testId);
       }
     }
 

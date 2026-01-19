@@ -62,8 +62,16 @@ export function OlympiadPage({ onNavigate, user, isAdmin }: OlympiadPageProps) {
             console.log("DEBUG: Olympiad Page Data:", testsRes);
 
             // Filter only published for non-admins, or show all for admins with a badge
-            setOlympiads(testsRes.tests || []);
+            const tests = testsRes.tests || [];
+            setOlympiads(tests);
             setLeaderboard(leaderboardRes.leaderboard || []);
+
+            // Auto-select first published olympiad if none selected
+            if (!selectedOlympiadId && tests.length > 0) {
+                const firstPublished = tests.find((t: any) => t.status === 'published');
+                if (firstPublished) setSelectedOlympiadId(firstPublished.id);
+                else setSelectedOlympiadId(tests[0].id);
+            }
         } catch (e) {
             console.error("DEBUG: Failed to load olympiad data:", e);
         } finally {
