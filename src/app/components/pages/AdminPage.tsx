@@ -1075,9 +1075,9 @@ export function AdminPage() {
                     <p className="text-xs text-muted-foreground mb-2">Preview:</p>
                     <div className="flex items-center gap-3">
                       <div className={`px-4 py-2 rounded-full font-bold text-sm ${siteContent.prize_badge_style === 'gold' ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black' :
-                          siteContent.prize_badge_style === 'silver' ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-black' :
-                            siteContent.prize_badge_style === 'bronze' ? 'bg-gradient-to-r from-amber-600 to-orange-700 text-white' :
-                              'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
+                        siteContent.prize_badge_style === 'silver' ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-black' :
+                          siteContent.prize_badge_style === 'bronze' ? 'bg-gradient-to-r from-amber-600 to-orange-700 text-white' :
+                            'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
                         }`}>
                         {siteContent.prize_badge || 'GRAND PRIZE'}
                       </div>
@@ -1109,6 +1109,8 @@ export function AdminPage() {
                 <div className="flex gap-4 pt-4">
                   <Button
                     onClick={async () => {
+                      if (contentLoading) return;
+                      setContentLoading(true);
                       try {
                         await authedRequest('/api/content', {
                           method: 'POST',
@@ -1118,15 +1120,40 @@ export function AdminPage() {
                         showFlash('Site content updated successfully!');
                       } catch (err) {
                         showFlash('Failed to update content');
+                      } finally {
+                        setContentLoading(false);
                       }
                     }}
                     className="bg-primary text-primary-foreground"
                     disabled={contentLoading}
                   >
-                    <Save className="w-4 h-4 mr-2" /> Save All Content
+                    {contentLoading ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {contentLoading ? 'Saving...' : 'Save All Content'}
                   </Button>
-                  <Button onClick={handleUpdateSettings} variant="outline" className="border-white/10">
-                    <Save className="w-4 h-4 mr-2" /> Save Statistics
+                  <Button
+                    onClick={async () => {
+                      if (contentLoading) return;
+                      setContentLoading(true);
+                      try {
+                        await handleUpdateSettings();
+                      } finally {
+                        setContentLoading(false);
+                      }
+                    }}
+                    variant="outline"
+                    className="border-white/10"
+                    disabled={contentLoading}
+                  >
+                    {contentLoading ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {contentLoading ? 'Saving Statistics...' : 'Save Statistics'}
                   </Button>
                 </div>
               </div>

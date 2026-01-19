@@ -18,7 +18,10 @@ import {
     FileText,
     Trophy,
     BookOpen,
-    ExternalLink
+    ExternalLink,
+    ArrowRight,
+    Shield,
+    Monitor
 } from 'lucide-react';
 import { FullscreenInterstitial } from '../FullscreenInterstitial';
 import { useAntiCheat } from '../../hooks/useAntiCheat';
@@ -151,47 +154,50 @@ const BreakScreen = ({
     formatTime: (s: number) => string
 }) => {
     return (
-        <div className="fixed inset-0 bg-slate-50 flex items-center justify-center z-[100] p-6 lg:p-12 overflow-y-auto">
-            <div className="max-w-3xl w-full bg-white rounded-[2.5rem] shadow-[0_20px_70px_-15px_rgba(0,0,0,0.1)] border border-slate-200 overflow-hidden relative">
-                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-gradient-x" />
+        <div className="fixed inset-0 bg-[#F6F8FA] flex items-center justify-center z-[100] p-6 lg:p-12 animate-in fade-in duration-500">
+            <div className="max-w-xl w-full text-center space-y-12">
+                <div className="space-y-4">
+                    <h2 className="text-3xl font-bold text-[#001E3C] tracking-tight">Break</h2>
+                    <p className="text-slate-600 text-lg">
+                        You've completed Section 1. Take a 10 minute break.
+                    </p>
+                </div>
 
-                <div className="p-12 lg:p-16 space-y-12 text-center">
-                    <div className="space-y-6">
-                        <div className="w-20 h-20 rounded-3xl bg-indigo-50 flex items-center justify-center mx-auto ring-8 ring-indigo-50/50">
-                            <Clock className="w-10 h-10 text-indigo-600 animate-pulse" />
-                        </div>
-                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">Break Time</h2>
-                        <p className="text-xl text-slate-500 font-medium max-w-lg mx-auto leading-relaxed">
-                            You have completed Section 1: Reading and Writing. Take a moment to rest.
-                        </p>
-                    </div>
-
-                    <div className="py-12 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
-                        <div className="text-8xl font-black font-mono text-slate-900 tracking-tighter tabular-nums">
+                <div className="bg-white rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-slate-200 py-20 px-12 space-y-8">
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Remaining Time</p>
+                        <div className="text-9xl font-black font-mono text-[#001E3C] tracking-tighter tabular-nums">
                             {formatTime(timeLeft)}
                         </div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-6">Protocol Standby</p>
                     </div>
 
-                    <div className="space-y-8">
-                        <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100 flex items-start gap-4 text-left">
-                            <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-amber-900">Important Reminders</p>
-                                <ul className="text-xs text-amber-800/70 space-y-1 list-disc ml-4 font-medium">
-                                    <li>Do NOT close this testing window</li>
-                                    <li>Leave your device open on your desk if you exit the room</li>
-                                    <li>The Math section will begin automatically when the timer reaches zero</li>
-                                </ul>
-                            </div>
-                        </div>
+                    <div className="h-px bg-slate-100 w-full" />
 
-                        <Button
+                    <div className="space-y-6">
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                            Make sure your device remains open. <br />
+                            Section 2: Math will begin automatically when the timer expires.
+                        </p>
+
+                        <button
                             onClick={onSkip}
-                            className="h-16 px-16 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg rounded-2xl shadow-2xl shadow-indigo-500/30 transition-all hover:scale-[1.02] hover:-translate-y-1 w-full sm:w-auto"
+                            className="w-full h-16 bg-[#001E3C] hover:bg-[#002D5C] text-white font-bold text-lg rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
                         >
-                            Resume Now
-                        </Button>
+                            Resume Testing
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-6 opacity-30 grayscale pointer-events-none">
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Secure Node</span>
+                    </div>
+                    <div className="w-1 h-1 rounded-full bg-slate-400" />
+                    <div className="flex items-center gap-2">
+                        <Monitor className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Protocol 1.2</span>
                     </div>
                 </div>
             </div>
@@ -899,7 +905,14 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             </main>
 
             <footer className="h-20 bg-white border-t border-slate-200 flex items-center justify-between px-8 relative shrink-0 z-30">
-                <div className="font-bold text-slate-900 text-sm">{user?.email || 'Student'}</div>
+                <div className="flex items-center gap-4">
+                    <div className="font-bold text-slate-900 text-sm">{user?.email || 'Student'}</div>
+                    {!isOlympiadMode && testId && (
+                        <div className="px-3 py-1 bg-slate-100 rounded-md border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            Ticket: T-{testId.slice(0, 4)}
+                        </div>
+                    )}
+                </div>
                 <div className="flex items-center gap-4">
                     {currentIndex > 0 && <Button variant="outline" onClick={handleBack} className="px-6 py-6 bg-[#001E3C] text-white hover:bg-[#00152a] hover:text-white border-none rounded-full font-bold">Back</Button>}
                     <Button onClick={handleNext} className="px-10 py-6 bg-[#004d99] hover:bg-[#003d7a] text-white border-none rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all">Next</Button>

@@ -104,8 +104,9 @@ export function PracticeTestsPage({ onNavigate }: PracticeTestsPageProps) {
                     </div>
                   </div>
                 </div>
-                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-gradient-to-br group-hover:from-indigo-500 group-hover:to-indigo-700 group-hover:border-transparent transition-all duration-500 shadow-sm">
-                  <span className="font-black text-white/60 group-hover:text-white transition-colors uppercase italic tracking-tighter">T{test.id}</span>
+                <div className="px-5 py-2 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-end justify-center group-hover:bg-gradient-to-br group-hover:from-indigo-500 group-hover:to-indigo-700 group-hover:border-transparent transition-all duration-500 shadow-sm">
+                  <span className="text-[8px] font-black text-white/20 uppercase tracking-widest leading-none mb-1">Ticket ID</span>
+                  <span className="font-black text-white/60 group-hover:text-white transition-colors uppercase italic tracking-tighter">T-{test.id.slice(0, 4)}-{test.id.slice(-4)}</span>
                 </div>
               </div>
 

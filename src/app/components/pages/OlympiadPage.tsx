@@ -160,7 +160,6 @@ export function OlympiadPage({ onNavigate, user, isAdmin }: OlympiadPageProps) {
                                                             }`}>
                                                             {isEnded ? 'Ended' : isUpcoming ? 'Upcoming' : 'Live Now'}
                                                         </span>
-                                                        <span className="text-white/30 text-[9px] font-black uppercase tracking-widest">ID: {olympiad.id.slice(0, 8)}</span>
                                                     </div>
                                                     <h3 className="text-4xl font-black text-white tracking-tighter">{olympiad.title}</h3>
                                                     <p className="text-white/40 max-w-md font-medium text-sm leading-relaxed line-clamp-2">{olympiad.description}</p>
