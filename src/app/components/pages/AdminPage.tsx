@@ -173,7 +173,7 @@ export function AdminPage() {
       readingq,
       writingq,
       is_olympiad: isOlympiad,
-      olympiad_end_date: olympiadEndDate || null
+      olympiad_end_date: olympiadEndDate || undefined
     };
 
     if (editingTestId) {
@@ -1003,36 +1003,73 @@ export function AdminPage() {
                   </div>
                 </div>
 
-                {/* Olympiad Section */}
+                {/* Home Page Statistics */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">Olympiad Section</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground">Olympiad Title</label>
-                      <Input
-                        value={siteContent.home_olympiad_title || ''}
-                        onChange={e => setSiteContent({ ...siteContent, home_olympiad_title: e.target.value })}
-                        className="bg-white/5 border-white/10 text-white h-12"
-                      />
+                  <h3 className="text-lg font-bold text-white border-b border-white/10 pb-2">📊 Home Page Statistics</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="text-xs font-black text-indigo-400 uppercase tracking-widest">Card 1</div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">Value (e.g. 1500+)</label>
+                        <Input
+                          value={siteContent.stats_1_value || ''}
+                          onChange={e => setSiteContent({ ...siteContent, stats_1_value: e.target.value })}
+                          className="bg-white/10 border-white/10 text-white h-10"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">Label (e.g. Students)</label>
+                        <Input
+                          value={siteContent.stats_1_label || ''}
+                          onChange={e => setSiteContent({ ...siteContent, stats_1_label: e.target.value })}
+                          className="bg-white/10 border-white/10 text-white h-10"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground">Olympiad Subtitle</label>
-                      <Input
-                        value={siteContent.home_olympiad_subtitle || ''}
-                        onChange={e => setSiteContent({ ...siteContent, home_olympiad_subtitle: e.target.value })}
-                        className="bg-white/5 border-white/10 text-white h-12"
-                      />
+
+                    <div className="space-y-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="text-xs font-black text-indigo-400 uppercase tracking-widest">Card 2</div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">Value (e.g. 1550+)</label>
+                        <Input
+                          value={siteContent.stats_2_value || ''}
+                          onChange={e => setSiteContent({ ...siteContent, stats_2_value: e.target.value })}
+                          className="bg-white/10 border-white/10 text-white h-10"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">Label (e.g. Students)</label>
+                        <Input
+                          value={siteContent.stats_2_label || ''}
+                          onChange={e => setSiteContent({ ...siteContent, stats_2_label: e.target.value })}
+                          className="bg-white/10 border-white/10 text-white h-10"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Olympiad Description</label>
-                    <Textarea
-                      value={siteContent.home_olympiad_desc || ''}
-                      onChange={e => setSiteContent({ ...siteContent, home_olympiad_desc: e.target.value })}
-                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
-                    />
+
+                    <div className="space-y-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="text-xs font-black text-indigo-400 uppercase tracking-widest">Card 3</div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">Value (e.g. 1600)</label>
+                        <Input
+                          value={siteContent.stats_3_value || ''}
+                          onChange={e => setSiteContent({ ...siteContent, stats_3_value: e.target.value })}
+                          className="bg-white/10 border-white/10 text-white h-10"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground">Label (e.g. Perfect Scores)</label>
+                        <Input
+                          value={siteContent.stats_3_label || ''}
+                          onChange={e => setSiteContent({ ...siteContent, stats_3_label: e.target.value })}
+                          className="bg-white/10 border-white/10 text-white h-10"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Olympiad Section */}
 
                 {/* Prize Stickers */}
                 <div className="space-y-4">

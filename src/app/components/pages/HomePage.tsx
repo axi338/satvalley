@@ -6,11 +6,6 @@ interface HomePageProps {
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
-  const stats = [
-    { score: '1500+', count: '247', label: 'Students' },
-    { score: '1550+', count: '128', label: 'Students' },
-    { score: '1600', count: '42', label: 'Perfect Scores' },
-  ];
 
   const features = [
     {
@@ -47,6 +42,21 @@ export function HomePage({ onNavigate }: HomePageProps) {
       .then(data => setContent(data.content || {}))
       .catch(err => console.error("Failed to load content", err));
   }, []);
+
+  const stats = [
+    {
+      score: content.stats_1_value || '1500+',
+      label: content.stats_1_label || 'Students'
+    },
+    {
+      score: content.stats_2_value || '1550+',
+      label: content.stats_2_label || 'Students'
+    },
+    {
+      score: content.stats_3_value || '1600',
+      label: content.stats_3_label || 'Perfect Scores'
+    },
+  ];
 
 
   return (
