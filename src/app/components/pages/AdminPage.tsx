@@ -64,10 +64,6 @@ export function AdminPage() {
   const adminUsersEndpoint = `${apiBase}/listUsers`;
 
   const fetchUsers = async () => {
-    if (!apiBase) {
-      setUsersError('Configure VITE_BACKEND_URL to list users.');
-      return;
-    }
     setUsersLoading(true);
     setUsersError(null);
     try {
@@ -93,11 +89,7 @@ export function AdminPage() {
   };
 
   useEffect(() => {
-    if (apiBase) {
-      void fetchUsers();
-    } else {
-      setUsersError('Set VITE_BACKEND_URL (server endpoint backed by Supabase Admin SDK).');
-    }
+    void fetchUsers();
   }, [apiBase]);
 
   const authedRequest = async (path: string, options: RequestInit = {}) => {
