@@ -155,8 +155,6 @@ app.post("/api/tests", async (req, res) => {
         readingq: readingq || "0",
         writingq: writingq || "0",
         is_olympiad: is_olympiad || false,
-        is_olympiad: is_olympiad || false, // Ensure defaults are set if not provided
-        is_olympiad: is_olympiad || false,
         olympiad_end_date: olympiad_end_date || null,
         olympiad_start_date: req.body.olympiad_start_date || new Date().toISOString(),
         status: 'draft' // Default to draft
@@ -383,9 +381,34 @@ app.get("/api/results", async (req, res) => {
   }
 });
 
+app.get("/api/olympiad/leaderboard", async (req, res) => {
+  try {
+    const { testId } = req.query;
+    let query = supabase
+      .from("results")
+      .select("id, name, score, user_email, created_at, photo_url, time_taken_seconds")
+      .eq("is_olympiad", true);
+
+    if (testId) {
+      query = query.eq("test_id", testId);
+    }
+
+    const { data, error } = await query
+      .order("score", { ascending: false })
+      .order("time_taken_seconds", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    if (error) throw error;
+    res.json({ leaderboard: data });
+  } catch (err) {
+    res.status(500).json({ error: "failed_to_fetch_leaderboard", message: err.message });
+  }
+});
+
 app.post("/api/results", async (req, res) => {
   try {
-    const { name, score, improvement, note, photoUrl, userEmail, testId, responses } = req.body || {};
+    const { name, score, improvement, note, photoUrl, userEmail, testId, responses, timeTaken } = req.body || {};
     if (!score && score !== 0) return res.status(400).json({ error: "score_required" });
 
     // Check if it's an olympiad test
@@ -447,7 +470,8 @@ app.post("/api/results", async (req, res) => {
         user_email: userEmail || null,
         test_id: testId || null,
         is_olympiad: is_olympiad,
-        responses: responses || []
+        responses: responses || [],
+        time_taken_seconds: timeTaken || 0
       })
       .select()
       .single();
@@ -457,31 +481,6 @@ app.post("/api/results", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "failed_to_save_result", message: err.message });
   }
-});
-
-app.get("/api/olympiad/leaderboard", async (req, res) => {
-  try {
-    const { testId } = req.query;
-    let query = supabase
-      .from("results")
-      .select("id, name, score, user_email, created_at, photo_url")
-      .eq("is_olympiad", true);
-
-    if (testId) {
-      query = query.eq("test_id", testId);
-    }
-
-    const { data, error } = await query
-      .order("score", { ascending: false })
-      .order("created_at", { ascending: true })
-      .limit(100);
-
-    if (error) throw error;
-    res.json({ leaderboard: data });
-  } catch (err) {
-    res.status(500).json({ error: "failed_to_fetch_leaderboard", message: err.message });
-  }
-
 });
 
 app.post("/api/olympiad/register", async (req, res) => {
@@ -607,8 +606,14 @@ app.post("/api/olympiad/profile", async (req, res) => {
     const match = authHeader.match(/^Bearer (.+)$/);
     if (!match) throw new Error("Missing bearer token");
     const token = match[1];
+
+    // Debug Auth
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthenticated");
+    if (authError || !user) {
+      console.error("Auth Error for token:", token.substring(0, 10) + "...");
+      console.error("Supabase Error:", authError);
+      throw new Error("Unauthenticated");
+    }
 
     const { phone, country_code, full_name } = req.body;
 

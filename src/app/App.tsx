@@ -50,6 +50,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Double check olympiad verification status when user is loaded
+  useEffect(() => {
+    if (user && !olympiadVerified) {
+      const checkStatus = async () => {
+        const { data } = await supabase.from('olympiad_profiles').select('phone_verified').eq('id', user.id).maybeSingle();
+        if (data?.phone_verified) {
+          setOlympiadVerified(true);
+        }
+      };
+      checkStatus();
+    }
+  }, [user, olympiadVerified]);
+
   const handleLogout = async () => {
     console.log("DEBUG: handleLogout called");
     try {

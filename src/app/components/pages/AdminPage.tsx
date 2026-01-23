@@ -689,7 +689,7 @@ export function AdminPage() {
                     <label className="text-sm text-muted-foreground">Test Link</label>
                     <select value={selectedTestId} onChange={e => setSelectedTestId(e.target.value)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
                       <option value="">Independent</option>
-                      {tests.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                      {tests.map(t => <option key={t.id} value={t.id}>{t.title} {t.is_olympiad ? '(Olympiad)' : ''}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">

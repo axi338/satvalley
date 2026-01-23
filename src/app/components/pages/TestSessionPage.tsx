@@ -432,6 +432,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const [isOlympiadMode, setIsOlympiadMode] = useState(false);
     const [stage, setStage] = useState<TestState['stage']>('rw-m1');
     const [testType, setTestType] = useState<'full' | 'math' | 'rw'>('full');
+    const [totalTimeTaken, setTotalTimeTaken] = useState(0);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [m2Difficulty, setM2Difficulty] = useState<'easy' | 'hard' | null>(null);
     const [allResponses, setAllResponses] = useState<any[]>([]);
@@ -623,6 +624,22 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     };
 
     const handleModuleSubmit = () => {
+        // Calculate time taken for this module
+        // For Math-Only olympiad, stage is math-m1 -> math-m2
+        // Allocated time depends on stage
+        let allocated = 0;
+        if (stage.startsWith('rw')) allocated = 1920; // 32 mins
+        else if (stage.startsWith('math')) allocated = 2100; // 35 mins
+
+        const spent = allocated - timeLeft;
+        // setTotalTimeTaken is async, so we use a temp var if we were submitting immediately,
+        // but since state update is fine across rerenders before final submit, we use functional update.
+        // However, for the FINAL submit, we need the up-to-date value.
+        // Better: Pass `currentTotal + spent` to next stages or store in state.
+
+        const currentTotalTime = totalTimeTaken + spent;
+        setTotalTimeTaken(currentTotalTime);
+
         const currentModuleResponses = questions.map(q => ({
             ...q,
             userAnswer: answers[q.id] || null,
@@ -639,7 +656,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             setStage('rw-m2');
         } else if (stage === 'rw-m2') {
             if (testType === 'rw') {
-                submitFinal(newTotalResponses);
+                submitFinal(newTotalResponses, currentTotalTime);
             } else {
                 setStage('break');
                 setTimeLeft(600);
@@ -651,11 +668,11 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             setM2Difficulty(correct / questions.length > 0.6 ? 'hard' : 'easy');
             setStage('math-m2');
         } else {
-            submitFinal(newTotalResponses);
+            submitFinal(newTotalResponses, currentTotalTime);
         }
     };
 
-    const submitFinal = async (finalData: any[]) => {
+    const submitFinal = async (finalData: any[], finalTimeTaken?: number) => {
         setLoading(true);
         try {
             const correctCount = finalData.filter(r => r.userAnswer === r.answer).length;
@@ -670,7 +687,8 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     score,
                     responses: finalData,
                     createdAt: new Date().toISOString(),
-                    is_olympiad: isOlympiadMode
+                    is_olympiad: isOlympiadMode,
+                    timeTaken: finalTimeTaken || totalTimeTaken
                 })
             });
             onNavigate('review');

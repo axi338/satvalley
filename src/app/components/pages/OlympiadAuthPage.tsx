@@ -14,7 +14,8 @@ export function OlympiadAuthPage({ onSuccess }: OlympiadAuthPageProps) {
     // Profile Data
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
-    const [countryCode, setCountryCode] = useState('+1');
+    const [countryCode, setCountryCode] = useState('+998');
+    const [showCountryList, setShowCountryList] = useState(false);
     const [otp, setOtp] = useState('');
 
     const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
@@ -148,18 +149,43 @@ export function OlympiadAuthPage({ onSuccess }: OlympiadAuthPageProps) {
                             placeholder="Full Name"
                             className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:border-indigo-500/50 focus:outline-none"
                         />
-                        <div className="flex gap-2">
-                            <select
-                                value={countryCode}
-                                onChange={e => setCountryCode(e.target.value)}
-                                className="bg-black border border-white/10 rounded-xl px-3 py-3 text-white focus:border-indigo-500/50 focus:outline-none max-w-[120px]"
-                            >
-                                {countryCodes.map((c) => (
-                                    <option key={`${c.country}-${c.code}`} value={c.code}>
-                                        {c.flag} {c.code}
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="flex gap-2 relative">
+                            <div className="relative w-[140px]">
+                                <input
+                                    value={countryCode}
+                                    onChange={e => {
+                                        setCountryCode(e.target.value);
+                                        setShowCountryList(true);
+                                    }}
+                                    onFocus={() => setShowCountryList(true)}
+                                    // Blur needs delay to allow click
+                                    onBlur={() => setTimeout(() => setShowCountryList(false), 200)}
+                                    placeholder="+Code"
+                                    className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-white focus:border-indigo-500/50 focus:outline-none"
+                                />
+                                {showCountryList && (
+                                    <div className="absolute top-full left-0 w-[200px] max-h-60 overflow-y-auto bg-black border border-white/10 rounded-xl z-50 mt-2 shadow-xl custom-scrollbar">
+                                        {countryCodes.filter(c =>
+                                            c.code.includes(countryCode) ||
+                                            (c.name && c.name.toLowerCase().includes(countryCode.toLowerCase())) ||
+                                            countryCode === ''
+                                        ).map((c) => (
+                                            <button
+                                                key={`${c.country}-${c.code}`}
+                                                onClick={() => {
+                                                    setCountryCode(c.code);
+                                                    setShowCountryList(false);
+                                                }}
+                                                className="w-full text-left px-4 py-3 hover:bg-white/10 flex items-center gap-3 text-sm text-white border-b border-white/5 last:border-0"
+                                            >
+                                                <span className="text-lg">{c.flag}</span>
+                                                <span className="font-mono text-white/60">{c.code}</span>
+                                                <span className="truncate flex-1">{c.name || c.country}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             <input
                                 value={phone}
                                 onChange={e => setPhone(e.target.value)}
