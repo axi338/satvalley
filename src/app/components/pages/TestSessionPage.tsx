@@ -431,6 +431,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const [hasEnteredFullscreen, setHasEnteredFullscreen] = useState(false);
     const [isOlympiadMode, setIsOlympiadMode] = useState(false);
     const [stage, setStage] = useState<TestState['stage']>('rw-m1');
+    const [testType, setTestType] = useState<'full' | 'math' | 'rw'>('full');
     const [questions, setQuestions] = useState<Question[]>([]);
     const [m2Difficulty, setM2Difficulty] = useState<'easy' | 'hard' | null>(null);
     const [allResponses, setAllResponses] = useState<any[]>([]);
@@ -560,26 +561,37 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         }
     }, [violationCount, questions, answers, allResponses, stage, apiBase, user, testId, isOlympiadMode, onNavigate]);
 
-    // Detect if Math Only (Olympiad) and skip RW
+    // Detect Test Type (Olympiad, Math Only, RW Only, Full)
     useEffect(() => {
         const checkTestType = async () => {
             if (!testId) return;
             try {
-                const res = await fetch(`${apiBase}/api/tests?isOlympiad=true`); // Fetch olympiads to check if this ID is one
-                // This is a bit inefficient, better to get single test. But works for now.
-                // Or simplified: Just check if we fetch questions for RW-M1 and get 0 results?
-                // Actually, let's just checking specific endpoint or assuming flow.
-                // Better: fetch single test meta.
-                // Since we don't have a clean single-test endpoint, let's rely on question fetching empty check?
-                // No, that's risky.
-                // Let's assume if the user clicked "Enter Node" on Olympiad, we pass a param?
-                // For now, let's trying to fetch the test details from the list.
+                // Fetch all tests to find the current one (including Olympiad)
+                const res = await fetch(`${apiBase}/api/tests`);
                 const data = await res.json();
                 const currentTest = data.tests?.find((t: any) => t.id === testId);
-                if (currentTest && currentTest.is_olympiad) {
-                    setStage('math-m1');
-                    setIsOlympiadMode(true);
-                    setTimeLeft(2100); // 35 min for Math M1
+
+                if (currentTest) {
+                    const hasMath = currentTest.sections?.some((s: string) => s.includes('math'));
+                    const hasRW = currentTest.sections?.some((s: string) => s.includes('reading') || s.includes('writing') || s.includes('rw'));
+
+                    if (currentTest.is_olympiad) {
+                        setStage('math-m1');
+                        setIsOlympiadMode(true);
+                        setTestType('math'); // Olympiad usually math only in this context
+                        setTimeLeft(2100);
+                    } else if (hasMath && !hasRW) {
+                        setStage('math-m1');
+                        setTestType('math');
+                        setTimeLeft(2100);
+                    } else if (hasRW && !hasMath) {
+                        setStage('rw-m1');
+                        setTestType('rw');
+                        setTimeLeft(1920);
+                    } else {
+                        setTestType('full');
+                        // Default stage is rw-m1
+                    }
                 }
             } catch (e) { console.error(e); }
         };
@@ -626,8 +638,12 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             setM2Difficulty(correct / questions.length > 0.6 ? 'hard' : 'easy');
             setStage('rw-m2');
         } else if (stage === 'rw-m2') {
-            setStage('break');
-            setTimeLeft(600);
+            if (testType === 'rw') {
+                submitFinal(newTotalResponses);
+            } else {
+                setStage('break');
+                setTimeLeft(600);
+            }
         } else if (stage === 'break') {
             setStage('math-m1');
         } else if (stage === 'math-m1') {
