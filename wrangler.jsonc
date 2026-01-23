@@ -1,9 +1,5 @@
 {
     "name": "satvalley",
     "compatibility_date": "2026-01-10",
-    "pages_build_output_dir": "./dist",
-    "assets": {
-        "directory": "./dist",
-        "binding": "STATIC_ASSETS"
-    }
+    "pages_build_output_dir": "./dist"
 }
