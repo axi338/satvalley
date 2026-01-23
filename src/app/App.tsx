@@ -105,28 +105,21 @@ export default function App() {
         return <ResultsPage />;
       case 'calculator':
         return <CalculatorPage />;
+      case 'auth':
+        return <AuthPage />;
 
       case 'practice':
+        if (!user) return <AuthPage />;
         return <PracticeTestsPage onNavigate={handleNavigate} />;
       case 'olympiad':
+        if (!user) return <AuthPage />;
         if (!olympiadVerified && !adminUnlocked) return <OlympiadAuthPage onSuccess={() => setOlympiadVerified(true)} />;
         return <OlympiadPage onNavigate={handleNavigate} user={user} isAdmin={adminUnlocked} />;
       case 'test-session':
-        // If it's an olympiad test (we might need to check test type, but for now enforce verification for all or check param?)
-        // The requirement says "Olympiad User Auth System". Regular tests don't need this.
-        // But TestSessionPage is used for both. 
-        // We'll trust the User logic or maybe the TestSessionPage logic?
-        // Actually, preventing entry is better. 
-        // If we don't know if it's olympiad here easily (without fetching test), we might rely on the previous page guard.
-        // But better safe: Check verify if we can. 
-        // For simplicity towards requirements: "Users CANNOT Enter the Olympiad ... until verification is complete."
-        // We will guard 'olympiad' page. If they navigate to 'test-session' FROM olympiad, they must have passed.
-        // But direct link?
-        // Let's assume direct link to an olympiad test needs guard.
-        // Check params?
-        // For now, let's just guard the Olympiad Dashboard (OlympiadPage).
+        if (!user) return <AuthPage />;
         return <TestSessionPage testId={currentParams?.testId} onNavigate={handleNavigate} user={user} />;
       case 'review':
+        if (!user) return <AuthPage />;
         return <ReviewPage user={user} onNavigate={handleNavigate} />;
       case 'admin':
         return adminUnlocked ? <AdminPage /> : <HomePage onNavigate={handleNavigate} />;
@@ -153,15 +146,6 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return (
-      <>
-        <LiquidBackground />
-        <AuthPage />
-      </>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-transparent text-foreground antialiased relative selection:bg-indigo-500/30">
       <LiquidBackground />
@@ -169,13 +153,13 @@ export default function App() {
         <Navigation
           currentPage={currentPage}
           onNavigate={handleNavigate}
-          userEmail={user.email || undefined}
+          userEmail={user?.email || undefined}
           onLogout={handleLogout}
           isAdmin={adminUnlocked}
         />
       )}
       <main className="relative z-10">{renderPage()}</main>
-      <Footer onNavigate={handleNavigate} />
+      {currentPage !== 'test-session' && <Footer onNavigate={handleNavigate} />}
     </div>
   );
 }
