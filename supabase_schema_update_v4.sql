@@ -1,0 +1,2 @@
+ALTER TABLE tests 
+ADD COLUMN IF NOT EXISTS olympiad_start_date TIMESTAMPTZ DEFAULT now();
