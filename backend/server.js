@@ -1,10 +1,14 @@
 import express from "express";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+import * as pdf from "pdf-parse";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
+import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
 
 dotenv.config();
 
@@ -739,7 +743,252 @@ app.delete("/api/results/:id", async (req, res) => {
 });
 
 
-// --- DYNAMIC CONTENT ENDPOINTS ---
+// --- SAT IMPORT PIPELINE ENDPOINTS ---
+
+app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => {
+  try {
+    const user = await verifyAdmin(req);
+    if (!req.file) return res.status(400).json({ error: "no_file" });
+
+    const { testId, testType } = req.body;
+
+    // 1. Create Import Job
+    const { data: job, error: jobError } = await supabase
+      .from("import_jobs")
+      .insert({
+        admin_id: user.id,
+        filename: req.file.originalname,
+        status: 'extracting',
+        destination_test_id: testId || null,
+        config: { testType: testType || 'sat-math' }
+      })
+      .select()
+      .single();
+
+    if (jobError) throw jobError;
+
+    // 2. Respond immediately to the client
+    res.json({ success: true, jobId: job.id });
+
+    // 3. Background process (Text extraction -> Splitting -> Normalization)
+    (async () => {
+      try {
+        let text = "";
+        if (req.file.mimetype === 'application/pdf') {
+          const parser = new pdf.PDFParse({ data: req.file.buffer });
+          const pdfData = await parser.getText();
+          text = pdfData.text;
+        } else {
+          text = req.file.buffer.toString('utf-8');
+        }
+
+        await supabase.from("import_jobs").update({ status: 'candidate_split' }).eq("id", job.id);
+
+        const candidates = await splitTextToCandidates(text);
+
+        await supabase.from("import_jobs").update({
+          status: 'normalizing',
+          config: { ...job.config, total_candidates: candidates.length, processed_candidates: 0 }
+        }).eq("id", job.id);
+
+        let processedCount = 0;
+        for (const rawText of candidates) {
+          try {
+            const normalized = await normalizeQuestion(rawText);
+            await supabase.from("import_candidates").insert({
+              job_id: job.id,
+              raw_text: rawText,
+              normalized_json: normalized,
+              status: 'review_required'
+            });
+
+            processedCount++;
+            await supabase.from("import_jobs").update({
+              config: { ...job.config, total_candidates: candidates.length, processed_candidates: processedCount }
+            }).eq("id", job.id);
+          } catch (normError) {
+            console.error("Candidate normalization failed:", normError);
+          }
+        }
+
+        await supabase.from("import_jobs").update({ status: 'review_required' }).eq("id", job.id);
+      } catch (err) {
+        console.error("Background import processing failed:", err);
+        await supabase.from("import_jobs").update({
+          status: 'failed',
+          error_message: err.message
+        }).eq("id", job.id);
+      }
+    })();
+
+  } catch (err) {
+    console.error("Import upload error:", err);
+    res.status(500).json({ error: "import_failed", message: err.message });
+  }
+});
+
+app.get("/api/admin/import/jobs", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { data, error } = await supabase
+      .from("import_jobs")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json({ jobs: data });
+  } catch (err) {
+    res.status(500).json({ error: "list_jobs_failed", message: err.message });
+  }
+});
+
+app.get("/api/admin/import/jobs/:id/candidates", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from("import_candidates")
+      .select("*")
+      .eq("job_id", id)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    res.json({ candidates: data });
+  } catch (err) {
+    res.status(500).json({ error: "list_candidates_failed", message: err.message });
+  }
+});
+
+app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
+  const logFile = path.join(path.resolve(), 'backend_debug.log');
+  const log = (msg) => {
+    const timestamp = new Date().toISOString();
+    const line = `[${timestamp}] ${msg}\n`;
+    console.log(msg);
+    fs.appendFileSync(logFile, line);
+  };
+
+  try {
+    log(`DEBUG: Received POST /api/admin/import/candidates/${req.params.id}/approve`);
+    await verifyAdmin(req);
+    const { id } = req.params;
+    const { editData } = req.body;
+
+    // 1. Get candidate
+    const { data: candidate, error: fetchError } = await supabase
+      .from("import_candidates")
+      .select("*, import_jobs(destination_test_id)")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      log(`DEBUG: Candidate fetch error: ${JSON.stringify(fetchError)}`);
+      throw fetchError;
+    }
+
+    const rawData = editData || candidate.normalized_json;
+    log(`DEBUG: rawData: ${JSON.stringify(rawData)}`);
+
+    // Robust Normalization
+    const questionData = {
+      text: rawData.text || "No question text provided.",
+      passage: rawData.passage || null,
+      answer: String(rawData.correct_answer || "TBD"),
+      explanation: rawData.explanation || "",
+      subject: rawData.subject || "math",
+      difficulty: rawData.difficulty || "medium",
+      type: rawData.type || "multiple-choice",
+      tags: rawData.skill_tags || []
+    };
+
+    // Ensure options is an array or null
+    let finalOptions = rawData.options;
+    if (finalOptions && typeof finalOptions === 'object' && !Array.isArray(finalOptions)) {
+      log("DEBUG: Converting options object to array");
+      finalOptions = Object.values(finalOptions);
+    }
+    questionData.options = finalOptions || (questionData.type === 'multiple-choice' ? ["", "", "", ""] : null);
+
+    log(`DEBUG: Normalized questionData for insert: ${JSON.stringify(questionData)}`);
+
+    // 2. Insert into questions table
+    const testId = candidate.import_jobs?.destination_test_id;
+
+    const { data: question, error: qError } = await supabase
+      .from("questions")
+      .insert({
+        text: questionData.text,
+        passage: questionData.passage,
+        options: questionData.options,
+        answer: questionData.answer,
+        explanation: questionData.explanation,
+        subject: questionData.subject,
+        difficulty: questionData.difficulty,
+        type: questionData.type,
+        tags: questionData.tags,
+        test_id: testId || null,
+        module: rawData.module || 'm1' // Default to m1 if not specified
+      })
+      .select()
+      .single();
+
+    if (qError) {
+      log(`DEBUG: Question insert error: ${JSON.stringify(qError)}`);
+      throw qError;
+    }
+
+    // 3. Link to test if destination_test_id exists
+    if (testId) {
+      // Get current max order
+      const { data: currentQuestions, error: orderError } = await supabase
+        .from("test_questions")
+        .select("order_index")
+        .eq("test_id", testId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+
+      if (orderError) log(`DEBUG: Order lookup error: ${JSON.stringify(orderError)}`);
+
+      const nextOrder = (currentQuestions?.[0]?.order_index ?? -1) + 1;
+      log(`DEBUG: Linking question ${question.id} to test ${testId} at index ${nextOrder}`);
+
+      const { error: linkError } = await supabase.from("test_questions").insert({
+        test_id: testId,
+        question_id: question.id,
+        order_index: nextOrder
+      });
+
+      if (linkError) log(`DEBUG: Linking error: ${JSON.stringify(linkError)}`);
+      else log("DEBUG: Link successful.");
+    }
+
+    // 4. Update candidate status
+    await supabase.from("import_candidates").update({ status: 'approved' }).eq("id", id);
+
+    res.json({ success: true, questionId: question.id });
+  } catch (err) {
+    log(`DEBUG: Approval error: ${err.message}`);
+    log(`DEBUG: Approval error details: ${JSON.stringify(err, null, 2)}`);
+    res.status(500).json({
+      error: "approval_failed",
+      message: err.message,
+      details: err.details || null,
+      code: err.code || null
+    });
+  }
+});
+
+app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+    await supabase.from("import_candidates").update({ status: 'rejected' }).eq("id", id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "rejection_failed", message: err.message });
+  }
+});
+
 
 app.get("/api/content", async (_req, res) => {
   try {
