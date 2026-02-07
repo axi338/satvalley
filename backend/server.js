@@ -216,11 +216,40 @@ app.delete("/api/tests/:id", async (req, res) => {
 app.get("/api/questions", async (req, res) => {
   try {
     const { testId, module, subject } = req.query || {};
+
+    // If testId is provided, use the test_questions junction table
+    if (testId && testId !== "undefined" && testId !== "") {
+      // Query through the junction table to get linked questions
+      const { data: linkedQuestions, error: linkError } = await supabase
+        .from("test_questions")
+        .select(`
+          order_index,
+          questions (*)
+        `)
+        .eq("test_id", testId)
+        .order("order_index", { ascending: true });
+
+      if (linkError) throw linkError;
+
+      // Extract questions from the nested structure
+      let questions = (linkedQuestions || [])
+        .map(link => link.questions)
+        .filter(q => q !== null);
+
+      // Apply additional filters if provided
+      if (module && module !== "undefined" && module !== "") {
+        questions = questions.filter(q => q.module === module);
+      }
+      if (subject && subject !== "undefined" && subject !== "") {
+        questions = questions.filter(q => q.subject === subject);
+      }
+
+      return res.json({ questions });
+    }
+
+    // Fallback: query questions table directly (for backward compatibility)
     let query = supabase.from("questions").select("*");
 
-    if (testId && testId !== "undefined" && testId !== "") {
-      query = query.eq("test_id", testId);
-    }
     if (module && module !== "undefined" && module !== "") {
       query = query.eq("module", module);
     }
