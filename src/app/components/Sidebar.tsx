@@ -10,6 +10,7 @@ interface SidebarProps {
     isCollapsed: boolean;
     onToggleVisibility: () => void;
     onToggleCollapse: () => void;
+    isAdmin?: boolean;
 }
 
 export function Sidebar({
@@ -20,7 +21,8 @@ export function Sidebar({
     isVisible,
     isCollapsed,
     onToggleVisibility,
-    onToggleCollapse
+    onToggleCollapse,
+    isAdmin
 }: SidebarProps) {
 
     const navItems = [
@@ -31,6 +33,12 @@ export function Sidebar({
         // { id: 'results', label: 'Hall of Fame', icon: Award },
         // { id: 'calculator', label: 'SAT Calculator', icon: Radio },
         // { id: 'olympiad', label: 'SAT Olympiad', icon: GraduationCap },
+    ];
+
+    const adminItems = [
+        { id: 'admin', label: 'Admin Panel', icon: User },
+        { id: 'admin-import', label: 'SAT Import', icon: Compass },
+        { id: 'admin-olympiad', label: 'Olympiad Admin', icon: GraduationCap },
     ];
 
     if (!isVisible) return null;
@@ -104,6 +112,33 @@ export function Sidebar({
                         </button>
                     );
                 })}
+
+                {isAdmin && (
+                    <div className="pt-4 mt-4 border-t border-white/5 space-y-2">
+                        {!isCollapsed && <p className="px-4 text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-3 opacity-60">Admin Tools</p>}
+                        {adminItems.map((item) => {
+                            const isActive = currentPage.startsWith(item.id);
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => onNavigate(item.id)}
+                                    className={`w-full relative flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${isActive
+                                        ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 shadow-[0_4px_15px_rgba(79,70,229,0.1)]'
+                                        : 'hover:bg-white/5 text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    <item.icon size={22} className={`${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-amber-400'} transition-colors duration-300`} />
+                                    {!isCollapsed && (
+                                        <span className="flex-1 text-left font-bold text-sm tracking-wide">{item.label}</span>
+                                    )}
+                                    {isActive && !isCollapsed && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 absolute right-4" />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </nav>
 
             {/* Logout & Home */}
