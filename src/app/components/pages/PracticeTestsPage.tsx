@@ -1,4 +1,4 @@
-import { Play, Clock, Info, Calculator, Sparkles, Zap, Activity } from 'lucide-react';
+import { Play, Clock, Info, Calculator, Sparkles, Zap, Activity, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface PracticeTestsPageProps {
@@ -193,9 +193,18 @@ export function PracticeTestsPage({ onNavigate, user }: PracticeTestsPageProps) 
 
                         {/* CTA */}
                         {results.some(r => r.test_id === test.id) ? (
-                          <div className="w-full h-20 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-[2rem] flex items-center justify-center gap-3">
-                            <Activity className="w-5 h-5" />
-                            <span className="text-sm font-black uppercase tracking-[0.4em]">Node Sequence Completed</span>
+                          <div className="flex flex-col gap-3">
+                            <div className="w-full h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center gap-3">
+                              <CheckCircle2 className="w-5 h-5" />
+                              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Previous Attempt Saved</span>
+                            </div>
+                            <button
+                              onClick={() => onNavigate('test-session', { testId: test.id })}
+                              className="w-full h-14 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-3 group"
+                            >
+                              <Play className="w-3 h-3 fill-current group-hover:text-indigo-400" />
+                              Take Again
+                            </button>
                           </div>
                         ) : (
                           <button

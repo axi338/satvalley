@@ -22,6 +22,9 @@ import { ScoreHistoryPage } from './components/pages/ScoreHistoryPage';
 import { VocabularyPage } from './components/pages/VocabularyPage';
 import { supabase } from './lib/supabase';
 import { LiquidBackground } from './components/LiquidBackground';
+import { ImportDashboard } from './components/pages/ImportDashboard';
+import { NewImport } from './components/pages/NewImport';
+import { ImportReview } from './components/pages/ImportReview';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -146,6 +149,12 @@ export default function App() {
         return adminUnlocked ? <AdminPage /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-olympiad':
         return adminUnlocked ? <OlympiadAdminPage /> : <HomePage onNavigate={handleNavigate} />;
+      case 'admin-import':
+        return adminUnlocked ? <ImportDashboard onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
+      case 'admin-import-new':
+        return adminUnlocked ? <NewImport onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
+      case 'admin-import-review':
+        return adminUnlocked ? <ImportReview onNavigate={handleNavigate} jobId={currentParams?.jobId} /> : <HomePage onNavigate={handleNavigate} />;
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }
@@ -194,6 +203,7 @@ export default function App() {
             isCollapsed={isSidebarCollapsed}
             onToggleVisibility={() => setIsSidebarVisible(!isSidebarVisible)}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            isAdmin={adminUnlocked}
           />
           <main
             className={`flex-1 transition-all duration-300 relative z-10 ${!isSidebarVisible ? 'ml-0' : (isSidebarCollapsed ? 'ml-20' : 'ml-64')

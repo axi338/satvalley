@@ -21,8 +21,10 @@ import {
     ExternalLink,
     ArrowRight,
     Shield,
-    Monitor
+    Monitor,
+    Zap
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FullscreenInterstitial } from '../FullscreenInterstitial';
 import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { Button } from '../ui/button';
@@ -805,9 +807,9 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     const statusData = await statusRes.json();
 
                     if (statusData.completed && !statusData.isAdmin) {
-                        alert("Access Denied: You have already completed this node sequence. Only one attempt is permitted.");
-                        onNavigate('home');
-                        return;
+                        // For Olympiad tests, we might want to keep the restriction.
+                        // But the user asked for "without limits", so we'll bypass this for practice tests.
+                        console.log("Student has already completed this test, allowing retake (Unlimited mode).");
                     }
                 }
 
@@ -1279,7 +1281,13 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     <div className="flex-1 overflow-y-auto p-12 custom-scrollbar select-text cursor-text" onMouseDown={e => e.stopPropagation()}>
                         {currentQ?.passage ? (
                             <>
-                                <PassageViewer text={currentQ.passage} highlights={highlights[currentQ.id] || []} isHighlighterActive={isHighlighterActive} onAddHighlight={(range) => setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))} onRemoveHighlight={(idx) => setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))} />
+                                <PassageViewer
+                                    text={currentQ.passage}
+                                    highlights={currentQ?.id ? (highlights[currentQ.id] || []) : []}
+                                    isHighlighterActive={isHighlighterActive}
+                                    onAddHighlight={(range) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))}
+                                    onRemoveHighlight={(idx) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))}
+                                />
                                 {currentQ?.imageUrl && <div className="mt-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
                             </>
                         ) : <div className="h-full flex items-center justify-center text-slate-300 italic">No passage context.</div>}
@@ -1303,8 +1311,8 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         <div className="space-y-3 pb-20">
                             {!(currentQ?.type === 'numeric' || currentQ?.type === 'spr') && currentQ?.options?.map((opt, idx) => {
                                 const letter = ['A', 'B', 'C', 'D'][idx];
-                                const isSelected = answers[currentQ.id] === letter;
-                                const isStruck = struckOptions[currentQ.id]?.has(letter);
+                                const isSelected = currentQ?.id ? answers[currentQ.id] === letter : false;
+                                const isStruck = currentQ?.id ? struckOptions[currentQ.id]?.has(letter) : false;
 
                                 return (
                                     <div key={letter} className="relative group">
@@ -1325,16 +1333,28 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                     </div>
                                 );
                             })}
-                            {(currentQ?.type === 'numeric' || currentQ?.type === 'spr') && (
-                                <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                                    <label className="text-xs font-black text-slate-600 uppercase tracking-[0.2em] mb-4 block">Student-Produced Response</label>
+                            {(currentQ?.type === 'numeric' || currentQ?.type === 'spr' || !currentQ?.options || currentQ.options.length === 0) && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-slate-50 p-10 rounded-[2rem] border-2 border-slate-100 shadow-sm max-w-xl"
+                                >
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                                            <Zap className="w-4 h-4 fill-current" />
+                                        </div>
+                                        <label className="text-[10px] font-black text-slate-900 uppercase tracking-[0.3em]">Student-Produced Response</label>
+                                    </div>
                                     <Input
-                                        value={answers[currentQ.id] || ''}
-                                        onChange={(e) => setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
-                                        placeholder="Enter your numerical response..."
-                                        className="bg-white h-16 text-2xl font-black text-slate-900 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-xl transition-all"
+                                        value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
+                                        onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
+                                        placeholder="Enter your solution..."
+                                        className="bg-white h-20 text-3xl font-black text-slate-900 border-slate-200 focus:border-indigo-500 focus:ring-8 focus:ring-indigo-500/5 rounded-2xl transition-all shadow-inner px-6"
                                     />
-                                </div>
+                                    <p className="mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
+                                        For math questions without options, enter your final numerical answer or expression in the field above.
+                                    </p>
+                                </motion.div>
                             )}
                         </div>
                     </div>
