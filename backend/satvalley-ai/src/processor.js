@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Lazy initialization - only create VertexAI when actually needed
+// This prevents server crashes when GOOGLE_CLOUD_PROJECT env var is missing
 let vertexAI = null;
 let model = null;
 
