@@ -8,11 +8,24 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const project = process.env.GOOGLE_CLOUD_PROJECT;
-const location = process.env.VERTEX_LOCATION || 'us-central1';
+// Lazy initialization - only create VertexAI when actually needed
+let vertexAI = null;
+let model = null;
 
-const vertexAI = new VertexAI({ project, location });
-const model = vertexAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+function getModel() {
+    if (!model) {
+        const project = process.env.GOOGLE_CLOUD_PROJECT;
+        const location = process.env.VERTEX_LOCATION || 'us-central1';
+
+        if (!project) {
+            throw new Error('GOOGLE_CLOUD_PROJECT environment variable is not set. AI features are disabled.');
+        }
+
+        vertexAI = new VertexAI({ project, location });
+        model = vertexAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    }
+    return model;
+}
 
 /**
  * Normalizes a raw question text into a structured JSON format.
@@ -48,7 +61,8 @@ export async function normalizeQuestion(rawText) {
     `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const aiModel = getModel();
+        const result = await aiModel.generateContent(prompt);
         const response = await result.response;
         const text = response.candidates[0].content.parts[0].text;
 
@@ -79,7 +93,8 @@ export async function splitTextToCandidates(fullText) {
     `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const aiModel = getModel();
+        const result = await aiModel.generateContent(prompt);
         const response = await result.response;
         const text = response.candidates[0].content.parts[0].text;
 
