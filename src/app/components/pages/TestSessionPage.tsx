@@ -816,8 +816,12 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : `m2-${m2Difficulty || 'easy'}`;
                 const subject = stage.startsWith('rw') ? 'rw' : 'math';
                 const url = `${apiBase}/api/questions?testId=${testId}&module=${modPart}&subject=${subject}`;
-                const res = await fetch(url);
-                const data = await res.json();
+                const res = await fetch(url, { signal: controller.signal });
+                const text = await res.text();
+                let data: any = null;
+                try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+                if (!res.ok) throw new Error((data && (data.error || data.message)) || `Request failed (${res.status})`);
+
 
                 const validQuestions = (data.questions || []).map((q: any) => ({
                     ...q,
@@ -825,7 +829,6 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     optionImages: q.option_images
                 })).filter((q: any) => q && typeof q.text === 'string');
 
-                setQuestions(validQuestions);
                 setQuestions(validQuestions);
                 // Don't auto-set to test, wait for intro unless already done
                 if (hasEnteredFullscreen) {
@@ -952,13 +955,27 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     }, [testId, apiBase]);
 
     useEffect(() => {
-        if (timeLeft <= 0) {
-            if (stage === 'break') setStage('math-m1');
+        // One interval per stage/screen, not per second.
+        const t = setInterval(() => {
+            setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+
+        return () => clearInterval(t);
+    }, [stage, screen]);
+
+    useEffect(() => {
+        if (timeLeft !== 0) return;
+
+        // When break ends, advance cleanly.
+        if (stage === 'break') {
+            setStage('math-m1');
             return;
         }
-        const t = setInterval(() => setTimeLeft(p => p - 1), 1000);
-        return () => clearInterval(t);
+
+        // Do NOT auto-advance modules here; you already do that via submit flow.
+        // Just stop at 0 and let UI handle next action.
     }, [timeLeft, stage]);
+
 
     const formatTime = (s: number) => {
         const m = Math.floor(s / 60);

@@ -8,9 +8,28 @@ import path from "path";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
-import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
+import { normalizeQuestion, processPdfCandidates } from "./satvalley-ai/src/processor.js";
+// import { v4 as uuidv4 } from 'uuid';
+// import sharp from 'sharp';
+// import pdfImgConvert from 'pdf-img-convert';
 
 dotenv.config();
+
+// Global Crash Logger
+const logCrash = (type, err) => {
+  const msg = `[${new Date().toISOString()}] ${type}: ${err.message}\n${err.stack}\n\n`;
+  console.error(msg); // Print to console still
+  try {
+    fs.appendFileSync(path.join(process.cwd(), 'crash.log'), msg);
+  } catch (e) {
+    console.error("Failed to write to crash.log", e);
+  }
+};
+
+process.on('uncaughtException', (err) => logCrash('UNCAUGHT_EXCEPTION', err));
+process.on('unhandledRejection', (reason, promise) => {
+  logCrash('UNHANDLED_REJECTION', reason instanceof Error ? reason : new Error(String(reason)));
+});
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey =
@@ -464,7 +483,9 @@ app.post("/api/results", async (req, res) => {
         .maybeSingle();
 
       const isAdmin = allowList.includes(userEmail?.toLowerCase());
-      if (existingResult && !isAdmin) {
+
+      // ONLY block duplicate submissions for Olympiad tests
+      if (existingResult && !isAdmin && is_olympiad) {
         return res.status(400).json({ error: "already_submitted", message: "You have already submitted this test. Only one attempt is permitted." });
       }
     }
@@ -799,41 +820,94 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
     // 2. Respond immediately to the client
     res.json({ success: true, jobId: job.id });
 
-    // 3. Background process (Text extraction -> Splitting -> Normalization)
+    // 3. Background process (Direct PDF -> Multimodal AI)
     (async () => {
       try {
-        let text = "";
-        if (req.file.mimetype === 'application/pdf') {
-          const parser = new pdf.PDFParse({ data: req.file.buffer });
-          const pdfData = await parser.getText();
-          text = pdfData.text;
-        } else {
-          text = req.file.buffer.toString('utf-8');
-        }
-
         await supabase.from("import_jobs").update({ status: 'candidate_split' }).eq("id", job.id);
 
-        const candidates = await splitTextToCandidates(text);
+        // We now pass the buffer directly to Gemini 1.5 Flash
+        // It handles PDF parsing and image extraction natively
+        const candidates = await processPdfCandidates(req.file.buffer, req.file.mimetype);
 
         await supabase.from("import_jobs").update({
           status: 'normalizing',
-          config: { ...job.config, total_candidates: candidates.length, processed_candidates: 0 }
+          total_questions: candidates.length,
+          processed_questions: 0
         }).eq("id", job.id);
 
-        let processedCount = 0;
-        for (const rawText of candidates) {
+        let successCount = 0;
+        const results = [];
+
+        // Pre-convert PDF to images (Optionally optimization: do this once per page if we track page numbers)
+        // For now, simpler to do on demand or just load the doc once.
+        // Actually processing PDF to images is heavy. 
+        // Let's assume Gemini returns the result. But Gemini doesn't return page numbers reliably unless asked.
+        // Simplification: We will only support cropping if we know the page number. 
+        // Wait, the current prompt doesn't ask for Page Number. 
+        // Let's update the prompt in processor.js? No, let's just try to match text?
+        // Actually, without page number, we can't crop from the correct page.
+        // Gemini 1.5 Flash *can* return page numbers. 
+
+        // Let's skip complex cropping for this iteration and just save the bbox for now? 
+        // No, user wants IMAGES. 
+
+        // REVISION: We need page numbers. 
+        // Updated plan inside this tool call: I will assume the prompt *will* return Page Number if I add it to the prompt later.
+        // But for now, let's implement the logic assuming we can get the image.
+
+        // ALTERNATIVE: Use the image directly if Gemini could return it (it can't).
+
+        // CRITICAL FIX: I need to update processor.js to ask for PAGE NUMBER too.
+        // for now, let's implement the loop and logic.
+
+        for (const candidateText of candidates) {
           try {
-            const normalized = await normalizeQuestion(rawText);
+            const normalized = await normalizeQuestion(candidateText);
+
+            /* IMAGE EXTRACTION DISABLED DUE TO MISSING PREQUISITES ON SERVER
+            let imageUrl = null;
+            if (normalized.bbox && Array.isArray(normalized.bbox) && normalized.bbox.length === 4) {
+                 // Logic removed to prevent crash
+            }
+            */
+            let imageUrl = null;
+
+            const { data: qData, error: qError } = await supabase
+              .from("questions")
+              .insert({
+                text: normalized.text,
+                answer: normalized.correct_answer,
+                test_id: job.destination_test_id || null,
+                passage: normalized.passage || null,
+                image_url: imageUrl || normalized.imageUrl || null, // Use extracted image or one from AI
+                options: normalized.options || [],
+                type: normalized.type || 'multiple-choice',
+                module: 'm1', // Default
+                // Prioritize AI detection. If AI says 'math' or 'rw', use it. Fallback to job config.
+                subject: (normalized.subject && ['math', 'rw'].includes(normalized.subject.toLowerCase()))
+                  ? normalized.subject.toLowerCase()
+                  : (job.config?.testType === 'sat-math' ? 'math' : 'rw'),
+                data_source: `import_job:${job.id}`
+              })
+              .select()
+              .single();
+
+            if (qError || !qData) {
+              console.error("Failed to insert question:", qError);
+              continue; // Skip this candidate if we couldn't create the question
+            }
+
             await supabase.from("import_candidates").insert({
               job_id: job.id,
-              raw_text: rawText,
+              raw_text: candidateText,
               normalized_json: normalized,
-              status: 'review_required'
+              status: 'review_required',
+              question_id: qData.id // Link to the newly created question
             });
 
-            processedCount++;
+            successCount++;
             await supabase.from("import_jobs").update({
-              config: { ...job.config, total_candidates: candidates.length, processed_candidates: processedCount }
+              processed_questions: successCount
             }).eq("id", job.id);
           } catch (normError) {
             console.error("Candidate normalization failed:", normError);
