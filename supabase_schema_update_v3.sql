@@ -5,3 +5,5 @@ CREATE TABLE IF NOT EXISTS olympiad_violations (
   violation_type TEXT,
   occurred_at TIMESTAMPTZ DEFAULT now()
 );
+
+  

@@ -88,19 +88,36 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
                     <p className="text-indigo-200/60 font-medium">Manage and review AI-powered question imports</p>
                 </motion.div>
 
-                <motion.button
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => onNavigate('admin-import-new')}
-                    className="flex items-center gap-3 px-6 py-3 bg-indigo-600 rounded-2xl text-white font-bold shadow-[0_0_30px_rgba(79,70,223,0.3)] hover:bg-indigo-500 transition-all group"
-                >
-                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
-                        <Plus className="w-5 h-5" />
-                    </div>
-                    New Import
-                </motion.button>
+                <div className="flex items-center gap-3">
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                            setLoading(true);
+                            fetchJobs();
+                        }}
+                        className="p-3 bg-white/5 rounded-2xl text-indigo-200/40 hover:text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/10"
+                        title="Refresh List"
+                    >
+                        <Clock className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                    </motion.button>
+
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => onNavigate('admin-import-new')}
+                        className="flex items-center gap-3 px-6 py-3 bg-indigo-600 rounded-2xl text-white font-bold shadow-[0_0_30px_rgba(79,70,223,0.3)] hover:bg-indigo-500 transition-all group"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
+                            <Plus className="w-5 h-5" />
+                        </div>
+                        New Import
+                    </motion.button>
+                </div>
             </div>
 
             {loading ? (
