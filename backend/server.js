@@ -864,45 +864,13 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
           try {
             const normalized = await normalizeQuestion(candidateText);
 
-            /* IMAGE EXTRACTION DISABLED DUE TO MISSING PREQUISITES ON SERVER
-            let imageUrl = null;
-            if (normalized.bbox && Array.isArray(normalized.bbox) && normalized.bbox.length === 4) {
-                 // Logic removed to prevent crash
-            }
-            */
-            let imageUrl = null;
-
-            const { data: qData, error: qError } = await supabase
-              .from("questions")
-              .insert({
-                text: normalized.text,
-                answer: normalized.correct_answer,
-                test_id: job.destination_test_id || null,
-                passage: normalized.passage || null,
-                image_url: imageUrl || normalized.imageUrl || null, // Use extracted image or one from AI
-                options: normalized.options || [],
-                type: normalized.type || 'multiple-choice',
-                module: 'm1', // Default
-                // Prioritize AI detection. If AI says 'math' or 'rw', use it. Fallback to job config.
-                subject: (normalized.subject && ['math', 'rw'].includes(normalized.subject.toLowerCase()))
-                  ? normalized.subject.toLowerCase()
-                  : (job.config?.testType === 'sat-math' ? 'math' : 'rw'),
-                data_source: `import_job:${job.id}`
-              })
-              .select()
-              .single();
-
-            if (qError || !qData) {
-              console.error("Failed to insert question:", qError);
-              continue; // Skip this candidate if we couldn't create the question
-            }
-
+            // Don't insert into questions table yet - wait for admin approval
+            // Just save the candidate with normalized data for review
             await supabase.from("import_candidates").insert({
               job_id: job.id,
               raw_text: candidateText,
               normalized_json: normalized,
-              status: 'review_required',
-              question_id: qData.id // Link to the newly created question
+              status: 'review_required'
             });
 
             successCount++;
@@ -1026,11 +994,10 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
         answer: questionData.answer,
         explanation: questionData.explanation,
         subject: questionData.subject,
-        difficulty: questionData.difficulty,
         type: questionData.type,
-        tags: questionData.tags,
+        skill: rawData.skill_tags ? rawData.skill_tags.join(', ') : null,
         test_id: testId || null,
-        module: rawData.module || 'm1' // Default to m1 if not specified
+        module: rawData.module || 'm1'
       })
       .select()
       .single();
