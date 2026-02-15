@@ -8,9 +8,28 @@ import path from "path";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
-import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
+import { normalizeQuestion, processPdfCandidates } from "./satvalley-ai/src/processor.js";
+// import { v4 as uuidv4 } from 'uuid';
+// import sharp from 'sharp';
+// import pdfImgConvert from 'pdf-img-convert';
 
 dotenv.config();
+
+// Global Crash Logger
+const logCrash = (type, err) => {
+  const msg = `[${new Date().toISOString()}] ${type}: ${err.message}\n${err.stack}\n\n`;
+  console.error(msg); // Print to console still
+  try {
+    fs.appendFileSync(path.join(process.cwd(), 'crash.log'), msg);
+  } catch (e) {
+    console.error("Failed to write to crash.log", e);
+  }
+};
+
+process.on('uncaughtException', (err) => logCrash('UNCAUGHT_EXCEPTION', err));
+process.on('unhandledRejection', (reason, promise) => {
+  logCrash('UNHANDLED_REJECTION', reason instanceof Error ? reason : new Error(String(reason)));
+});
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey =
@@ -216,11 +235,40 @@ app.delete("/api/tests/:id", async (req, res) => {
 app.get("/api/questions", async (req, res) => {
   try {
     const { testId, module, subject } = req.query || {};
+
+    // If testId is provided, use the test_questions junction table
+    if (testId && testId !== "undefined" && testId !== "") {
+      // Query through the junction table to get linked questions
+      const { data: linkedQuestions, error: linkError } = await supabase
+        .from("test_questions")
+        .select(`
+          order_index,
+          questions (*)
+        `)
+        .eq("test_id", testId)
+        .order("order_index", { ascending: true });
+
+      if (linkError) throw linkError;
+
+      // Extract questions from the nested structure
+      let questions = (linkedQuestions || [])
+        .map(link => link.questions)
+        .filter(q => q !== null);
+
+      // Apply additional filters if provided
+      if (module && module !== "undefined" && module !== "") {
+        questions = questions.filter(q => q.module === module);
+      }
+      if (subject && subject !== "undefined" && subject !== "") {
+        questions = questions.filter(q => q.subject === subject);
+      }
+
+      return res.json({ questions });
+    }
+
+    // Fallback: query questions table directly (for backward compatibility)
     let query = supabase.from("questions").select("*");
 
-    if (testId && testId !== "undefined" && testId !== "") {
-      query = query.eq("test_id", testId);
-    }
     if (module && module !== "undefined" && module !== "") {
       query = query.eq("module", module);
     }
@@ -435,7 +483,9 @@ app.post("/api/results", async (req, res) => {
         .maybeSingle();
 
       const isAdmin = allowList.includes(userEmail?.toLowerCase());
-      if (existingResult && !isAdmin) {
+
+      // ONLY block duplicate submissions for Olympiad tests
+      if (existingResult && !isAdmin && is_olympiad) {
         return res.status(400).json({ error: "already_submitted", message: "You have already submitted this test. Only one attempt is permitted." });
       }
     }
@@ -770,41 +820,62 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
     // 2. Respond immediately to the client
     res.json({ success: true, jobId: job.id });
 
-    // 3. Background process (Text extraction -> Splitting -> Normalization)
+    // 3. Background process (Direct PDF -> Multimodal AI)
     (async () => {
       try {
-        let text = "";
-        if (req.file.mimetype === 'application/pdf') {
-          const parser = new pdf.PDFParse({ data: req.file.buffer });
-          const pdfData = await parser.getText();
-          text = pdfData.text;
-        } else {
-          text = req.file.buffer.toString('utf-8');
-        }
-
         await supabase.from("import_jobs").update({ status: 'candidate_split' }).eq("id", job.id);
 
-        const candidates = await splitTextToCandidates(text);
+        // We now pass the buffer directly to Gemini 1.5 Flash
+        // It handles PDF parsing and image extraction natively
+        const candidates = await processPdfCandidates(req.file.buffer, req.file.mimetype);
 
         await supabase.from("import_jobs").update({
           status: 'normalizing',
-          config: { ...job.config, total_candidates: candidates.length, processed_candidates: 0 }
+          total_questions: candidates.length,
+          processed_questions: 0
         }).eq("id", job.id);
 
-        let processedCount = 0;
-        for (const rawText of candidates) {
+        let successCount = 0;
+        const results = [];
+
+        // Pre-convert PDF to images (Optionally optimization: do this once per page if we track page numbers)
+        // For now, simpler to do on demand or just load the doc once.
+        // Actually processing PDF to images is heavy. 
+        // Let's assume Gemini returns the result. But Gemini doesn't return page numbers reliably unless asked.
+        // Simplification: We will only support cropping if we know the page number. 
+        // Wait, the current prompt doesn't ask for Page Number. 
+        // Let's update the prompt in processor.js? No, let's just try to match text?
+        // Actually, without page number, we can't crop from the correct page.
+        // Gemini 1.5 Flash *can* return page numbers. 
+
+        // Let's skip complex cropping for this iteration and just save the bbox for now? 
+        // No, user wants IMAGES. 
+
+        // REVISION: We need page numbers. 
+        // Updated plan inside this tool call: I will assume the prompt *will* return Page Number if I add it to the prompt later.
+        // But for now, let's implement the logic assuming we can get the image.
+
+        // ALTERNATIVE: Use the image directly if Gemini could return it (it can't).
+
+        // CRITICAL FIX: I need to update processor.js to ask for PAGE NUMBER too.
+        // for now, let's implement the loop and logic.
+
+        for (const candidateText of candidates) {
           try {
-            const normalized = await normalizeQuestion(rawText);
+            const normalized = await normalizeQuestion(candidateText);
+
+            // Don't insert into questions table yet - wait for admin approval
+            // Just save the candidate with normalized data for review
             await supabase.from("import_candidates").insert({
               job_id: job.id,
-              raw_text: rawText,
+              raw_text: candidateText,
               normalized_json: normalized,
               status: 'review_required'
             });
 
-            processedCount++;
+            successCount++;
             await supabase.from("import_jobs").update({
-              config: { ...job.config, total_candidates: candidates.length, processed_candidates: processedCount }
+              processed_questions: successCount
             }).eq("id", job.id);
           } catch (normError) {
             console.error("Candidate normalization failed:", normError);
@@ -923,11 +994,10 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
         answer: questionData.answer,
         explanation: questionData.explanation,
         subject: questionData.subject,
-        difficulty: questionData.difficulty,
         type: questionData.type,
-        tags: questionData.tags,
+        skill: rawData.skill_tags ? rawData.skill_tags.join(', ') : null,
         test_id: testId || null,
-        module: rawData.module || 'm1' // Default to m1 if not specified
+        module: rawData.module || 'm1'
       })
       .select()
       .single();

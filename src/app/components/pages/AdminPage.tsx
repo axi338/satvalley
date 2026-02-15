@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Shield, Plus, FileText, Award, Database, UserRound, RefreshCw, Trash2, Edit, Save, X as CloseIcon } from 'lucide-react';
+import { Shield, Plus, FileText, Award, Database, UserRound, RefreshCw, Trash2, Edit, Save, X as CloseIcon, Sparkles } from 'lucide-react';
 import { OlympiadAdminPage } from './OlympiadAdminPage';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -7,7 +7,11 @@ import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { supabase } from '../../lib/supabase';
 
-export function AdminPage() {
+interface AdminPageProps {
+  onNavigate: (page: string) => void;
+}
+
+export function AdminPage({ onNavigate }: AdminPageProps) {
   const [testTitle, setTestTitle] = useState('');
   const [testDifficulty, setTestDifficulty] = useState('Medium');
   const [testDescription, setTestDescription] = useState('');
@@ -495,14 +499,24 @@ export function AdminPage() {
           </div>
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-5xl lg:text-6xl text-white">Admin Panel</h1>
-            <Button
-              onClick={() => window.location.href = '/admin-olympiad'}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-6 rounded-xl text-lg relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <Award className="w-6 h-6 mr-3 relative z-10" />
-              <span className="relative z-10">Manage Olympiad</span>
-            </Button>
+            <div className="flex gap-4">
+              <Button
+                onClick={() => onNavigate('admin-import')}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-6 rounded-xl text-lg relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <Sparkles className="w-6 h-6 mr-3 relative z-10" />
+                <span className="relative z-10">AI Import Center</span>
+              </Button>
+              <Button
+                onClick={() => onNavigate('admin-olympiad')}
+                className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 py-6 rounded-xl text-lg relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <Award className="w-6 h-6 mr-3 relative z-10" />
+                <span className="relative z-10">Manage Olympiad</span>
+              </Button>
+            </div>
           </div>
           <p className="text-xl text-muted-foreground mr-auto">Manage tests, questions, and student results.</p>
           <button

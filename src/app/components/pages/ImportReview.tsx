@@ -73,7 +73,10 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                 body: JSON.stringify({ editData: isEditing ? editData : null }),
             });
 
-            if (!response.ok) throw new Error('Approval failed');
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || 'Approval failed');
+            }
 
             toast.success('Question Approved & Published!');
 
@@ -87,7 +90,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
             // Auto-advance to next, even if it's the end (to show success screen)
             setCurrentIndex(currentIndex + 1);
         } catch (err) {
-            toast.error('Failed to approve');
+            toast.error(`Failed to approve: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setActionLoading(false);
         }
@@ -272,21 +275,31 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Question Stem</label>
                                             <textarea
-                                                value={editData.text}
+                                                value={editData.text || ''}
                                                 onChange={(e) => setEditData({ ...editData, text: e.target.value })}
                                                 className="w-full h-32 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium outline-none focus:border-indigo-500 transition-colors resize-none"
                                             />
                                         </div>
 
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Passage (optional)</label>
+                                            <textarea
+                                                value={editData.passage || ''}
+                                                onChange={(e) => setEditData({ ...editData, passage: e.target.value })}
+                                                className="w-full h-24 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium outline-none focus:border-indigo-500 transition-colors resize-none"
+                                                placeholder="Reading passage or context..."
+                                            />
+                                        </div>
+
                                         <div className="grid grid-cols-2 gap-4">
-                                            {['options[0]', 'options[1]', 'options[2]', 'options[3]'].map((opt, i) => (
+                                            {[0, 1, 2, 3].map((i) => (
                                                 <div key={i} className="space-y-2">
-                                                    <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Option {['A', 'B', 'C', 'D', 'E', 'F'][i]}</label>
+                                                    <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Option {['A', 'B', 'C', 'D'][i]}</label>
                                                     <input
                                                         type="text"
-                                                        value={editData.options[i]}
+                                                        value={(editData.options || [])[i] || ''}
                                                         onChange={(e) => {
-                                                            const newOpts = [...editData.options];
+                                                            const newOpts = [...(editData.options || ['', '', '', ''])];
                                                             newOpts[i] = e.target.value;
                                                             setEditData({ ...editData, options: newOpts });
                                                         }}
@@ -300,7 +313,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Answer</label>
                                                 <select
-                                                    value={editData.correct_answer}
+                                                    value={editData.correct_answer || 'A'}
                                                     onChange={(e) => setEditData({ ...editData, correct_answer: e.target.value })}
                                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-indigo-500 transition-colors"
                                                 >
@@ -310,7 +323,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Subject</label>
                                                 <select
-                                                    value={editData.subject}
+                                                    value={editData.subject || 'math'}
                                                     onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
                                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-indigo-500 transition-colors"
                                                 >
@@ -319,26 +332,43 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                 </select>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Difficulty</label>
+                                                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Type</label>
                                                 <select
-                                                    value={editData.difficulty}
-                                                    onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
+                                                    value={editData.type || 'multiple-choice'}
+                                                    onChange={(e) => setEditData({ ...editData, type: e.target.value })}
                                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-indigo-500 transition-colors"
                                                 >
-                                                    {['easy', 'medium', 'hard'].map(v => <option key={v} value={v} className="bg-[#020617] text-capitalize">{v}</option>)}
+                                                    <option value="multiple-choice" className="bg-[#020617]">Multiple Choice</option>
+                                                    <option value="spr" className="bg-[#020617]">Student-Produced Response</option>
                                                 </select>
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Explanation (optional)</label>
+                                            <textarea
+                                                value={editData.explanation || ''}
+                                                onChange={(e) => setEditData({ ...editData, explanation: e.target.value })}
+                                                className="w-full h-20 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium outline-none focus:border-indigo-500 transition-colors resize-none"
+                                                placeholder="Why this answer is correct..."
+                                            />
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-8">
+                                        {currentCandidate.normalized_json?.passage && (
+                                            <div className="space-y-2">
+                                                <h3 className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Passage</h3>
+                                                <p className="text-white/60 font-medium leading-relaxed whitespace-pre-wrap text-sm p-4 rounded-xl bg-white/5 border border-white/5">{currentCandidate.normalized_json.passage}</p>
+                                            </div>
+                                        )}
                                         <div className="space-y-2">
                                             <h3 className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Stem</h3>
                                             <p className="text-white font-bold leading-relaxed">{currentCandidate.normalized_json?.text || "No question text available."}</p>
                                         </div>
 
                                         <div className="grid gap-4">
-                                            {(currentCandidate.normalized_json.options || []).map((opt: string, i: number) => (
+                                            {(currentCandidate.normalized_json?.options || []).map((opt: string, i: number) => (
                                                 <div key={i} className={`flex items-start gap-4 p-4 rounded-2xl border ${currentCandidate.normalized_json.correct_answer === ['A', 'B', 'C', 'D'][i]
                                                     ? 'bg-emerald-500/10 border-emerald-500/20'
                                                     : 'bg-white/5 border-white/10'
@@ -354,8 +384,25 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                             ))}
                                         </div>
 
+                                        {currentCandidate.normalized_json?.explanation && (
+                                            <div className="space-y-2">
+                                                <h3 className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Explanation</h3>
+                                                <p className="text-white/50 font-medium leading-relaxed text-sm">{currentCandidate.normalized_json.explanation}</p>
+                                            </div>
+                                        )}
+
                                         <div className="flex flex-wrap gap-2">
-                                            {currentCandidate.normalized_json.skill_tags?.map((tag: string) => (
+                                            {currentCandidate.normalized_json?.subject && (
+                                                <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-black uppercase tracking-widest">
+                                                    {currentCandidate.normalized_json.subject}
+                                                </span>
+                                            )}
+                                            {currentCandidate.normalized_json?.difficulty && (
+                                                <span className="px-3 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest">
+                                                    {currentCandidate.normalized_json.difficulty}
+                                                </span>
+                                            )}
+                                            {currentCandidate.normalized_json?.skill_tags?.map((tag: string) => (
                                                 <span key={tag} className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-black uppercase tracking-widest">
                                                     {tag}
                                                 </span>

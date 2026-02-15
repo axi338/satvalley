@@ -31,7 +31,7 @@ export default function App() {
   const [currentParams, setCurrentParams] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(() => sessionStorage.getItem('adminUnlocked') === 'true');
   const [olympiadVerified, setOlympiadVerified] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -98,6 +98,7 @@ export default function App() {
       const input = window.prompt('Enter admin passcode');
       if (input === adminPasscode) {
         setAdminUnlocked(true);
+        sessionStorage.setItem('adminUnlocked', 'true');
         setCurrentPage('admin');
       } else if (input !== null) {
         window.alert('Invalid passcode');
@@ -146,7 +147,7 @@ export default function App() {
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('review')} />;
         return <ReviewPage user={user} onNavigate={handleNavigate} params={currentParams} />;
       case 'admin':
-        return adminUnlocked ? <AdminPage /> : <HomePage onNavigate={handleNavigate} />;
+        return adminUnlocked ? <AdminPage onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-olympiad':
         return adminUnlocked ? <OlympiadAdminPage /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-import':

@@ -1,30 +1,99 @@
-import { Play, Clock, Info, Calculator, Sparkles, Zap, Activity, CheckCircle2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  Play,
+  Clock,
+  Info,
+  Calculator,
+  Sparkles,
+  Zap,
+  Activity,
+  CheckCircle2,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface PracticeTestsPageProps {
   onNavigate: (page: string, params?: any) => void;
   user: any;
 }
 
+type ApiTestsResponse = { tests?: any[] };
+type ApiResultsResponse = { results?: any[] };
+
+async function fetchJson<T>(
+  url: string,
+  opts?: RequestInit & { signal?: AbortSignal }
+): Promise<T> {
+  const res = await fetch(url, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...(opts?.headers || {}),
+    },
+  });
+
+  // Don’t blindly r.json() — this is a common crash source.
+  const text = await res.text();
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // If backend returns HTML/error page, we fail gracefully.
+    data = null;
+  }
+
+  if (!res.ok) {
+    const msg =
+      (data && (data.error || data.message)) ||
+      `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
 export function PracticeTestsPage({ onNavigate, user }: PracticeTestsPageProps) {
   const [tests, setTests] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || "";
+  const abortRef = useRef<AbortController | null>(null);
 
   const loadTests = async () => {
+    // Cancel any in-flight request to avoid “setState on unmounted component”
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     try {
       setLoading(true);
+      setErrorMsg(null);
+
+      const testsUrl = `${apiBase}/api/tests?isOlympiad=false`;
+      const resultsUrl = user?.email
+        ? `${apiBase}/api/results?userEmail=${encodeURIComponent(user.email)}`
+        : null;
+
       const [testsRes, resultsRes] = await Promise.all([
-        fetch(`${apiBase}/api/tests?isOlympiad=false`).then(r => r.json()),
-        user?.email ? fetch(`${apiBase}/api/results?userEmail=${user.email}`).then(r => r.json()) : Promise.resolve({ results: [] })
+        fetchJson<ApiTestsResponse>(testsUrl, { signal: ac.signal }),
+        resultsUrl
+          ? fetchJson<ApiResultsResponse>(resultsUrl, { signal: ac.signal })
+          : Promise.resolve({ results: [] }),
       ]);
 
-      setTests(testsRes.tests || []);
-      setResults(resultsRes.results || []);
-    } catch (error) {
-      console.error("Failed to fetch tests:", error);
+      const safeTests = Array.isArray(testsRes?.tests) ? testsRes.tests : [];
+      const safeResults = Array.isArray(resultsRes?.results)
+        ? resultsRes.results
+        : [];
+
+      setTests(safeTests);
+      setResults(safeResults);
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      console.error("Failed to fetch tests:", err);
+      setErrorMsg(err?.message || "Failed to load practice tests.");
+      setTests([]);
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -32,252 +101,224 @@ export function PracticeTestsPage({ onNavigate, user }: PracticeTestsPageProps) 
 
   useEffect(() => {
     loadTests();
-  }, [apiBase]);
+    return () => abortRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase, user?.email]);
+
+  const resultsByTestId = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const r of results) {
+      const key = String(r?.testId ?? r?.test_id ?? "");
+      if (!key) continue;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(r);
+    }
+    return map;
+  }, [results]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy':
-        return 'from-emerald-400 to-teal-500';
-      case 'Medium':
-        return 'from-indigo-400 to-indigo-600';
-      case 'Hard':
-        return 'from-amber-400 to-orange-500';
-      case 'Very Hard':
-        return 'from-rose-400 to-pink-500';
+      case "Easy":
+        return "from-emerald-400 to-teal-500";
+      case "Medium":
+        return "from-indigo-400 to-indigo-600";
+      case "Hard":
+        return "from-amber-400 to-orange-500";
+      case "Very Hard":
+        return "from-rose-400 to-pink-500";
       default:
-        return 'from-slate-400 to-slate-500';
+        return "from-slate-400 to-slate-500";
     }
+  };
+
+  const getLastAttempt = (testId: string) => {
+    const arr = resultsByTestId.get(String(testId)) || [];
+    if (!arr.length) return null;
+    // safest: sort by createdAt/date if exists, else take last
+    const sorted = [...arr].sort((a, b) => {
+      const da = new Date(a?.createdAt || a?.created_at || 0).getTime();
+      const db = new Date(b?.createdAt || b?.created_at || 0).getTime();
+      return db - da;
+    });
+    return sorted[0] || arr[arr.length - 1];
   };
 
   return (
     <div className="min-h-screen pt-40 pb-24 px-6">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border-white/20 shadow-xl mb-10 animate-in fade-in slide-in-from-bottom-4 bg-white/5">
-            <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
-            <span className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.3em]">Adaptive System Architecture</span>
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border-white/20 shadow-xl mb-8 bg-white/5">
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            <span className="text-sm font-semibold text-white/90">
+              Practice Tests
+            </span>
+            <Zap className="w-4 h-4 text-amber-400" />
           </div>
-          <h1 className="text-7xl lg:text-9xl font-black text-white mb-8 tracking-tighter leading-none">
-            Test <span className="opacity-20 italic">Portal.</span>
+
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white mb-4">
+            Take a full-length test like test day
           </h1>
-          <p className="text-2xl text-white/50 max-w-2xl mx-auto leading-relaxed font-bold">
-            Execute full-length simulations in the world's most
-            accurate Digital SAT testing environment.
+          <p className="text-white/70 max-w-2xl mx-auto text-base sm:text-lg">
+            Fast load, stable navigation, and clean timing behavior. No random
+            crashes. No jank.
           </p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
-          <div className="glass-card p-12 hover:bg-white/5 transition-all">
-            <div className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em] mb-6">Library Status</div>
-            <div className="text-6xl font-black text-white tracking-tighter">{tests.length} Total Tests</div>
+        {/* Status row */}
+        <div className="flex items-center justify-between gap-4 mb-10">
+          <div className="flex items-center gap-3 text-white/70 text-sm">
+            <Activity className="w-4 h-4" />
+            <span>
+              {loading
+                ? "Loading tests…"
+                : `${tests.length} test${tests.length === 1 ? "" : "s"} available`}
+            </span>
           </div>
-          <div className="glass-card p-12 hover:bg-white/5 transition-all">
-            <div className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em] mb-6">English</div>
-            <div className="text-6xl font-black text-white tracking-tighter">Reading and Writing</div>
-          </div>
-          <div className="glass-card p-12 hover:bg-white/5 transition-all">
-            <div className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em] mb-6">Math</div>
-            <div className="text-6xl font-black text-white tracking-tighter">Math</div>
-          </div>
+
+          <button
+            onClick={loadTests}
+            className="h-10 px-4 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-white text-sm font-semibold transition"
+          >
+            Refresh
+          </button>
         </div>
 
-        {/* Tests Grid */}
-        {/* Tests Sections */}
-        {loading ? (
-          <div className="col-span-full py-40 flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-[2rem] border-4 border-white/20 border-t-indigo-400 animate-spin mb-8" />
-            <p className="font-black text-indigo-200/40 uppercase tracking-[0.4em] text-[10px]">Accessing Secure Database...</p>
+        {/* Error state */}
+        {errorMsg && !loading && (
+          <div className="mb-10 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-4 text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="font-bold">Couldn’t load tests</div>
+                <div className="text-white/80 text-sm mt-1">{errorMsg}</div>
+              </div>
+              <button
+                onClick={loadTests}
+                className="h-9 px-4 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-white text-sm font-semibold transition"
+              >
+                Retry
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-32">
-            {[
-              {
-                title: "Full Length Practice",
-                items: tests.filter(t => {
-                  const hasMath = t.sections?.some((s: string) => s.includes('math'));
-                  const hasRW = t.sections?.some((s: string) => s.includes('reading') || s.includes('writing') || s.includes('rw'));
-                  return (hasMath && hasRW) || (!hasMath && !hasRW);
-                })
-              },
-              {
-                title: "English Module Only",
-                items: tests.filter(t => {
-                  const hasMath = t.sections?.some((s: string) => s.includes('math'));
-                  const hasRW = t.sections?.some((s: string) => s.includes('reading') || s.includes('writing') || s.includes('rw'));
-                  return hasRW && !hasMath;
-                })
-              },
-              {
-                title: "Math Only",
-                items: tests.filter(t => {
-                  const hasMath = t.sections?.some((s: string) => s.includes('math'));
-                  const hasRW = t.sections?.some((s: string) => s.includes('reading') || s.includes('writing') || s.includes('rw'));
-                  return hasMath && !hasRW;
-                })
-              }
-            ].map((section, idx) => (
-              <div key={idx} className="space-y-12">
-                <div className="flex items-center gap-4">
-                  <div className="h-px bg-white/10 flex-1" />
-                  <h2 className="text-2xl font-black text-white uppercase tracking-widest">{section.title}</h2>
-                  <div className="h-px bg-white/10 flex-1" />
-                </div>
+        )}
 
-                {section.items.length === 0 ? (
-                  <div className="py-12 text-center border border-dashed border-white/10 rounded-3xl bg-white/5">
-                    <p className="text-white/40 font-black uppercase tracking-widest text-xs">No active modules in this sector.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    {section.items.map((test) => (
-                      <div key={test.id} className="group glass-card p-12 hover:bg-white/5 transition-all duration-700 border-white/10 hover:border-indigo-500/30">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-10">
-                          <div className="space-y-6">
-                            <h3 className="text-4xl font-black text-white tracking-tighter group-hover:text-indigo-400 transition-colors">{test.title}</h3>
-                            <div className="flex items-center gap-3">
-                              <div className={`px-4 py-1.5 rounded-xl bg-gradient-to-r ${getDifficultyColor(test.difficulty)} text-white text-[10px] font-black uppercase tracking-widest shadow-lg`}>
-                                {test.difficulty}
-                              </div>
-                              <div className="px-4 py-1.5 rounded-xl bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest leading-none">
-                                Official Standard
-                              </div>
-                            </div>
-                          </div>
-                          <div className="px-5 py-2 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-end justify-center group-hover:bg-gradient-to-br group-hover:from-indigo-500 group-hover:to-indigo-700 group-hover:border-transparent transition-all duration-500 shadow-sm">
-                            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest leading-none mb-1">Ticket ID</span>
-                            <span className="font-black text-white/60 group-hover:text-white transition-colors uppercase italic tracking-tighter">T-{test.id.slice(0, 4)}-{test.id.slice(-4)}</span>
-                          </div>
-                        </div>
-
-                        {/* Sections Visualization */}
-                        <div className="flex gap-3 mb-12">
-                          {(section.title === "Full Length Practice" || section.title === "English Module Only") && (
-                            <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
-                              <div className="w-1/2 h-full bg-gradient-to-r from-indigo-500 to-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
-                            </div>
-                          )}
-                          {(section.title === "Full Length Practice" || section.title === "Math Only") && (
-                            <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
-                              <div className="w-1/2 h-full bg-gradient-to-r from-amber-500 to-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.5)]" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Metrics */}
-                        <div className="grid grid-cols-3 gap-8 mb-12">
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-white/30 font-black uppercase text-[9px] tracking-[0.3em]">
-                              <Clock className="w-3.5 h-3.5" />
-                              Window
-                            </div>
-                            <div className="text-xl font-black text-white">{test.duration || 'Standard'}</div>
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-white/30 font-black uppercase text-[9px] tracking-[0.3em]">
-                              <Zap className="w-3.5 h-3.5" />
-                              Avg Score
-                            </div>
-                            <div className="text-xl font-black text-indigo-400 italic tracking-tighter">{test.avgScore || '1280'}</div>
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-white/30 font-black uppercase text-[9px] tracking-[0.3em]">
-                              <Activity className="w-3.5 h-3.5" />
-                              Sessions
-                            </div>
-                            <div className="text-xl font-black text-white tracking-tighter">{test.attempts || 0}</div>
-                          </div>
-                        </div>
-
-                        {/* CTA */}
-                        {results.some(r => r.test_id === test.id) ? (
-                          <div className="flex flex-col gap-3">
-                            <div className="w-full h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center gap-3">
-                              <CheckCircle2 className="w-5 h-5" />
-                              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Previous Attempt Saved</span>
-                            </div>
-                            <button
-                              onClick={() => onNavigate('test-session', { testId: test.id })}
-                              className="w-full h-14 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-3 group"
-                            >
-                              <Play className="w-3 h-3 fill-current group-hover:text-indigo-400" />
-                              Take Again
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => onNavigate('test-session', { testId: test.id })}
-                            className="w-full h-20 bg-white text-black hover:bg-indigo-400 hover:text-white rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4 group/btn"
-                          >
-                            <div className="w-8 h-8 rounded-full bg-black/10 group-hover/btn:bg-white/20 flex items-center justify-center transition-colors">
-                              <Play className="w-3.5 h-3.5 fill-current" />
-                            </div>
-                            Initialize Session
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6 animate-pulse"
+              >
+                <div className="h-4 w-1/2 bg-white/10 rounded mb-3" />
+                <div className="h-6 w-3/4 bg-white/10 rounded mb-6" />
+                <div className="h-10 w-full bg-white/10 rounded" />
               </div>
             ))}
           </div>
         )}
 
-        {/* Official Protocol (Instructions) */}
-        <div className="mt-32 glass-card p-16 lg:p-24 border-white/10 relative overflow-hidden group/protocol">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 -mr-64 -mt-64 rounded-full border border-indigo-500/20 blur-3xl opacity-50" />
+        {/* Tests grid */}
+        {!loading && !errorMsg && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {tests.map((t) => {
+              const id = String(t?.id ?? t?.testId ?? "");
+              const difficulty = String(t?.difficulty || "Medium");
+              const last = id ? getLastAttempt(id) : null;
 
-          <div className="relative z-10 flex flex-col lg:flex-row gap-24">
-            <div className="lg:w-1/3">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center mb-10 shadow-2xl shadow-indigo-500/20">
-                <Calculator className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-8">System <br /><span className="opacity-30 italic">Protocol.</span></h2>
-              <p className="text-white/50 font-bold leading-relaxed text-lg">
-                To maintain architectural validity, please adhere to these
-                official simulation standards.
-              </p>
-            </div>
+              const totalMin =
+                typeof t?.durationMinutes === "number"
+                  ? t.durationMinutes
+                  : t?.duration
+                    ? Math.round(Number(t.duration) / 60)
+                    : 134; // fallback feel
 
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-16">
-              <div className="space-y-10">
-                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Node Preparation</h4>
-                <ul className="space-y-6">
-                  {[
-                    'Sterile testing environment required',
-                    'Standard uninterrupted allocation',
-                    'High-resolution desktop interface',
-                    'Physical scratch tokens permitted'
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center gap-6 group/li">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500/40 group-hover/li:bg-indigo-400 transition-colors" />
-                      <span className="text-white/60 font-black text-xs uppercase tracking-widest">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+              const hasAttempt = Boolean(last);
+              const score = last?.score ?? last?.totalScore ?? null;
+
+              return (
+                <div
+                  key={id || Math.random()}
+                  className="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/7 transition shadow-lg shadow-black/10 overflow-hidden"
+                >
+                  <div
+                    className={`h-1 w-full bg-gradient-to-r ${getDifficultyColor(
+                      difficulty
+                    )}`}
+                  />
+
+                  <div className="p-6">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div>
+                        <div className="text-xs font-bold tracking-wider text-white/60 uppercase">
+                          {difficulty}
+                        </div>
+                        <div className="text-xl font-black text-white leading-tight mt-1">
+                          {t?.title || t?.name || "Practice Test"}
+                        </div>
+                      </div>
+
+                      {hasAttempt && (
+                        <div className="flex items-center gap-1 text-emerald-300 text-xs font-bold">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Attempted
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-4 text-white/70 text-sm mb-5">
+                      <div className="inline-flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span>{totalMin} min</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2">
+                        <Calculator className="w-4 h-4" />
+                        <span>Desmos</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2">
+                        <Info className="w-4 h-4" />
+                        <span>{t?.questionCount || t?.qcount || "Adaptive"}</span>
+                      </div>
+                    </div>
+
+                    {hasAttempt && (
+                      <div className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-white/80 text-sm mb-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold">Last attempt</span>
+                          <span className="text-white/60 text-xs">
+                            {last?.createdAt || last?.created_at
+                              ? new Date(last.createdAt || last.created_at).toLocaleString()
+                              : ""}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-white">
+                          Score:{" "}
+                          <span className="font-black">
+                            {score ?? "—"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => onNavigate("test-session", { testId: id })}
+                      className="w-full h-11 rounded-xl bg-[#001E3C] hover:bg-[#002D5C] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-blue-900/10"
+                    >
+                      <Play className="w-4 h-4" />
+                      Start
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {!tests.length && (
+              <div className="col-span-full rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-white/70">
+                No practice tests found.
               </div>
-              <div className="space-y-10">
-                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Logic Execution</h4>
-                <ul className="space-y-6">
-                  {[
-                    'Autonomous section timing logic',
-                    'Active module retrospective review',
-                    'Dynamic difficulty adaptation',
-                    'Instant analytical synthesis'
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center gap-6 group/li">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500/40 group-hover/li:bg-indigo-400 transition-colors" />
-                      <span className="text-white/60 font-black text-xs uppercase tracking-widest">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -182,8 +182,8 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                 >
                     <div className="space-y-3">
                         <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em] ml-2">Content Type</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {['sat-math', 'sat-rw'].map((type) => (
+                        <div className="grid grid-cols-3 gap-2">
+                            {['sat-math', 'sat-rw', 'sat-mixed'].map((type) => (
                                 <button
                                     key={type}
                                     onClick={() => setTestType(type)}
@@ -192,7 +192,7 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                                         : 'bg-white/5 text-indigo-100/40 border-white/10 hover:bg-white/10 hover:border-white/20'
                                         }`}
                                 >
-                                    {type === 'sat-math' ? 'Math' : 'Reading & Writing'}
+                                    {type === 'sat-math' ? 'Math' : type === 'sat-rw' ? 'Reading & Writing' : 'Full Test'}
                                 </button>
                             ))}
                         </div>
