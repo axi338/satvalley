@@ -368,20 +368,23 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                         </div>
 
                                         <div className="grid gap-4">
-                                            {(currentCandidate.normalized_json?.options || []).map((opt: string, i: number) => (
-                                                <div key={i} className={`flex items-start gap-4 p-4 rounded-2xl border ${currentCandidate.normalized_json.correct_answer === ['A', 'B', 'C', 'D'][i]
+                                            {(Array.isArray(currentCandidate.normalized_json?.options) ? currentCandidate.normalized_json.options : []).map((opt: string, i: number) => {
+                                                const isCorrect = currentCandidate.normalized_json?.correct_answer === ['A', 'B', 'C', 'D'][i];
+                                                return (
+                                                <div key={i} className={`flex items-start gap-4 p-4 rounded-2xl border ${isCorrect
                                                     ? 'bg-emerald-500/10 border-emerald-500/20'
                                                     : 'bg-white/5 border-white/10'
                                                     }`}>
-                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black shrink-0 ${currentCandidate.normalized_json.correct_answer === ['A', 'B', 'C', 'D'][i]
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black shrink-0 ${isCorrect
                                                         ? 'bg-emerald-500 text-white'
                                                         : 'bg-indigo-500/20 text-indigo-300'
                                                         }`}>
                                                         {['A', 'B', 'C', 'D'][i]}
                                                     </div>
-                                                    <span className="text-white/80 font-medium break-words pt-1">{opt}</span>
+                                                    <span className="text-white/80 font-medium break-words pt-1">{String(opt || '')}</span>
                                                 </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
 
                                         {currentCandidate.normalized_json?.explanation && (
@@ -424,15 +427,26 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                 ) : (
                                     <button
                                         onClick={() => {
+                                            const nj = currentCandidate.normalized_json || {};
+                                            // Ensure options is always a proper array
+                                            let safeOptions = ['', '', '', ''];
+                                            if (Array.isArray(nj.options)) {
+                                                safeOptions = nj.options.map((o: any) => String(o || ''));
+                                                while (safeOptions.length < 4) safeOptions.push('');
+                                            } else if (nj.options && typeof nj.options === 'object') {
+                                                safeOptions = Object.values(nj.options).map((o: any) => String(o || ''));
+                                                while (safeOptions.length < 4) safeOptions.push('');
+                                            }
                                             setEditData({
-                                                text: '',
-                                                options: ['', '', '', ''],
-                                                correct_answer: 'A',
-                                                subject: 'math',
-                                                difficulty: 'medium',
-                                                skill_tags: [],
-                                                explanation: '',
-                                                ...currentCandidate.normalized_json
+                                                text: nj.text || '',
+                                                passage: nj.passage || '',
+                                                options: safeOptions,
+                                                correct_answer: nj.correct_answer || 'A',
+                                                subject: nj.subject || 'math',
+                                                type: nj.type || 'multiple-choice',
+                                                skill_tags: Array.isArray(nj.skill_tags) ? nj.skill_tags : [],
+                                                explanation: nj.explanation || '',
+                                                module: nj.module || 'm1',
                                             });
                                             setIsEditing(true);
                                         }}

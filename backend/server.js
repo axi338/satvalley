@@ -948,57 +948,71 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
     // 1. Get candidate
     const { data: candidate, error: fetchError } = await supabase
       .from("import_candidates")
-      .select("*, import_jobs(destination_test_id)")
+      .select("*")
       .eq("id", id)
       .single();
 
-    if (fetchError) {
+    if (fetchError || !candidate) {
       log(`DEBUG: Candidate fetch error: ${JSON.stringify(fetchError)}`);
-      throw fetchError;
+      throw fetchError || new Error("Candidate not found");
     }
 
+    log(`DEBUG: Candidate found: ${candidate.id}, job_id: ${candidate.job_id}`);
+
+    // 2. Get the import job to find destination_test_id
+    let testId = null;
+    if (candidate.job_id) {
+      const { data: job, error: jobError } = await supabase
+        .from("import_jobs")
+        .select("destination_test_id")
+        .eq("id", candidate.job_id)
+        .single();
+
+      if (jobError) {
+        log(`DEBUG: Job fetch error: ${JSON.stringify(jobError)}`);
+      } else {
+        testId = job?.destination_test_id || null;
+      }
+    }
+    log(`DEBUG: destination_test_id = ${testId}`);
+
+    // 3. Build question data from editData or normalized_json
     const rawData = editData || candidate.normalized_json;
-    log(`DEBUG: rawData: ${JSON.stringify(rawData)}`);
+    if (!rawData) {
+      throw new Error("No question data available (normalized_json is empty)");
+    }
+    log(`DEBUG: rawData keys: ${Object.keys(rawData).join(', ')}`);
 
-    // Robust Normalization
-    const questionData = {
-      text: rawData.text || "No question text provided.",
-      passage: rawData.passage || null,
-      answer: String(rawData.correct_answer || "TBD"),
-      explanation: rawData.explanation || "",
-      subject: rawData.subject || "math",
-      difficulty: rawData.difficulty || "medium",
-      type: rawData.type || "multiple-choice",
-      tags: rawData.skill_tags || []
-    };
-
-    // Ensure options is an array or null
+    // Ensure options is an array
     let finalOptions = rawData.options;
     if (finalOptions && typeof finalOptions === 'object' && !Array.isArray(finalOptions)) {
       log("DEBUG: Converting options object to array");
       finalOptions = Object.values(finalOptions);
     }
-    questionData.options = finalOptions || (questionData.type === 'multiple-choice' ? ["", "", "", ""] : null);
+    if (!finalOptions || !Array.isArray(finalOptions)) {
+      finalOptions = rawData.type === 'spr' ? null : ["", "", "", ""];
+    }
 
-    log(`DEBUG: Normalized questionData for insert: ${JSON.stringify(questionData)}`);
+    // 4. Insert into questions table (only columns that exist in the schema)
+    const insertPayload = {
+      text: rawData.text || "No question text provided.",
+      passage: rawData.passage || null,
+      options: finalOptions,
+      answer: String(rawData.correct_answer || rawData.answer || "TBD"),
+      explanation: rawData.explanation || null,
+      subject: rawData.subject || "math",
+      type: rawData.type || "multiple-choice",
+      skill: Array.isArray(rawData.skill_tags) ? rawData.skill_tags.join(', ') : (rawData.skill || null),
+      test_id: testId,
+      module: rawData.module || 'm1',
+      image_url: rawData.image_url || rawData.imageUrl || null
+    };
 
-    // 2. Insert into questions table
-    const testId = candidate.import_jobs?.destination_test_id;
+    log(`DEBUG: Insert payload: ${JSON.stringify(insertPayload)}`);
 
     const { data: question, error: qError } = await supabase
       .from("questions")
-      .insert({
-        text: questionData.text,
-        passage: questionData.passage,
-        options: questionData.options,
-        answer: questionData.answer,
-        explanation: questionData.explanation,
-        subject: questionData.subject,
-        type: questionData.type,
-        skill: rawData.skill_tags ? rawData.skill_tags.join(', ') : null,
-        test_id: testId || null,
-        module: rawData.module || 'm1'
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
@@ -1007,20 +1021,19 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       throw qError;
     }
 
-    // 3. Link to test if destination_test_id exists
-    if (testId) {
-      // Get current max order
-      const { data: currentQuestions, error: orderError } = await supabase
+    log(`DEBUG: Question created: ${question.id}`);
+
+    // 5. Link to test via test_questions junction table
+    if (testId && question.id) {
+      const { data: maxOrderRows } = await supabase
         .from("test_questions")
         .select("order_index")
         .eq("test_id", testId)
         .order("order_index", { ascending: false })
         .limit(1);
 
-      if (orderError) log(`DEBUG: Order lookup error: ${JSON.stringify(orderError)}`);
-
-      const nextOrder = (currentQuestions?.[0]?.order_index ?? -1) + 1;
-      log(`DEBUG: Linking question ${question.id} to test ${testId} at index ${nextOrder}`);
+      const nextOrder = (maxOrderRows?.[0]?.order_index ?? -1) + 1;
+      log(`DEBUG: Linking question ${question.id} to test ${testId} at order_index ${nextOrder}`);
 
       const { error: linkError } = await supabase.from("test_questions").insert({
         test_id: testId,
@@ -1028,17 +1041,28 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
         order_index: nextOrder
       });
 
-      if (linkError) log(`DEBUG: Linking error: ${JSON.stringify(linkError)}`);
-      else log("DEBUG: Link successful.");
+      if (linkError) {
+        log(`DEBUG: test_questions link error: ${JSON.stringify(linkError)}`);
+        // Don't throw — question was created, just not linked
+      } else {
+        log("DEBUG: test_questions link successful.");
+      }
+    } else {
+      log(`DEBUG: No test linking — testId=${testId}, question.id=${question?.id}`);
     }
 
-    // 4. Update candidate status
-    await supabase.from("import_candidates").update({ status: 'approved' }).eq("id", id);
+    // 6. Update candidate status
+    const { error: updateErr } = await supabase
+      .from("import_candidates")
+      .update({ status: 'approved' })
+      .eq("id", id);
+
+    if (updateErr) log(`DEBUG: Candidate status update error: ${JSON.stringify(updateErr)}`);
 
     res.json({ success: true, questionId: question.id });
   } catch (err) {
     log(`DEBUG: Approval error: ${err.message}`);
-    log(`DEBUG: Approval error details: ${JSON.stringify(err, null, 2)}`);
+    log(`DEBUG: Approval error stack: ${err.stack}`);
     res.status(500).json({
       error: "approval_failed",
       message: err.message,
