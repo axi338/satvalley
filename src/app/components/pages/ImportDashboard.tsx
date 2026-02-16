@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Clock, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Clock, FileText, CheckCircle, AlertCircle, Loader2, Wrench, Link2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
 interface ImportJob {
     id: string;
@@ -19,6 +20,9 @@ interface ImportDashboardProps {
 export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
     const [jobs, setJobs] = useState<ImportJob[]>([]);
     const [loading, setLoading] = useState(true);
+    const [repairLoading, setRepairLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [bulkLoading, setBulkLoading] = useState<string | null>(null);
 
     useEffect(() => {
         fetchJobs();
@@ -36,17 +40,80 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
 
     const fetchJobs = async () => {
         try {
-            const { data, error } = await supabase
-                .from('import_jobs')
-                .select('*')
-                .order('created_at', { ascending: false });
+            // Use backend API instead of direct Supabase (RLS blocks anon key)
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch('/api/admin/import/jobs', {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
 
-            if (error) throw error;
-            setJobs(data || []);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || `Failed to fetch jobs (${response.status})`);
+            }
+
+            const result = await response.json();
+            setJobs(result.jobs || []);
         } catch (err) {
             console.error('Error fetching jobs:', err);
+            toast.error(`Failed to load jobs: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRepairLinks = async () => {
+        setRepairLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/admin/import/repair-links', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.message);
+            toast.success(result.message);
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setRepairLoading(false);
+        }
+    };
+
+    const handleBulkApprove = async (jobId: string) => {
+        setBulkLoading(jobId);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(`/api/admin/import/jobs/${jobId}/bulk-approve`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.message);
+            toast.success(result.message);
+            fetchJobs();
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setBulkLoading(null);
+        }
+    };
+
+    const handleResetApproved = async () => {
+        setResetLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/admin/import/reset-approved', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.message);
+            toast.success(result.message);
+            fetchJobs();
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setResetLoading(false);
         }
     };
 
@@ -178,6 +245,16 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
                                         {getStatusBadge(job.status)}
 
                                         <button
+                                            disabled={bulkLoading === job.id || job.status === 'failed'}
+                                            onClick={() => handleBulkApprove(job.id)}
+                                            className="px-4 py-2 rounded-xl font-bold text-sm bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/30 transition-all flex items-center gap-2"
+                                            title="Approve all candidates and insert as questions"
+                                        >
+                                            {bulkLoading === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                            Bulk Approve
+                                        </button>
+
+                                        <button
                                             disabled={job.status === 'failed'}
                                             onClick={() => onNavigate('admin-import-review', { jobId: job.id })}
                                             className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${job.status === 'review_required' || job.status === 'done'
@@ -224,6 +301,43 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
                     </AnimatePresence>
                 </div>
             )}
+
+            {/* Admin Tools */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-12 p-6 rounded-3xl bg-white/5 border border-white/10"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                    <Wrench className="w-5 h-5 text-indigo-400" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Repair Tools</h3>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                    <button
+                        disabled={repairLoading}
+                        onClick={handleRepairLinks}
+                        className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-left"
+                    >
+                        {repairLoading ? <Loader2 className="w-5 h-5 text-indigo-400 animate-spin shrink-0" /> : <Link2 className="w-5 h-5 text-indigo-400 shrink-0" />}
+                        <div>
+                            <p className="text-sm font-bold text-white">Sync Question Links</p>
+                            <p className="text-xs text-indigo-200/40 mt-0.5">Link existing questions to tests via test_questions table</p>
+                        </div>
+                    </button>
+                    <button
+                        disabled={resetLoading}
+                        onClick={handleResetApproved}
+                        className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all text-left"
+                    >
+                        {resetLoading ? <Loader2 className="w-5 h-5 text-amber-400 animate-spin shrink-0" /> : <RotateCcw className="w-5 h-5 text-amber-400 shrink-0" />}
+                        <div>
+                            <p className="text-sm font-bold text-white">Reset Approved Candidates</p>
+                            <p className="text-xs text-amber-200/40 mt-0.5">Reset all approved candidates back to review for re-approval</p>
+                        </div>
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 };

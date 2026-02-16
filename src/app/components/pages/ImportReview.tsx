@@ -30,23 +30,29 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
 
     const fetchCandidates = async () => {
         try {
-            const { data, error } = await supabase
-                .from('import_candidates')
-                .select('*')
-                .eq('job_id', jobId)
-                .order('created_at', { ascending: true });
+            // Use backend API instead of direct Supabase (RLS blocks anon key)
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`/api/admin/import/jobs/${jobId}/candidates`, {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
 
-            if (error) throw error;
-            setCandidates(data || []);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || `Failed to fetch candidates (${response.status})`);
+            }
+
+            const result = await response.json();
+            const data = result.candidates || [];
+            setCandidates(data);
 
             // Find first pending review
-            const firstPending = data?.findIndex(c => c.status === 'review_required');
-            if (firstPending !== -1 && firstPending !== undefined) {
+            const firstPending = data.findIndex((c: Candidate) => c.status === 'review_required');
+            if (firstPending !== -1) {
                 setCurrentIndex(firstPending);
             }
         } catch (err) {
             console.error('Error fetching candidates:', err);
-            toast.error('Failed to load candidates');
+            toast.error(`Failed to load candidates: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
         }
@@ -56,6 +62,12 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
     const total = candidates.length;
     const approvedCount = candidates.filter(c => c.status === 'approved').length;
     const progress = total > 0 ? (approvedCount / total) * 100 : 0;
+
+    // Reset edit state when switching candidates
+    useEffect(() => {
+        setIsEditing(false);
+        setEditData(null);
+    }, [currentIndex]);
 
     const handleApprove = async () => {
         if (!currentCandidate) return;
@@ -270,7 +282,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                             </div>
 
                             <div className="p-8 rounded-[2rem] bg-white/5 border border-white/10 space-y-8">
-                                {isEditing ? (
+                                {isEditing && editData ? (
                                     <div className="space-y-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Question Stem</label>

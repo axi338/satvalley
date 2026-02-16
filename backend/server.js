@@ -255,6 +255,22 @@ app.get("/api/questions", async (req, res) => {
         .map(link => link.questions)
         .filter(q => q !== null);
 
+      // Fallback: if no test_questions links exist, check questions table directly
+      // This handles questions created before test_questions junction was properly used
+      if (questions.length === 0) {
+        log(`DEBUG: No test_questions links found for test ${testId}, falling back to questions.test_id`);
+        let fallbackQuery = supabase.from("questions").select("*").eq("test_id", testId);
+        if (module && module !== "undefined" && module !== "") {
+          fallbackQuery = fallbackQuery.eq("module", module);
+        }
+        if (subject && subject !== "undefined" && subject !== "") {
+          fallbackQuery = fallbackQuery.eq("subject", subject);
+        }
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery.order("created_at", { ascending: true });
+        if (fallbackError) throw fallbackError;
+        return res.json({ questions: fallbackData || [] });
+      }
+
       // Apply additional filters if provided
       if (module && module !== "undefined" && module !== "") {
         questions = questions.filter(q => q.module === module);
@@ -1083,6 +1099,237 @@ app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
   }
 });
 
+// Repair endpoint: Sync test_questions from questions that have test_id but no junction entry
+app.post("/api/admin/import/repair-links", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+
+    // Find all questions that have a test_id but no test_questions entry
+    const { data: questions, error: qErr } = await supabase
+      .from("questions")
+      .select("id, test_id")
+      .not("test_id", "is", null);
+
+    if (qErr) throw qErr;
+
+    if (!questions || questions.length === 0) {
+      return res.json({ success: true, message: "No questions with test_id found", linked: 0 });
+    }
+
+    // Get existing test_questions links
+    const { data: existingLinks } = await supabase
+      .from("test_questions")
+      .select("question_id");
+
+    const linkedIds = new Set((existingLinks || []).map(l => l.question_id));
+    const unlinked = questions.filter(q => !linkedIds.has(q.id));
+
+    if (unlinked.length === 0) {
+      return res.json({ success: true, message: "All questions already linked", linked: 0 });
+    }
+
+    // Group by test_id to assign order_index properly
+    const byTest = {};
+    for (const q of unlinked) {
+      if (!byTest[q.test_id]) byTest[q.test_id] = [];
+      byTest[q.test_id].push(q.id);
+    }
+
+    let totalLinked = 0;
+    for (const [testId, questionIds] of Object.entries(byTest)) {
+      // Get current max order_index for this test
+      const { data: maxRows } = await supabase
+        .from("test_questions")
+        .select("order_index")
+        .eq("test_id", testId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+
+      let nextOrder = (maxRows?.[0]?.order_index ?? -1) + 1;
+
+      const inserts = questionIds.map((qId) => ({
+        test_id: testId,
+        question_id: qId,
+        order_index: nextOrder++
+      }));
+
+      const { error: insertErr } = await supabase.from("test_questions").insert(inserts);
+      if (insertErr) {
+        log(`DEBUG: Repair link error for test ${testId}: ${JSON.stringify(insertErr)}`);
+      } else {
+        totalLinked += inserts.length;
+      }
+    }
+
+    log(`DEBUG: Repair complete. Linked ${totalLinked} questions to tests.`);
+    res.json({ success: true, linked: totalLinked, message: `Linked ${totalLinked} questions to their tests` });
+  } catch (err) {
+    log(`DEBUG: Repair error: ${err.message}`);
+    res.status(500).json({ error: "repair_failed", message: err.message });
+  }
+});
+
+// Reset approved candidates so they can be re-approved with fixed code
+app.post("/api/admin/import/reset-approved", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+
+    const { data: approved, error: fetchErr } = await supabase
+      .from("import_candidates")
+      .select("id")
+      .eq("status", "approved");
+
+    if (fetchErr) throw fetchErr;
+
+    if (!approved || approved.length === 0) {
+      return res.json({ success: true, message: "No approved candidates to reset", reset: 0 });
+    }
+
+    const { error: updateErr } = await supabase
+      .from("import_candidates")
+      .update({ status: "review_required" })
+      .eq("status", "approved");
+
+    if (updateErr) throw updateErr;
+
+    log(`DEBUG: Reset ${approved.length} approved candidates to review_required`);
+    res.json({ success: true, reset: approved.length, message: `Reset ${approved.length} candidates for re-review` });
+  } catch (err) {
+    log(`DEBUG: Reset error: ${err.message}`);
+    res.status(500).json({ error: "reset_failed", message: err.message });
+  }
+});
+
+// Bulk approve: Takes ALL review_required candidates for a job and inserts them as questions
+app.post("/api/admin/import/jobs/:id/bulk-approve", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+
+    // 1. Get the job to find destination_test_id
+    const { data: job, error: jobErr } = await supabase
+      .from("import_jobs")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (jobErr || !job) {
+      return res.status(404).json({ error: "Job not found", details: jobErr?.message });
+    }
+
+    const testId = job.destination_test_id;
+    log(`DEBUG BULK: Job ${id}, testId=${testId}`);
+
+    // 2. Get all candidates with normalized_json
+    const { data: candidates, error: candErr } = await supabase
+      .from("import_candidates")
+      .select("*")
+      .eq("job_id", id)
+      .in("status", ["review_required", "approved"])
+      .order("created_at", { ascending: true });
+
+    if (candErr) {
+      return res.status(500).json({ error: "Failed to fetch candidates", details: candErr.message });
+    }
+
+    if (!candidates || candidates.length === 0) {
+      return res.json({ success: true, inserted: 0, message: "No candidates found to approve" });
+    }
+
+    log(`DEBUG BULK: Found ${candidates.length} candidates`);
+
+    // 3. Get current max order_index for test_questions
+    let nextOrder = 0;
+    if (testId) {
+      const { data: maxRows } = await supabase
+        .from("test_questions")
+        .select("order_index")
+        .eq("test_id", testId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+      nextOrder = (maxRows?.[0]?.order_index ?? -1) + 1;
+    }
+
+    // 4. Insert each candidate as a question
+    let inserted = 0;
+    const errors = [];
+
+    for (const candidate of candidates) {
+      const rawData = candidate.normalized_json;
+      if (!rawData || !rawData.text) {
+        errors.push({ id: candidate.id, error: "No normalized_json or text" });
+        continue;
+      }
+
+      // Build options
+      let finalOptions = rawData.options;
+      if (finalOptions && typeof finalOptions === 'object' && !Array.isArray(finalOptions)) {
+        finalOptions = Object.values(finalOptions);
+      }
+      if (!finalOptions || !Array.isArray(finalOptions)) {
+        finalOptions = rawData.type === 'spr' ? null : ["", "", "", ""];
+      }
+
+      const insertPayload = {
+        text: rawData.text,
+        passage: rawData.passage || null,
+        options: finalOptions,
+        answer: String(rawData.correct_answer || rawData.answer || "A"),
+        explanation: rawData.explanation || null,
+        subject: rawData.subject || "math",
+        type: rawData.type || "multiple-choice",
+        skill: Array.isArray(rawData.skill_tags) ? rawData.skill_tags.join(', ') : (rawData.skill || null),
+        test_id: testId,
+        module: rawData.module || 'm1',
+        image_url: rawData.image_url || rawData.imageUrl || null
+      };
+
+      // Insert question
+      const { data: question, error: qError } = await supabase
+        .from("questions")
+        .insert(insertPayload)
+        .select()
+        .single();
+
+      if (qError) {
+        log(`DEBUG BULK: Question insert error for candidate ${candidate.id}: ${JSON.stringify(qError)}`);
+        errors.push({ id: candidate.id, error: qError.message });
+        continue;
+      }
+
+      // Link to test
+      if (testId && question.id) {
+        const { error: linkError } = await supabase.from("test_questions").insert({
+          test_id: testId,
+          question_id: question.id,
+          order_index: nextOrder++
+        });
+        if (linkError) {
+          log(`DEBUG BULK: Link error for question ${question.id}: ${JSON.stringify(linkError)}`);
+        }
+      }
+
+      // Mark candidate as approved
+      await supabase.from("import_candidates")
+        .update({ status: 'approved' })
+        .eq("id", candidate.id);
+
+      inserted++;
+    }
+
+    log(`DEBUG BULK: Done. Inserted ${inserted}/${candidates.length} questions. Errors: ${errors.length}`);
+    res.json({
+      success: true,
+      inserted,
+      total: candidates.length,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Inserted ${inserted} of ${candidates.length} questions${errors.length > 0 ? ` (${errors.length} errors)` : ''}`
+    });
+  } catch (err) {
+    log(`DEBUG BULK: Error: ${err.message}`);
+    res.status(500).json({ error: "bulk_approve_failed", message: err.message });
+  }
+});
 
 app.get("/api/content", async (_req, res) => {
   try {
