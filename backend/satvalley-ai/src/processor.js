@@ -171,12 +171,12 @@ ${rawText}
 
 SCHEMA:
 {
-  "text": "The question stem. If there is a graph/table described in the raw text, include that description here.",
-  "passage": "Any reading passage or detailed description of a graph/table/image associated with the question (null if none)",
-  "type": "multiple-choice or spr (spr is for math questions without options)",
+  "text": "The core question stem (e.g., 'What is the value of x?'). DO NOT include UI labels like 'Mark for Review', question numbers, or page markers.",
+  "passage": "The reading passage for the question. If there is a graph/table, include a brief description here. EXCLUDE all UI noise and page numbers.",
+  "type": "multiple-choice or spr",
   "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correct_answer": "The correct option (A, B, C, D) or the numeric value for SPR",
-  "explanation": "Brief explanation of the answer",
+  "correct_answer": "A, B, C, D or numeric value",
+  "explanation": "Brief explanation",
   "subject": "math or rw",
   "difficulty": "easy, medium, hard",
   "skill_tags": ["tag1", "tag2"],
@@ -189,8 +189,12 @@ RULES:
 3. Ensure "subject" is lowercase.
 4. If it is a math question without options, set "type" to "spr" and "options" to null.
 5. If options are not clearly labeled, infer them from the text and set "type" to "multiple-choice".
-6. CLEANING: Remove any occurrences of "Mark for Review", "Question X of Y", "Directions", or page numbers from the extracted text.
-7. TABLES & FIGURES: Because images are provided separately, do not include long textual transcriptions of tables or complex figures in the "passage" or "text" fields. Focus on the actual question stem and core passage text.
+6. STOP WORDS: You MUST strip the following from the output:
+   - "X Mark for Review" (where X is any number)
+   - "[Page: X]" or "Page X of Y"
+   - Any "Directions" headings
+   - Any random OCR artifacts or page footer/header text
+7. TABLES & FIGURES: Do not transcribe tables in full. Simply note "Table with [summary]" and focus on the question.
 8. EXTRACT the [bbox: ...] tag from raw text and put it in the "bbox" field as an array of integers.
 9. DETERMINE SUBJECT:
    - If the question involves calculation, algebra, geometry, or data analysis -> "math"
