@@ -29,6 +29,7 @@ import { FullscreenInterstitial } from '../FullscreenInterstitial';
 import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { DesmosPanel, type DesmosPanelRef } from '../ui/DesmosPanel';
 
 // --- Types ---
 interface TestSessionPageProps {
@@ -66,86 +67,7 @@ interface TestState {
     timeLeft: number;
 }
 
-// Draggable Calculator Component
-const DraggableCalculator = ({ onClose }: { onClose: () => void }) => {
-    const [position, setPosition] = useState({ x: 80, y: 80 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-    const panelRef = useRef<HTMLDivElement>(null);
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (panelRef.current) {
-            const rect = panelRef.current.getBoundingClientRect();
-            setDragOffset({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            });
-            setIsDragging(true);
-        }
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging) {
-                setPosition({
-                    x: Math.max(0, e.clientX - dragOffset.x),
-                    y: Math.max(0, e.clientY - dragOffset.y)
-                });
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, dragOffset]);
-
-    return (
-        <div
-            ref={panelRef}
-            className="fixed w-[650px] h-[450px] bg-white rounded-xl shadow-2xl border border-slate-300 z-[60] flex flex-col overflow-hidden allow-anticheat-focus"
-            style={{
-                left: position.x,
-                top: position.y,
-                minWidth: '400px',
-                minHeight: '350px'
-            }}
-        >
-            <div
-                className="h-10 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 cursor-move select-none"
-                onMouseDown={handleMouseDown}
-            >
-                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Calculator className="w-4 h-4" />
-                    Desmos Graphing Calculator
-                </span>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={onClose}
-                        className="hover:bg-slate-700 rounded p-1 transition-colors"
-                    >
-                        <X className="w-4 h-4 text-white" />
-                    </button>
-                </div>
-            </div>
-            <iframe
-                src="https://www.desmos.com/testing/collegeboard/graphing"
-                className="flex-1 w-full h-full border-none bg-white"
-                title="Desmos Calculator"
-                allow="clipboard-read; clipboard-write"
-            />
-        </div>
-    );
-};
+// NOTE: Old DraggableCalculator component removed - replaced with DesmosPanel component in ui folder
 
 // Draggable Reference Component
 const DraggableReference = ({ onClose }: { onClose: () => void }) => {
@@ -778,11 +700,13 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const [isStrikethroughActive, setIsStrikethroughActive] = useState(false);
     const [activeHighlightColor, setActiveHighlightColor] = useState<'yellow' | 'blue' | 'pink'>('yellow');
     const [showDirections, setShowDirections] = useState(false);
-    const [showCalculator, setShowCalculator] = useState(false);
     const [showReference, setShowReference] = useState(false);
     const [showNavModal, setShowNavModal] = useState(false);
     const [testDenoms, setTestDenoms] = useState({ math: 22, rw: 27 });
     const [olympiadProfile, setOlympiadProfile] = useState<{ full_name?: string; phone?: string } | null>(null);
+
+    // Desmos calculator ref
+    const calculatorRef = useRef<DesmosPanelRef>(null);
 
     useEffect(() => {
         (window as any).nextHighlightColor = activeHighlightColor;
@@ -909,8 +833,11 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 const currentTest = data.tests?.find((t: any) => t.id === testId);
 
                 if (currentTest) {
-                    const hasMath = currentTest.sections?.some((s: string) => s.includes('math'));
-                    const hasRW = currentTest.sections?.some((s: string) => s.includes('reading') || s.includes('writing') || s.includes('rw'));
+                    const hasMath = currentTest.sections?.some((s: string) => s.toLowerCase().includes('math'));
+                    const hasRW = currentTest.sections?.some((s: string) => {
+                        const lower = s.toLowerCase();
+                        return lower.includes('reading') || lower.includes('writing') || lower.includes('rw');
+                    });
 
                     // Set denominators from admin config
                     setTestDenoms({
@@ -1259,7 +1186,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
 
                     {stage.startsWith('math') && (
                         <>
-                            <button onClick={() => setShowCalculator(!showCalculator)} className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"><Calculator className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Calculator</span></button>
+                            <button onClick={() => calculatorRef.current?.toggle()} className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"><Calculator className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Calculator</span></button>
                             <button onClick={() => setShowReference(!showReference)} className="p-2 rounded hover:bg-white/10 flex flex-col items-center gap-0.5 text-slate-300"><FileText className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Reference</span></button>
                         </>
                     )}
@@ -1285,8 +1212,9 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 </div>
             )}
 
-            {showCalculator && (
-                <DraggableCalculator onClose={() => setShowCalculator(false)} />
+            {/* Desmos Calculator Panel - only shown in Math sections */}
+            {stage.startsWith('math') && (
+                <DesmosPanel ref={calculatorRef} />
             )}
 
             {showReference && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Check, X, Edit3, ChevronRight, ChevronLeft, Loader2, Sparkles, Save } from 'lucide-react';
+import { ArrowLeft, Check, X, Edit3, ChevronRight, ChevronLeft, Loader2, Sparkles, Save, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const [jobInfo, setJobInfo] = useState<any>(null);
 
     useEffect(() => {
         fetchCandidates();
@@ -32,12 +33,20 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
         try {
             const { data, error } = await supabase
                 .from('import_candidates')
-                .select('*')
+                .select(`
+                    *,
+                    import_jobs(id, filename, destination_test_id, config)
+                `)
                 .eq('job_id', jobId)
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
             setCandidates(data || []);
+
+            // Store job info for later use
+            if (data && data.length > 0) {
+                setJobInfo(data[0].import_jobs);
+            }
 
             // Find first pending review
             const firstPending = data?.findIndex(c => c.status === 'review_required');
@@ -111,6 +120,37 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
             setCurrentIndex(currentIndex + 1);
         } catch (err) {
             toast.error('Failed to reject');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const file = e.target.files[0];
+
+        try {
+            setActionLoading(true);
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed');
+
+            const data = await response.json();
+            setEditData({ ...editData, image_url: data.url });
+            toast.success('Image uploaded successfully');
+        } catch (err) {
+            console.error('Image upload error:', err);
+            toast.error('Failed to upload image');
         } finally {
             setActionLoading(false);
         }
@@ -215,12 +255,21 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                         </div>
 
                         <div className="flex flex-col sm:flex-row items-center gap-4">
+                            {jobInfo?.destination_test_id && approvedCount > 0 && (
+                                <button
+                                    onClick={() => onNavigate('test-session', { testId: jobInfo.destination_test_id })}
+                                    className="px-10 py-4 bg-emerald-600 rounded-2xl text-white font-black uppercase tracking-widest hover:bg-emerald-500 shadow-[0_20px_40px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto flex items-center gap-3"
+                                >
+                                    <Check className="w-5 h-5" />
+                                    View in Practice Test
+                                </button>
+                            )}
                             <button
                                 onClick={() => onNavigate('admin-import')}
                                 className="px-10 py-4 bg-indigo-600 rounded-2xl text-white font-black uppercase tracking-widest hover:bg-indigo-500 shadow-[0_20px_40px_rgba(79,70,223,0.3)] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto flex items-center gap-3"
                             >
                                 <Check className="w-5 h-5" />
-                                Finish & Return to Dashboard
+                                Return to Dashboard
                             </button>
                             <button
                                 onClick={() => onNavigate('admin-import-new')}
@@ -329,6 +378,59 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                 </select>
                                             </div>
                                         </div>
+
+
+                                        {/* Image Upload Section */}
+                                        <div className="space-y-4 pt-4 border-t border-white/10">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Question Image</label>
+                                                {editData.image_url && (
+                                                    <button
+                                                        onClick={() => setEditData({ ...editData, image_url: null })}
+                                                        className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" /> Remove
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {editData.image_url ? (
+                                                <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-black/20">
+                                                    <img
+                                                        src={editData.image_url}
+                                                        alt="Question"
+                                                        className="w-full max-h-64 object-contain"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button
+                                                            onClick={() => document.getElementById('image-upload')?.click()}
+                                                            className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-bold backdrop-blur-sm transition-all"
+                                                        >
+                                                            Change Image
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => document.getElementById('image-upload')?.click()}
+                                                    className="w-full h-32 rounded-xl bg-white/5 border-2 border-dashed border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all flex flex-col items-center justify-center gap-2 group"
+                                                >
+                                                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                                                        <ImageIcon className="w-5 h-5" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-indigo-200/60 group-hover:text-indigo-300">
+                                                        Click to upload image
+                                                    </span>
+                                                </button>
+                                            )}
+                                            <input
+                                                id="image-upload"
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                            />
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-8">
@@ -385,6 +487,8 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                 difficulty: 'medium',
                                                 skill_tags: [],
                                                 explanation: '',
+                                                image_url: null,
+                                                option_images: [],
                                                 ...currentCandidate.normalized_json
                                             });
                                             setIsEditing(true);
@@ -452,8 +556,9 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                             </div>
                         </motion.div>
                     </div>
-                )}
-            </div>
-        </div>
+                )
+                }
+            </div >
+        </div >
     );
 };

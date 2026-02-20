@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Clock, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Clock, FileText, CheckCircle, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 
@@ -14,7 +14,7 @@ interface ImportJob {
 
 interface ImportDashboardProps {
     onNavigate: (page: string, params?: any) => void;
-}
+}   
 
 export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
     const [jobs, setJobs] = useState<ImportJob[]>([]);
@@ -45,6 +45,27 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
             setJobs(data || []);
         } catch (err) {
             console.error('Error fetching jobs:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteJob = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this import job?')) return;
+
+        try {
+            setLoading(true);
+            // 1. Delete candidates
+            await supabase.from('import_candidates').delete().eq('job_id', id);
+            // 2. Delete job
+            const { error } = await supabase.from('import_jobs').delete().eq('id', id);
+            if (error) throw error;
+
+            setJobs(prev => prev.filter(job => job.id !== id));
+        } catch (err) {
+            console.error('Error deleting job:', err);
+            alert('Failed to delete job');
         } finally {
             setLoading(false);
         }
@@ -177,39 +198,56 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
                                     <div className="flex items-center gap-4 w-full md:w-auto shrink-0">
                                         {getStatusBadge(job.status)}
 
-                                        <button
-                                            disabled={job.status === 'failed'}
-                                            onClick={() => onNavigate('admin-import-review', { jobId: job.id })}
-                                            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${job.status === 'review_required' || job.status === 'done'
-                                                ? 'bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)] hover:scale-105 active:scale-95'
-                                                : 'bg-white/5 text-white/20 cursor-not-allowed'
-                                                }`}
-                                        >
-                                            {job.status === 'done' ? 'View' : 'Review'}
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                disabled={job.status === 'publishing' || job.status === 'normalizing'}
+                                                onClick={(e) => handleDeleteJob(e, job.id)}
+                                                className="p-2 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500/20 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
+                                                title="Delete Import"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+
+                                            <button
+                                                disabled={job.status === 'failed'}
+                                                onClick={() => onNavigate('admin-import-review', { jobId: job.id })}
+                                                className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${job.status === 'review_required' || job.status === 'done'
+                                                    ? 'bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.2)] hover:scale-105 active:scale-95'
+                                                    : 'bg-white/5 text-white/20 cursor-not-allowed'
+                                                    }`}
+                                            >
+                                                {job.status === 'done' ? 'View' : 'Review'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
+                                {(job.status === 'normalizing' || job.status === 'candidate_split') && (
                                     <div className="mt-6 space-y-3">
                                         <div className="flex justify-between items-center text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                                Processing Candidates...
+                                                {job.config?.progress_message || (job.status === 'candidate_split' ? 'Analyzing PDF...' : 'Processing Candidates...')}
                                             </div>
-                                            <span>{Math.round((job.config.processed_candidates / job.config.total_candidates) * 100)}%</span>
+                                            {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
+                                                <span>{Math.round((job.config.processed_candidates / job.config.total_candidates) * 100)}%</span>
+                                            )}
                                         </div>
-                                        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                                            <motion.div
-                                                className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${(job.config.processed_candidates / job.config.total_candidates) * 100}%` }}
-                                                transition={{ duration: 0.5 }}
-                                            />
-                                        </div>
-                                        <p className="text-[9px] text-indigo-200/30 font-bold text-center italic tracking-wider">
-                                            {job.config.processed_candidates} of {job.config.total_candidates} candidates normalized
-                                        </p>
+                                        {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
+                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                                <motion.div
+                                                    className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${(job.config.processed_candidates / job.config.total_candidates) * 100}%` }}
+                                                    transition={{ duration: 0.5 }}
+                                                />
+                                            </div>
+                                        )}
+                                        {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
+                                            <p className="text-[9px] text-indigo-200/30 font-bold text-center italic tracking-wider">
+                                                {job.config.processed_candidates} of {job.config.total_candidates} candidates normalized
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 

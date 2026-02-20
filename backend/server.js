@@ -8,12 +8,16 @@ import path from "path";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
-import { normalizeQuestion, processPdfCandidates } from "./satvalley-ai/src/processor.js";
-// import { v4 as uuidv4 } from 'uuid';
-// import sharp from 'sharp';
-// import pdfImgConvert from 'pdf-img-convert';
+import { fileURLToPath } from 'url';
+import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
+import { v4 as uuidv4 } from 'uuid';
+// import sharp from 'sharp';
+// import pdfImgConvert from 'pdf-img-convert';
 
 // Global Crash Logger
 const logCrash = (type, err) => {
@@ -95,7 +99,59 @@ const verifyAdmin = async (req) => {
   if (isAdmin) {
     return user;
   }
+  console.warn(`WARN: Admin access denied for ${email}. Checked against allowList: [${allowList.join(", ")}]`);
   throw Object.assign(new Error("Not an admin"), { status: 403 });
+};
+
+// Helper: Recalculate and update test metadata (counts and sections)
+const recalculateTestCounts = async (testId) => {
+  if (!testId) return;
+  try {
+    // 1. Get all linked questions
+    const { data: linkedQuestions, error: linkError } = await supabase
+      .from("test_questions")
+      .select(`
+        questions (
+          subject
+        )
+      `)
+      .eq("test_id", testId);
+
+    if (linkError) {
+      console.error(`Error fetching linked questions for layout update:`, linkError);
+      return;
+    }
+
+    const questions = linkedQuestions
+      .map(l => l.questions)
+      .filter(q => q);
+
+    const mathCount = questions.filter(q => q.subject === 'math').length;
+    // Count 'rw', 'reading', 'writing' as RW
+    const rwCount = questions.filter(q => ['reading', 'writing', 'rw'].includes(q.subject)).length;
+
+    // 2. Construct sections
+    const newSections = [];
+    if (mathCount > 0) newSections.push(`Math: ${mathCount}Q`);
+    if (rwCount > 0) newSections.push(`Reading & Writing: ${rwCount}Q`);
+    if (newSections.length === 0) newSections.push('Empty: 0Q');
+
+    // 3. Update test
+    await supabase
+      .from("tests")
+      .update({
+        sections: newSections,
+        mathq: String(mathCount),
+        readingq: String(rwCount),
+        writingq: "0",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", testId);
+
+    console.log(`Updated test ${testId} metadata: Math=${mathCount}, RW=${rwCount}`);
+  } catch (err) {
+    console.error(`Failed to recalculate test counts:`, err);
+  }
 };
 
 app.get("/listUsers", async (req, res) => {
@@ -257,7 +313,11 @@ app.get("/api/questions", async (req, res) => {
 
       // Apply additional filters if provided
       if (module && module !== "undefined" && module !== "") {
-        questions = questions.filter(q => q.module === module);
+        questions = questions.filter(q => {
+          // Allow 'm2' questions to show up for 'm2-easy' or 'm2-hard' requests
+          if (module.startsWith('m2') && q.module === 'm2') return true;
+          return q.module === module;
+        });
       }
       if (subject && subject !== "undefined" && subject !== "") {
         questions = questions.filter(q => q.subject === subject);
@@ -795,12 +855,86 @@ app.delete("/api/results/:id", async (req, res) => {
 
 // --- SAT IMPORT PIPELINE ENDPOINTS ---
 
+// Get question counts per module for a specific test
+app.get("/api/admin/tests/:testId/module-counts", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { testId } = req.params;
+
+    // Get all questions for this test with their modules and subjects
+    const { data: questions, error } = await supabase
+      .from("test_questions")
+      .select("question_id, questions(module, subject)")
+      .eq("test_id", testId);
+
+    if (error) throw error;
+
+    // Count questions by module and subject
+    const counts = {
+      m1_math: 0,
+      m2_math: 0,
+      m1_rw: 0,
+      m2_rw: 0
+    };
+
+    questions?.forEach(tq => {
+      const q = tq.questions;
+      if (!q) return;
+
+      const module = q.module || 'm1';
+      const subject = q.subject || 'math';
+      const key = `${module}_${subject}`;
+
+      if (counts.hasOwnProperty(key)) {
+        counts[key]++;
+      }
+    });
+
+    res.json({ counts });
+  } catch (err) {
+    res.status(500).json({ error: "fetch_module_counts_failed", message: err.message });
+  }
+});
+
 app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => {
   try {
     const user = await verifyAdmin(req);
     if (!req.file) return res.status(400).json({ error: "no_file" });
 
-    const { testId, testType } = req.body;
+    const { testId, testType, subject, module } = req.body;
+
+    // Validate subject and module if provided
+    if (testId && (!subject || !module)) {
+      return res.status(400).json({
+        error: "missing_module_info",
+        message: "Subject and module are required when uploading to a specific test"
+      });
+    }
+
+    // If uploading to a test, check question limits
+    if (testId && subject && module) {
+      const { data: questions } = await supabase
+        .from("test_questions")
+        .select("question_id, questions(module, subject)")
+        .eq("test_id", testId);
+
+      const key = `${module}_${subject}`;
+      const currentCount = questions?.filter(tq => {
+        const q = tq.questions;
+        return q && q.module === module && q.subject === subject;
+      }).length || 0;
+
+      const limit = subject === 'math' ? 22 : 27;
+
+      if (currentCount >= limit) {
+        return res.status(400).json({
+          error: "module_full",
+          message: `This module already has ${currentCount}/${limit} questions. Cannot add more.`,
+          currentCount,
+          limit
+        });
+      }
+    }
 
     // 1. Create Import Job
     const { data: job, error: jobError } = await supabase
@@ -810,7 +944,11 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
         filename: req.file.originalname,
         status: 'extracting',
         destination_test_id: testId || null,
-        config: { testType: testType || 'sat-math' }
+        config: {
+          testType: testType || 'sat-math',
+          subject: subject || null,
+          module: module || null
+        }
       })
       .select()
       .single();
@@ -822,99 +960,84 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
 
     // 3. Background process (Direct PDF -> Multimodal AI)
     (async () => {
+      const reportProgress = async (status, configUpdates = {}) => {
+        try {
+          const { data: currentJob } = await supabase
+            .from("import_jobs")
+            .select("config")
+            .eq("id", job.id)
+            .single();
+
+          await supabase
+            .from("import_jobs")
+            .update({
+              status,
+              config: { ...(currentJob?.config || {}), ...configUpdates }
+            })
+            .eq("id", job.id);
+        } catch (e) {
+          console.error("Failed to report progress:", e);
+        }
+      };
+
       try {
-        await supabase.from("import_jobs").update({ status: 'candidate_split' }).eq("id", job.id);
+        await reportProgress('candidate_split', { progress_message: 'Starting PDF analysis...' });
 
         // We now pass the buffer directly to Gemini 1.5 Flash
         // It handles PDF parsing and image extraction natively
-        const candidates = await processPdfCandidates(req.file.buffer, req.file.mimetype);
+        const candidates = await splitTextToCandidates(
+          req.file.buffer,
+          req.file.mimetype,
+          (msg) => reportProgress('candidate_split', { progress_message: msg })
+        );
 
-        await supabase.from("import_jobs").update({
-          status: 'normalizing',
-          total_questions: candidates.length,
-          processed_questions: 0
-        }).eq("id", job.id);
+        if (!candidates || candidates.length === 0) {
+          throw new Error("No SAT questions were detected in this PDF. Please ensure the file is readable and contains text.");
+        }
+
+        await reportProgress('normalizing', {
+          total_candidates: candidates.length,
+          processed_candidates: 0,
+          progress_message: `Extracted ${candidates.length} candidates. Starting normalization...`
+        });
 
         let successCount = 0;
-        const results = [];
-
-        // Pre-convert PDF to images (Optionally optimization: do this once per page if we track page numbers)
-        // For now, simpler to do on demand or just load the doc once.
-        // Actually processing PDF to images is heavy. 
-        // Let's assume Gemini returns the result. But Gemini doesn't return page numbers reliably unless asked.
-        // Simplification: We will only support cropping if we know the page number. 
-        // Wait, the current prompt doesn't ask for Page Number. 
-        // Let's update the prompt in processor.js? No, let's just try to match text?
-        // Actually, without page number, we can't crop from the correct page.
-        // Gemini 1.5 Flash *can* return page numbers. 
-
-        // Let's skip complex cropping for this iteration and just save the bbox for now? 
-        // No, user wants IMAGES. 
-
-        // REVISION: We need page numbers. 
-        // Updated plan inside this tool call: I will assume the prompt *will* return Page Number if I add it to the prompt later.
-        // But for now, let's implement the logic assuming we can get the image.
-
-        // ALTERNATIVE: Use the image directly if Gemini could return it (it can't).
-
-        // CRITICAL FIX: I need to update processor.js to ask for PAGE NUMBER too.
-        // for now, let's implement the loop and logic.
 
         for (const candidateText of candidates) {
           try {
-            const normalized = await normalizeQuestion(candidateText);
+            const normalized = await normalizeQuestion(
+              candidateText,
+              (msg) => reportProgress('normalizing', { progress_message: `Candidate ${successCount + 1}/${candidates.length}: ${msg}` })
+            );
 
-            /* IMAGE EXTRACTION DISABLED DUE TO MISSING PREQUISITES ON SERVER
-            let imageUrl = null;
-            if (normalized.bbox && Array.isArray(normalized.bbox) && normalized.bbox.length === 4) {
-                 // Logic removed to prevent crash
-            }
-            */
             let imageUrl = null;
 
-            const { data: qData, error: qError } = await supabase
-              .from("questions")
-              .insert({
-                text: normalized.text,
-                answer: normalized.correct_answer,
-                test_id: job.destination_test_id || null,
-                passage: normalized.passage || null,
-                image_url: imageUrl || normalized.imageUrl || null, // Use extracted image or one from AI
-                options: normalized.options || [],
-                type: normalized.type || 'multiple-choice',
-                module: 'm1', // Default
-                // Prioritize AI detection. If AI says 'math' or 'rw', use it. Fallback to job config.
-                subject: (normalized.subject && ['math', 'rw'].includes(normalized.subject.toLowerCase()))
-                  ? normalized.subject.toLowerCase()
-                  : (job.config?.testType === 'sat-math' ? 'math' : 'rw'),
-                data_source: `import_job:${job.id}`
-              })
-              .select()
-              .single();
-
-            if (qError || !qData) {
-              console.error("Failed to insert question:", qError);
-              continue; // Skip this candidate if we couldn't create the question
-            }
-
-            await supabase.from("import_candidates").insert({
+            // 3. Save to import_candidates ONLY (User will approve/publish later in ImportReview)
+            const { error: candidateError } = await supabase.from("import_candidates").insert({
               job_id: job.id,
               raw_text: candidateText,
               normalized_json: normalized,
-              status: 'review_required',
-              question_id: qData.id // Link to the newly created question
+              status: 'review_required'
             });
 
-            successCount++;
-            await supabase.from("import_jobs").update({
-              processed_questions: successCount
-            }).eq("id", job.id);
+            if (candidateError) {
+              console.error("Failed to insert candidate to database:", candidateError);
+              // logAiActivity("ERROR", "DB_INSERT_CANDIDATE", `Job ${job.id} | Error: ${JSON.stringify(candidateError)}`); // This function is not defined
+            } else {
+              successCount++;
+            }
+
+            await reportProgress('normalizing', {
+              processed_candidates: successCount,
+              progress_message: `Normalized ${successCount}/${candidates.length} questions...`
+            });
           } catch (normError) {
             console.error("Candidate normalization failed:", normError);
+            // Optionally update message about failure
           }
         }
 
-        await supabase.from("import_jobs").update({ status: 'review_required' }).eq("id", job.id);
+        await reportProgress('review_required', { progress_message: 'Import complete. Review required.' });
       } catch (err) {
         console.error("Background import processing failed:", err);
         await supabase.from("import_jobs").update({
@@ -942,6 +1065,27 @@ app.get("/api/admin/import/jobs", async (req, res) => {
     res.json({ jobs: data });
   } catch (err) {
     res.status(500).json({ error: "list_jobs_failed", message: err.message });
+  }
+});
+
+app.delete("/api/admin/import/jobs/:id", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+
+    // First delete candidates related to this job
+    await supabase.from("import_candidates").delete().eq("job_id", id);
+
+    // Then delete the job itself
+    const { error } = await supabase
+      .from("import_jobs")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+    res.json({ success: true, id });
+  } catch (err) {
+    res.status(500).json({ error: "delete_job_failed", message: err.message });
   }
 });
 
@@ -1001,7 +1145,10 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       subject: rawData.subject || "math",
       difficulty: rawData.difficulty || "medium",
       type: rawData.type || "multiple-choice",
-      tags: rawData.skill_tags || []
+      skill: rawData.skill || (rawData.skill_tags && rawData.skill_tags[0]) || null,
+      tags: rawData.skill_tags || [],
+      image_url: rawData.image_url || null,
+      option_images: rawData.option_images || []
     };
 
     // Ensure options is an array or null
@@ -1029,8 +1176,11 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
         difficulty: questionData.difficulty,
         type: questionData.type,
         tags: questionData.tags,
+        skill: questionData.skill,
         test_id: testId || null,
-        module: rawData.module || 'm1' // Default to m1 if not specified
+        module: rawData.module || 'm1',
+        image_url: rawData.image_url || null,
+        option_images: rawData.option_images || []
       })
       .select()
       .single();
@@ -1062,11 +1212,33 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       });
 
       if (linkError) log(`DEBUG: Linking error: ${JSON.stringify(linkError)}`);
-      else log("DEBUG: Link successful.");
+      else {
+        log("DEBUG: Link successful.");
+        // Auto-update test metadata
+        await recalculateTestCounts(testId);
+      }
     }
+
 
     // 4. Update candidate status
     await supabase.from("import_candidates").update({ status: 'approved' }).eq("id", id);
+
+    // 5. Check if job is complete
+    if (candidate.job_id) {
+      const { count, error: countError } = await supabase
+        .from("import_candidates")
+        .select("*", { count: 'exact', head: true })
+        .eq("job_id", candidate.job_id)
+        .eq("status", "review_required");
+
+      if (!countError) {
+        log(`DEBUG: Job ${candidate.job_id} remaining candidates: ${count}`);
+        if (count === 0) {
+          await supabase.from("import_jobs").update({ status: 'completed' }).eq("id", candidate.job_id);
+          log(`DEBUG: Job ${candidate.job_id} marked as completed.`);
+        }
+      }
+    }
 
     res.json({ success: true, questionId: question.id });
   } catch (err) {
@@ -1085,7 +1257,29 @@ app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
   try {
     await verifyAdmin(req);
     const { id } = req.params;
+
+    // Get candidate to find job_id
+    const { data: candidate } = await supabase
+      .from("import_candidates")
+      .select("job_id")
+      .eq("id", id)
+      .single();
+
     await supabase.from("import_candidates").update({ status: 'rejected' }).eq("id", id);
+
+    // Check if job is complete
+    if (candidate?.job_id) {
+      const { count, error: countError } = await supabase
+        .from("import_candidates")
+        .select("*", { count: 'exact', head: true })
+        .eq("job_id", candidate.job_id)
+        .eq("status", "review_required");
+
+      if (!countError && count === 0) {
+        await supabase.from("import_jobs").update({ status: 'completed' }).eq("id", candidate.job_id);
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "rejection_failed", message: err.message });
@@ -1494,7 +1688,6 @@ app.post("/api/vocabulary/upload-image", upload.single('image'), async (req, res
 
 
 // Serve static files from the 'dist' directory (Vite build)
-const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Serve static files from 'dist' (root) or '../dist' (if running from backend/)

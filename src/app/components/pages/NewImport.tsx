@@ -11,8 +11,11 @@ interface NewImportProps {
 export const NewImport = ({ onNavigate }: NewImportProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [testType, setTestType] = useState('sat-math');
+    const [subject, setSubject] = useState<'math' | 'rw'>('math');
+    const [module, setModule] = useState<'m1' | 'm2'>('m1');
     const [destinationTestId, setDestinationTestId] = useState('');
     const [tests, setTests] = useState<any[]>([]);
+    const [moduleCounts, setModuleCounts] = useState<any>(null);
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
 
@@ -20,9 +23,32 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
         fetchTests();
     }, []);
 
+    useEffect(() => {
+        if (destinationTestId) {
+            fetchModuleCounts(destinationTestId);
+        } else {
+            setModuleCounts(null);
+        }
+    }, [destinationTestId]);
+
     const fetchTests = async () => {
         const { data } = await supabase.from('tests').select('id, title').order('created_at', { ascending: false });
         setTests(data || []);
+    };
+
+    const fetchModuleCounts = async (testId: string) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`/api/admin/tests/${testId}/module-counts`, {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await response.json();
+            if (response.ok) {
+                setModuleCounts(result.counts);
+            }
+        } catch (err) {
+            console.error('Failed to fetch module counts:', err);
+        }
     };
 
     const handleDrag = (e: React.DragEvent) => {
@@ -53,12 +79,20 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
     const handleStartImport = async () => {
         if (!file) return;
 
+        // Validate module selection if uploading to a test
+        if (destinationTestId && (!subject || !module)) {
+            toast.error('Please select both subject and module');
+            return;
+        }
+
         setUploading(true);
         const formData = new FormData();
         formData.append('file', file);
         formData.append('testType', testType);
         if (destinationTestId) {
             formData.append('testId', destinationTestId);
+            formData.append('subject', subject);
+            formData.append('module', module);
         }
 
         try {
@@ -178,8 +212,9 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="grid md:grid-cols-2 gap-6"
+                    className="space-y-6"
                 >
+                    {/* Content Type */}
                     <div className="space-y-3">
                         <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em] ml-2">Content Type</label>
                         <div className="grid grid-cols-3 gap-2">
@@ -198,6 +233,71 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                         </div>
                     </div>
 
+                    {/* Subject & Module Selection (only show if test is selected) */}
+                    {destinationTestId && (
+                        <div className="grid md:grid-cols-2 gap-6 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/10">
+                            {/* Subject */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em] ml-2">Subject</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { value: 'math', label: 'Math' },
+                                        { value: 'rw', label: 'Reading & Writing' }
+                                    ].map((s) => (
+                                        <button
+                                            key={s.value}
+                                            onClick={() => setSubject(s.value as 'math' | 'rw')}
+                                            className={`px-4 py-3 rounded-2xl font-bold text-sm transition-all border ${subject === s.value
+                                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_20px_rgba(79,70,223,0.2)]'
+                                                : 'bg-white/5 text-indigo-100/40 border-white/10 hover:bg-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Module */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em] ml-2">Module</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { value: 'm1', label: 'Module 1' },
+                                        { value: 'm2', label: 'Module 2' }
+                                    ].map((m) => {
+                                        const key = `${m.value}_${subject}`;
+                                        const currentCount = moduleCounts?.[key] || 0;
+                                        const limit = subject === 'math' ? 22 : 27;
+                                        const isFull = currentCount >= limit;
+
+                                        return (
+                                            <button
+                                                key={m.value}
+                                                onClick={() => setModule(m.value as 'm1' | 'm2')}
+                                                className={`px-4 py-3 rounded-2xl font-bold text-sm transition-all border relative ${module === m.value
+                                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_20px_rgba(79,70,223,0.2)]'
+                                                    : isFull
+                                                        ? 'bg-rose-500/5 text-rose-400 border-rose-500/20 hover:bg-rose-500/10'
+                                                        : 'bg-white/5 text-indigo-100/40 border-white/10 hover:bg-white/10 hover:border-white/20'
+                                                    }`}
+                                            >
+                                                <div>{m.label}</div>
+                                                {moduleCounts && (
+                                                    <div className={`text-[9px] font-black uppercase tracking-widest mt-1 ${isFull ? 'text-rose-400' : module === m.value ? 'text-white/60' : 'text-indigo-200/40'
+                                                        }`}>
+                                                        {currentCount}/{limit} {isFull && '(FULL)'}
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Destination */}
                     <div className="space-y-3">
                         <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em] ml-2">Destination (Optional)</label>
                         <select
