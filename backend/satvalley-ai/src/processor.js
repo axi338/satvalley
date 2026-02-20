@@ -189,9 +189,10 @@ RULES:
 3. Ensure "subject" is lowercase.
 4. If it is a math question without options, set "type" to "spr" and "options" to null.
 5. If options are not clearly labeled, infer them from the text and set "type" to "multiple-choice".
-6. PRESERVE ALL GRAPH / IMAGE DESCRIPTIONS found in the text.
-7. EXTRACT the [bbox: ...] tag from raw text and put it in the "bbox" field as an array of integers.
-8. DETERMINE SUBJECT:
+6. CLEANING: Remove any occurrences of "Mark for Review", "Question X of Y", "Directions", or page numbers from the extracted text.
+7. TABLES & FIGURES: Because images are provided separately, do not include long textual transcriptions of tables or complex figures in the "passage" or "text" fields. Focus on the actual question stem and core passage text.
+8. EXTRACT the [bbox: ...] tag from raw text and put it in the "bbox" field as an array of integers.
+9. DETERMINE SUBJECT:
    - If the question involves calculation, algebra, geometry, or data analysis -> "math"
    - If the question involves reading a passage, grammar, vocabulary, or rhetoric -> "rw"
 `;
@@ -230,7 +231,12 @@ export async function splitTextToCandidates(
     const prompt = `
 Extract ALL SAT questions from this PDF.
 Separate each question with "---QUESTION_START---".
-Include any graph/table description and [Page: X] if possible.
+
+IMPORTANT EXTRACTION RULES:
+1. EXCLUDE all UI-related text such as "Mark for Review", "Question X of Y", "Directions", or page footer/header metadata.
+2. DO NOT transcribe detailed tables or complex diagrams in full. Instead, simply note their presence if they contain textual labels and focus on the question/passage text. 
+3. The user uploads separate images for tables/diagrams, so only extract the core question stem and reading passage.
+4. Keep the output clean of OCR noise and non-academic text.
 `;
 
     try {
