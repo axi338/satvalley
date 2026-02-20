@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS import_candidates (
     raw_text TEXT,
     page INTEGER,
     status TEXT NOT NULL DEFAULT 'pending', -- pending, normalized, needs_review, approved, rejected
-    normalized_json JSONB, -- The structured question data from Gemini
+    normalized_json JSONB DEFAULT '{}'::jsonb,
+    question_id UUID REFERENCES questions(id),
     confidence FLOAT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
