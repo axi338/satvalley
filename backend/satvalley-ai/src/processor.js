@@ -126,6 +126,17 @@ function buildTextRequestOrThrow(promptText) {
     };
 }
 
+function sanitizeAiText(text) {
+    if (typeof text !== 'string') return text;
+    return text
+        .replace(/\d+\s+Mark for Review/gi, '')
+        .replace(/Mark for Review/gi, '')
+        .replace(/\[Page:\s*\d+\]/gi, '')
+        .replace(/Page\s+\d+\s+of\s+\d+/gi, '')
+        .replace(/Directions\s*\n/gi, '')
+        .trim();
+}
+
 function buildPdfRequestOrThrow(fileBuffer, mimeType, promptText) {
     const prompt = (promptText ?? "").toString().trim();
     if (!fileBuffer || !Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
@@ -214,6 +225,11 @@ RULES:
         if (!jsonMatch) throw new Error("No valid JSON found in response");
 
         const data = JSON.parse(jsonMatch[0]);
+
+        // Programmatic cleanup of AI noise
+        if (data.text) data.text = sanitizeAiText(data.text);
+        if (data.passage) data.passage = sanitizeAiText(data.passage);
+
         logAiActivity(
             "SUCCESS",
             "NORMALIZE",
@@ -272,7 +288,7 @@ IMPORTANT EXTRACTION RULES:
 
         const questions = text
             .split("---QUESTION_START---")
-            .map((q) => q.trim())
+            .map((q) => sanitizeAiText(q.trim()))
             .filter((q) => q.length > 50);
 
         logAiActivity(
