@@ -1,0 +1,139 @@
+/* Bluebook Digital SAT UI Styles */
+
+:root {
+  --bluebook-blue: #2b59c3;
+  --bluebook-blue-hover: #1e3f8a;
+  --bluebook-light-blue: #a0b4e8;
+  --bluebook-light-blue-hover: #8da2d4;
+  --bluebook-accent-blue: #0077c8;
+  --bluebook-footer-bg: #ffffff;
+  --bluebook-bg-light: #ffffff;
+  --bluebook-bar-gray: #ffffff;
+  --bluebook-text-slate: #1e293b;
+  --bluebook-text-muted: #64748b;
+  --bluebook-border: #e2e8f0;
+}
+
+/* Iconic 4-Color Dashed Separator (Blue, Yellow, Pink, Gray) */
+.bluebook-dashed-separator {
+  height: 4px;
+  width: 100%;
+  background: white;
+}
+
+/* Solid Black Navigation Pill */
+.bluebook-nav-button {
+  height: 40px;
+  padding: 0 24px;
+  background: #000000;
+  color: white;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.bluebook-nav-button:hover {
+  background: #262626;
+}
+
+/* Circle Letters for Options */
+.bluebook-option-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 14px;
+  color: #475569;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.bluebook-option-button {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s;
+}
+
+.bluebook-option-button:hover:not(:disabled) {
+  border-color: var(--bluebook-blue);
+  background-color: #f8faff;
+}
+
+.bluebook-option-button.selected {
+  border-color: var(--bluebook-blue);
+  background-color: #eef2ff;
+  border-width: 2px;
+}
+
+.bluebook-option-button.selected .bluebook-option-letter {
+  background-color: var(--bluebook-blue);
+  border-color: var(--bluebook-blue);
+  color: white;
+}
+
+/* Header & Question Bar */
+.bluebook-header {
+  height: 64px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: relative;
+}
+
+.bluebook-question-bar {
+  height: 48px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.bluebook-question-num-box {
+  width: 36px;
+  height: 36px;
+  background: #111827;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+/* Custom Scrollbar to match Bluebook */
+.bluebook-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.bluebook-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.bluebook-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.bluebook-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
