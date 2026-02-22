@@ -10,37 +10,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import { fileURLToPath } from 'url';
 
-// --- PRODUCTION DEBUG LOGGING ---
-const currentFile = fileURLToPath(import.meta.url);
-const currentDir = path.dirname(currentFile);
-console.log("DEBUG: server.js path:", currentFile);
-try {
-  const aiDir = path.join(currentDir, 'satvalley-ai/src');
-  console.log("DEBUG: Checking directory:", aiDir);
-  if (fs.existsSync(aiDir)) {
-    console.log("DEBUG: Files in satvalley-ai/src:", fs.readdirSync(aiDir));
-  } else {
-    console.log("DEBUG: satvalley-ai/src NOT FOUND at:", aiDir);
-    console.log("DEBUG: Current Dir files:", fs.readdirSync(currentDir));
-    if (fs.existsSync(path.join(currentDir, 'satvalley-ai'))) {
-      console.log("DEBUG: Files in satvalley-ai:", fs.readdirSync(path.join(currentDir, 'satvalley-ai')));
-    }
-  }
-} catch (e) {
-  console.log("DEBUG: File check failed:", e.message);
-}
-
-// Dynamically import processor to catch errors after logging
-let normalizeQuestion, splitTextToCandidates;
-try {
-  const processor = await import("./satvalley-ai/src/processor.js");
-  normalizeQuestion = processor.normalizeQuestion;
-  splitTextToCandidates = processor.splitTextToCandidates;
-  console.log("DEBUG: Successfully imported processor.js");
-} catch (e) {
-  console.error("DEBUG: FAILED TO IMPORT PROCESSOR:", e.message);
-  // We can't continue without these, but at least we see the logs above
-}
+import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,5 +1,6 @@
 import { VertexAI } from "@google-cloud/vertexai";
-import { logAiActivity } from "./src/logger.js";
+// import { logAiActivity } from "./src/processor.js"; // can import from here if needed
+const logAiActivity = () => { }; // Mock for test
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
