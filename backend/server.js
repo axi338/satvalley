@@ -9,6 +9,25 @@ import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
 import { fileURLToPath } from 'url';
+
+// --- PRODUCTION DEBUG LOGGING ---
+const currentFile = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFile);
+console.log("DEBUG: server.js path:", currentFile);
+try {
+  const aiDir = path.join(currentDir, 'satvalley-ai/src');
+  console.log("DEBUG: Checking directory:", aiDir);
+  if (fs.existsSync(aiDir)) {
+    console.log("DEBUG: Files in satvalley-ai/src:", fs.readdirSync(aiDir));
+  } else {
+    console.log("DEBUG: satvalley-ai/src NOT FOUND at:", aiDir);
+    // Let's check the parent
+    console.log("DEBUG: Files in satvalley-ai:", fs.readdirSync(path.join(currentDir, 'satvalley-ai')));
+  }
+} catch (e) {
+  console.log("DEBUG: File check failed:", e.message);
+}
+
 import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
 
 const __filename = fileURLToPath(import.meta.url);
