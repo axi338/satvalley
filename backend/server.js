@@ -21,14 +21,26 @@ try {
     console.log("DEBUG: Files in satvalley-ai/src:", fs.readdirSync(aiDir));
   } else {
     console.log("DEBUG: satvalley-ai/src NOT FOUND at:", aiDir);
-    // Let's check the parent
-    console.log("DEBUG: Files in satvalley-ai:", fs.readdirSync(path.join(currentDir, 'satvalley-ai')));
+    console.log("DEBUG: Current Dir files:", fs.readdirSync(currentDir));
+    if (fs.existsSync(path.join(currentDir, 'satvalley-ai'))) {
+      console.log("DEBUG: Files in satvalley-ai:", fs.readdirSync(path.join(currentDir, 'satvalley-ai')));
+    }
   }
 } catch (e) {
   console.log("DEBUG: File check failed:", e.message);
 }
 
-import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
+// Dynamically import processor to catch errors after logging
+let normalizeQuestion, splitTextToCandidates;
+try {
+  const processor = await import("./satvalley-ai/src/processor.js");
+  normalizeQuestion = processor.normalizeQuestion;
+  splitTextToCandidates = processor.splitTextToCandidates;
+  console.log("DEBUG: Successfully imported processor.js");
+} catch (e) {
+  console.error("DEBUG: FAILED TO IMPORT PROCESSOR:", e.message);
+  // We can't continue without these, but at least we see the logs above
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
