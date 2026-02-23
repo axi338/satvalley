@@ -1191,6 +1191,17 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       throw qError;
     }
 
+    // 2b. Link question_id back to candidate
+    log(`DEBUG: Updating candidate ${id} with question_id ${question.id}`);
+    const { error: candUpdateError } = await supabase
+      .from("import_candidates")
+      .update({ question_id: question.id })
+      .eq("id", id);
+
+    if (candUpdateError) {
+      log(`DEBUG: Candidate update error (linking question_id): ${JSON.stringify(candUpdateError)}`);
+    }
+
     // 3. Link to test if destination_test_id exists
     if (testId) {
       // Get current max order
@@ -1235,8 +1246,8 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       if (!countError) {
         log(`DEBUG: Job ${candidate.job_id} remaining candidates: ${count}`);
         if (count === 0) {
-          await supabase.from("import_jobs").update({ status: 'completed' }).eq("id", candidate.job_id);
-          log(`DEBUG: Job ${candidate.job_id} marked as completed.`);
+          await supabase.from("import_jobs").update({ status: 'done' }).eq("id", candidate.job_id);
+          log(`DEBUG: Job ${candidate.job_id} marked as done.`);
         }
       }
     }
@@ -1277,7 +1288,7 @@ app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
         .eq("status", "review_required");
 
       if (!countError && count === 0) {
-        await supabase.from("import_jobs").update({ status: 'completed' }).eq("id", candidate.job_id);
+        await supabase.from("import_jobs").update({ status: 'done' }).eq("id", candidate.job_id);
       }
     }
 
