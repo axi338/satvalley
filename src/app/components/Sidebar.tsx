@@ -29,7 +29,7 @@ export function Sidebar({
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'practice', label: 'DSAT Tests', icon: PenTool },
         { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
-        { id: 'history', label: 'My Scores', icon: History },
+        { id: 'review', label: 'Review', icon: History },
         // { id: 'results', label: 'Hall of Fame', icon: Award },
         // { id: 'calculator', label: 'SAT Calculator', icon: Radio },
         // { id: 'olympiad', label: 'SAT Olympiad', icon: GraduationCap },

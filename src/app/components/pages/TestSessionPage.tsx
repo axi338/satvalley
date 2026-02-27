@@ -14,17 +14,25 @@ import {
     AlertCircle,
     Loader2,
     CheckCircle2,
-    HelpCircle,
+    Zap,
+    PenLine,
+    Grid3X3,
+    Book,
+    HelpCircle as HelpIcon,
+    Settings,
+    Accessibility,
+    LogOut,
+    Eye as EyeIcon,
+    Move,
     MoreVertical,
-    FileText,
-    Trophy,
-    BookOpen,
-    ExternalLink,
+    Trash2,
     ArrowRight,
     Shield,
     Monitor,
-    Zap,
-    PenLine
+    MapPin,
+    Bookmark,
+    FileText,
+    Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FullscreenInterstitial } from '../FullscreenInterstitial';
@@ -69,16 +77,130 @@ interface TestState {
     timeLeft: number;
 }
 
-// NOTE: Old DraggableCalculator component removed - replaced with DesmosPanel component in ui folder
+// --- Specialized Tools ---
+
+const LineReader = ({ onClose }: { onClose: () => void }) => {
+    const [top, setTop] = useState(200);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startY, setStartY] = useState(0);
+    const [startTop, setStartTop] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setStartY(e.clientY);
+        setStartTop(top);
+        e.preventDefault();
+        containerRef.current?.focus();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowUp') {
+            setTop(prev => Math.max(-30, prev - 10));
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            setTop(prev => prev + 10);
+            e.preventDefault();
+        }
+    };
+
+    useEffect(() => {
+        containerRef.current?.focus();
+    }, []);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging) return;
+            const deltaY = e.clientY - startY;
+            // Allow top to go to -30px, keeping handle at the very edge (0px)
+            setTop(Math.max(-30, startTop + deltaY));
+        };
+        const handleMouseUp = () => setIsDragging(false);
+
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, startY, startTop]);
+
+    return (
+        <div
+            ref={containerRef}
+            className="bluebook-line-reader outline-none"
+            style={{ top }}
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+        >
+            <div className="bluebook-line-reader-instruction pointer-events-none select-none">
+                Click on the six dots, then use the arrow keys to move the line reader.
+            </div>
+            <div className="bluebook-line-reader-window">
+                <div className="bluebook-line-reader-handle" onMouseDown={handleMouseDown}>
+                    <div className="flex flex-col gap-0.5 pointer-events-none">
+                        <div className="flex gap-0.5"><div className="w-1 h-1 bg-slate-400 rounded-full" /><div className="w-1 h-1 bg-slate-400 rounded-full" /></div>
+                        <div className="flex gap-0.5"><div className="w-1 h-1 bg-slate-400 rounded-full" /><div className="w-1 h-1 bg-slate-400 rounded-full" /></div>
+                        <div className="flex gap-0.5"><div className="w-1 h-1 bg-slate-400 rounded-full" /><div className="w-1 h-1 bg-slate-400 rounded-full" /></div>
+                    </div>
+                </div>
+                {/* Close Button with high-contrast background */}
+                <div className="absolute top-2 right-4 z-[130] pointer-events-auto">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors shadow-lg border border-white/20"
+                        title="Close line reader"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const HighlightToolbar = ({
+    position,
+    onSelectColor,
+    onRemove
+}: {
+    position: { x: number, y: number },
+    onSelectColor: (color: 'yellow' | 'blue' | 'pink') => void,
+    onRemove: () => void
+}) => {
+    return (
+        <div
+            className="fixed z-[70] bg-white border border-slate-200 shadow-xl rounded-full px-3 py-1.5 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200"
+            style={{ left: position.x, top: position.y, transform: 'translate(-50%, -120%)' }}
+        >
+            <button onClick={() => onSelectColor('yellow')} className="w-6 h-6 rounded-full bg-[#FFF5A1] border border-slate-300 hover:scale-110 transition-transform" />
+            <button onClick={() => onSelectColor('blue')} className="w-6 h-6 rounded-full bg-[#D1E9FF] border border-slate-300 hover:scale-110 transition-transform" />
+            <button onClick={() => onSelectColor('pink')} className="w-6 h-6 rounded-full bg-[#FFD1E8] border border-slate-300 hover:scale-110 transition-transform" />
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button onClick={onRemove} className="p-1 hover:bg-slate-100 rounded-full transition-colors">
+                <Trash2 className="w-4 h-4 text-slate-500" />
+            </button>
+        </div>
+    );
+};
+
+// --- Main Components ---
 
 // Draggable Reference Component
 const DraggableReference = ({ onClose }: { onClose: () => void }) => {
     const [position, setPosition] = useState({ x: 120, y: 120 });
     const [isDragging, setIsDragging] = useState(false);
+    const [isMaximized, setIsMaximized] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const panelRef = useRef<HTMLDivElement>(null);
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        if (isMaximized) return; // Prevent dragging while maximized
         if (panelRef.current) {
             const rect = panelRef.current.getBoundingClientRect();
             setDragOffset({
@@ -117,158 +239,224 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
     return (
         <div
             ref={panelRef}
-            className="fixed w-[700px] h-[550px] bg-white rounded-xl shadow-2xl border border-slate-300 z-[60] flex flex-col overflow-hidden"
-            style={{
+            className={`fixed bg-white shadow-2xl z-[100] flex flex-col overflow-hidden border border-[#e2e8f0] transition-all duration-200 ${isMaximized ? 'inset-0 w-full h-full rounded-none' : 'w-[750px] h-[600px] rounded-t-xl'
+                }`}
+            style={!isMaximized ? {
                 left: position.x,
                 top: position.y,
-            }}
+            } : {}}
         >
             <div
-                className="h-10 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 cursor-move select-none"
+                className="h-[48px] bg-[#1e293b] flex items-center justify-between px-4 cursor-move select-none relative"
                 onMouseDown={handleMouseDown}
             >
-                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
+                <span className="text-[14px] font-bold text-white tracking-wide">
                     Reference Sheet
                 </span>
-                <button
-                    onClick={onClose}
-                    className="hover:bg-slate-700 rounded p-1 transition-colors"
-                >
-                    <X className="w-4 h-4 text-white" />
-                </button>
+
+                {/* Handle Dots */}
+                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col gap-0.5 pointer-events-none opacity-60">
+                    <div className="flex gap-0.5"><div className="w-1 h-1 bg-white rounded-full" /><div className="w-1 h-1 bg-white rounded-full" /><div className="w-1 h-1 bg-white rounded-full" /></div>
+                    <div className="flex gap-0.5"><div className="w-1 h-1 bg-white rounded-full" /><div className="w-1 h-1 bg-white rounded-full" /><div className="w-1 h-1 bg-white rounded-full" /></div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsMaximized(!isMaximized)}
+                        className="p-2 hover:bg-white/10 rounded transition-colors"
+                        title={isMaximized ? "Restore" : "Maximize"}
+                    >
+                        {isMaximized ? <Move className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-white" />}
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-white/10 rounded transition-colors"
+                    >
+                        <X className="w-5 h-5 text-white" />
+                    </button>
+                </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 bg-white custom-scrollbar">
-                <div className="space-y-8">
-                    {/* Area/Circumference Formulas */}
-                    <div className="grid grid-cols-3 gap-8">
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-20 h-20 border-2 border-slate-400 rounded-full relative">
-                                <span className="absolute top-1/2 left-1/2 w-1/2 h-0.5 bg-slate-600 origin-left" />
-                                <span className="absolute top-[40%] left-[65%] text-[10px] font-bold italic">r</span>
-                            </div>
-                            <p className="text-xs font-bold leading-tight">Circle<br />A = πr<sup>2</sup><br />C = 2πr</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-24 h-16 border-2 border-slate-400 relative">
-                                <span className="absolute top-[-15px] left-1/2 -translate-x-1/2 text-[10px] font-bold italic">l</span>
-                                <span className="absolute right-[-12px] top-1/2 -translate-y-1/2 text-[10px] font-bold italic">w</span>
-                            </div>
-                            <p className="text-xs font-bold leading-tight">Rectangle<br />A = lw</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-20 h-20 relative">
-                                <svg viewBox="0 0 100 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <path d="M10 90 L90 90 L50 10 Z" />
-                                    <line x1="50" y1="10" x2="50" y2="90" strokeDasharray="4" />
-                                    <rect x="50" y="80" width="10" height="10" />
-                                </svg>
-                                <span className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 text-[10px] font-bold italic">b</span>
-                                <span className="absolute left-[54%] top-1/2 text-[10px] font-bold italic">h</span>
-                            </div>
-                            <p className="text-xs font-bold leading-tight">Triangle<br />A = ½bh</p>
-                        </div>
-                    </div>
 
-                    <div className="h-px bg-slate-100" />
-
-                    {/* Pythagorean / Special Right */}
+            <div className={`flex-1 overflow-y-auto bg-white ${isMaximized ? 'p-12' : 'p-6'} bluebook-scroll select-text text-black`}>
+                <div className="max-w-4xl mx-auto space-y-10 font-serif">
+                    {/* Top Row: Circle, Rectangle, Triangle */}
                     <div className="grid grid-cols-3 gap-8">
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-20 h-20 relative">
-                                <svg viewBox="0 0 100 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <path d="M20 10 L20 90 L80 90 Z" />
-                                    <rect x="20" y="80" width="10" height="10" />
+                        {/* Circle */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-24 h-24 relative mb-4">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-black">
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <circle cx="50" cy="50" r="1.5" fill="black" />
+                                    <line x1="50" y1="50" x2="90" y2="50" stroke="black" strokeWidth="1" />
+                                    <text x="70" y="45" fontSize="12" className="italic" fill="black">r</text>
                                 </svg>
-                                <span className="absolute left-[5px] top-1/2 -translate-y-1/2 text-[10px] font-bold italic">b</span>
-                                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px] font-bold italic">a</span>
-                                <span className="absolute right-[15px] top-[40%] text-[10px] font-bold italic">c</span>
                             </div>
-                            <p className="text-xs font-bold leading-tight">Pythagorean Theorem<br />c<sup>2</sup> = a<sup>2</sup> + b<sup>2</sup></p>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-24 h-20 relative">
-                                <svg viewBox="0 0 120 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <path d="M20 10 L20 90 L100 90 Z" />
-                                    <rect x="20" y="80" width="10" height="10" />
-                                    <text x="35" y="85" fontSize="10" className="fill-slate-600 italic">30°</text>
-                                    <text x="25" y="30" fontSize="10" className="fill-slate-600 italic">60°</text>
-                                </svg>
-                                <span className="absolute left-[5px] top-1/2 text-[10px] font-bold italic">x√3</span>
-                                <span className="absolute bottom-[-10px] left-1/2 text-[10px] font-bold italic">x</span>
-                                <span className="absolute right-[10px] top-[40%] text-[10px] font-bold italic">2x</span>
+                            <div className="text-center space-y-1">
+                                <p className="text-[13px] italic">A = πr²</p>
+                                <p className="text-[13px] italic">C = 2πr</p>
                             </div>
-                            <p className="text-xs font-bold leading-tight italic uppercase tracking-tighter">Special Right Triangles</p>
                         </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-20 h-20 relative">
-                                <svg viewBox="0 0 100 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <path d="M20 20 L20 80 L80 80 Z" />
-                                    <rect x="20" y="70" width="10" height="10" />
-                                    <text x="35" y="75" fontSize="10" className="fill-slate-600 italic">45°</text>
+
+                        {/* Rectangle */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 60" className="w-full max-h-full text-black">
+                                    <rect x="10" y="5" width="80" height="50" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <text x="50" y="0" fontSize="12" className="italic" textAnchor="middle" alignmentBaseline="hanging" fill="black">ℓ</text>
+                                    <text x="95" y="30" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">w</text>
                                 </svg>
-                                <span className="absolute left-[5px] top-1/2 text-[10px] font-bold italic">s</span>
-                                <span className="absolute bottom-[-10px] left-1/2 text-[10px] font-bold italic">s</span>
-                                <span className="absolute right-[10px] top-[40%] text-[10px] font-bold italic">s√2</span>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[13px] italic">A = ℓw</p>
+                            </div>
+                        </div>
+
+                        {/* Triangle */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
+                                    <path d="M10 70 L90 70 L50 10 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <line x1="50" y1="10" x2="50" y2="70" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <rect x="50" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="50" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">b</text>
+                                    <text x="56" y="40" fontSize="12" className="italic" fill="black">h</text>
+                                </svg>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[13px] italic">A = ½bh</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-slate-100" />
+                    {/* Second Row: Pythagorean + Special Rights */}
+                    <div className="grid grid-cols-3 gap-8">
+                        {/* Pythagorean */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
+                                    <path d="M20 10 L20 70 L80 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="10" y="40" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">b</text>
+                                    <text x="50" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">a</text>
+                                    <text x="55" y="35" fontSize="12" className="italic" fill="black">c</text>
+                                </svg>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[13px] italic">c² = a² + b²</p>
+                            </div>
+                        </div>
 
-                    {/* Volume Formulas */}
+                        {/* 30-60-90 */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 120 80" className="w-full max-h-full text-black">
+                                    <path d="M20 10 L20 70 L90 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="75" y="65" fontSize="10" fill="black">30°</text>
+                                    <text x="25" y="25" fontSize="10" fill="black">60°</text>
+                                    <text x="5" y="40" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">x√3</text>
+                                    <text x="55" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">x</text>
+                                    <text x="60" y="35" fontSize="12" className="italic" fill="black">2x</text>
+                                </svg>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[11px] font-bold uppercase tracking-tight font-sans">Special Right Triangles</p>
+                            </div>
+                        </div>
+
+                        {/* 45-45-90 */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
+                                    <path d="M20 20 L20 70 L70 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="55" y="65" fontSize="10" fill="black">45°</text>
+                                    <text x="25" y="35" fontSize="10" fill="black">45°</text>
+                                    <text x="10" y="45" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">s</text>
+                                    <text x="45" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">s</text>
+                                    <text x="48" y="40" fontSize="12" className="italic" fill="black">s√2</text>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Third Row: Volumes */}
                     <div className="grid grid-cols-5 gap-4">
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-16 h-12 border-2 border-slate-400 relative">
-                                <span className="absolute top-[-12px] left-1/2 text-[8px] font-bold">l</span>
-                                <span className="absolute right-[-10px] top-1/2 text-[8px] font-bold">w</span>
-                                <span className="absolute left-[-10px] top-1/2 text-[8px] font-bold">h</span>
-                            </div>
-                            <p className="text-[10px] font-bold">V=lwh</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-16 h-16 relative">
-                                <svg viewBox="0 0 100 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <ellipse cx="50" cy="20" rx="30" ry="10" />
-                                    <path d="M20 20 L20 80 A30 10 0 0 0 80 80 L80 20" />
-                                    <line x1="50" y1="20" x2="80" y2="20" strokeDasharray="2" />
-                                </svg>
-                                <span className="absolute left-[-15px] top-1/2 text-[8px] font-bold">h</span>
-                                <span className="absolute top-1 left-[60%] text-[8px] font-bold">r</span>
-                            </div>
-                            <p className="text-[10px] font-bold">V=πr<sup>2</sup>h</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-16 h-16 border-2 border-slate-400 rounded-full relative">
-                                <ellipse cx="50" cy="50" rx="50" ry="15" className="stroke-slate-200 stroke-1" strokeDasharray="4" />
-                                <line x1="50" y1="50" x2="100" y2="50" strokeDasharray="2" />
-                            </div>
-                            <p className="text-[10px] font-bold mt-2">V=4/3πr<sup>3</sup></p>
-                        </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-16 h-16 relative">
-                                <svg viewBox="0 0 100 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <ellipse cx="50" cy="80" rx="30" ry="10" />
-                                    <path d="M20 80 L50 10 L80 80" />
+                        {/* Rectangular Prism */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-20 mb-2">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-black">
+                                    <rect x="5" y="25" width="60" height="40" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M5 25 L25 5 L85 5 L85 45 L65 65" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M65 25 L85 5" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <text x="35" y="75" fontSize="10" className="italic" textAnchor="middle" fill="black">ℓ</text>
+                                    <text x="75" y="60" fontSize="10" className="italic" fill="black">w</text>
+                                    <text x="0" y="45" fontSize="10" className="italic" fill="black">h</text>
                                 </svg>
                             </div>
-                            <p className="text-[10px] font-bold">V=1/3πr<sup>2</sup>h</p>
+                            <p className="text-[12px] italic">V = ℓwh</p>
                         </div>
-                        <div className="flex flex-col items-center text-center space-y-2">
-                            <div className="w-16 h-16 relative">
-                                <svg viewBox="0 0 100 100" className="w-full h-full fill-none stroke-slate-400 stroke-2">
-                                    <path d="M20 80 L80 80 L50 90 Z" strokeDasharray="2" />
-                                    <path d="M20 80 L50 10 L80 80 L50 90 L20 80" />
-                                    <line x1="50" y1="10" x2="50" y2="85" strokeDasharray="2" />
+
+                        {/* Cylinder */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-20 mb-2">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-black">
+                                    <ellipse cx="50" cy="20" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M20 20 L20 80 A30 10 0 0 0 80 80 L80 20" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" strokeDasharray="3 2" />
+                                    <line x1="50" y1="20" x2="80" y2="20" stroke="black" strokeWidth="1" strokeDasharray="2 1" />
+                                    <text x="65" y="17" fontSize="10" className="italic" fill="black">r</text>
+                                    <text x="10" y="55" fontSize="10" className="italic" fill="black">h</text>
                                 </svg>
                             </div>
-                            <p className="text-[10px] font-bold">V=1/3lwh</p>
+                            <p className="text-[12px] italic">V = πr²h</p>
+                        </div>
+
+                        {/* Sphere */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-20 mb-2">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-black">
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <ellipse cx="50" cy="50" rx="40" ry="12" fill="none" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <line x1="50" y1="50" x2="90" y2="50" stroke="black" strokeWidth="1" strokeDasharray="2 1" />
+                                    <text x="70" y="47" fontSize="10" className="italic" fill="black">r</text>
+                                </svg>
+                            </div>
+                            <p className="text-[12px] italic">V = ⁴/₃πr³</p>
+                        </div>
+
+                        {/* Cone */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-20 mb-2">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-black">
+                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M20 80 L50 10 L80 80" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <line x1="50" y1="10" x2="50" y2="80" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <text x="54" y="45" fontSize="10" className="italic" fill="black">h</text>
+                                    <text x="65" y="88" fontSize="10" className="italic" fill="black">r</text>
+                                </svg>
+                            </div>
+                            <p className="text-[12px] italic">V = ¹/₃πr²h</p>
+                        </div>
+
+                        {/* Pyramid */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-20 mb-2">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-black">
+                                    <path d="M10 80 L50 90 L90 80 L50 10 Z" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M50 10 L50 90" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M10 80 L90 80" fill="none" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <text x="30" y="92" fontSize="10" className="italic" fill="black">ℓ</text>
+                                    <text x="75" y="92" fontSize="10" className="italic" fill="black">w</text>
+                                    <text x="54" y="50" fontSize="10" className="italic" fill="black">h</text>
+                                </svg>
+                            </div>
+                            <p className="text-[12px] italic">V = ¹/₃ℓwh</p>
                         </div>
                     </div>
 
-                    <div className="h-px bg-slate-100" />
-
-                    <div className="text-[11px] font-bold text-slate-600 space-y-2 italic">
+                    {/* Bottom Text Notes */}
+                    <div className="pt-6 border-t border-slate-100 text-[12px] text-black italic space-y-2">
                         <p>The number of degrees of arc in a circle is 360.</p>
                         <p>The number of radians of arc in a circle is 2π.</p>
                         <p>The sum of the measures in degrees of the angles of a triangle is 180.</p>
@@ -290,51 +478,64 @@ const BreakScreen = ({
     formatTime: (s: number) => string
 }) => {
     return (
-        <div className="fixed inset-0 bg-[#F6F8FA] flex items-center justify-center z-[100] p-6 lg:p-12 animate-in fade-in duration-500">
-            <div className="max-w-xl w-full text-center space-y-12">
-                <div className="space-y-4">
-                    <h2 className="text-3xl font-bold text-[#001E3C] tracking-tight">Break</h2>
-                    <p className="text-slate-600 text-lg">
-                        You've completed Section 1. Take a 10 minute break.
-                    </p>
+        <div className="fixed inset-0 bg-[#1c1c1c] overflow-y-auto z-[100] flex flex-col md:flex-row animate-in fade-in duration-500">
+            {/* Left Column - Timer & Actions */}
+            <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-12 min-h-screen relative">
+                {/* Admin Logo Position */}
+                <div className="absolute bottom-8 left-8">
+                    <span className="text-white font-bold text-xl tracking-tight">Testpress Admin</span>
                 </div>
 
-                <div className="bg-white rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-slate-200 py-20 px-12 space-y-8">
-                    <div className="space-y-2">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Remaining Time</p>
-                        <div className="text-9xl font-black font-mono text-[#001E3C] tracking-tighter tabular-nums">
+                <div className="flex flex-col items-center gap-12 max-w-sm w-full">
+                    {/* Timer Box */}
+                    <div className="w-full border border-white/30 rounded-[20px] p-8 text-center bg-transparent">
+                        <p className="text-white font-bold text-[22px] mb-2 tracking-tight">Remaining Break Time:</p>
+                        <div className="text-white font-bold text-7xl tracking-[-0.05em] leading-none tabular-nums">
                             {formatTime(timeLeft)}
                         </div>
                     </div>
 
-                    <div className="h-px bg-slate-100 w-full" />
-
-                    <div className="space-y-6">
-                        <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                            Make sure your device remains open. <br />
-                            Section 2: Math will begin automatically when the timer expires.
-                        </p>
-
-                        <button
-                            onClick={onSkip}
-                            className="w-full h-16 bg-[#001E3C] hover:bg-[#002D5C] text-white font-bold text-lg rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
-                        >
-                            Resume Testing
-                            <ArrowRight className="w-5 h-5" />
-                        </button>
-                    </div>
+                    {/* Resume Button */}
+                    <button
+                        onClick={onSkip}
+                        className="bg-[#FFE000] hover:bg-[#E6C900] text-black font-bold text-[17px] px-10 py-3.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                    >
+                        Resume Testing
+                    </button>
                 </div>
+            </div>
 
-                <div className="flex items-center justify-center gap-6 opacity-30 grayscale pointer-events-none">
-                    <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Secure Node</span>
-                    </div>
-                    <div className="w-1 h-1 rounded-full bg-slate-400" />
-                    <div className="flex items-center gap-2">
-                        <Monitor className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Protocol 1.2</span>
-                    </div>
+            {/* Right Column - Instructions */}
+            <div className="flex-1 flex flex-col justify-center p-8 md:p-16 border-l border-white/10 bg-[#1c1c1c] text-white">
+                <div className="max-w-md w-full space-y-10">
+                    {/* Section 1: Practice Break */}
+                    <section className="space-y-6">
+                        <h2 className="text-[32px] font-bold tracking-tight leading-tight">Practice Break</h2>
+                        <p className="text-[17px] text-[#DDDDDD] leading-relaxed font-medium">
+                            You can resume this practice test as soon as you're ready to move on. On test day, you'll wait until the clock counts down. Read below to see how breaks work on test day.
+                        </p>
+                    </section>
+
+                    <hr className="border-white/20" />
+
+                    {/* Section 2: Take a Break */}
+                    <section className="space-y-6">
+                        <h2 className="text-[32px] font-bold tracking-tight leading-tight">Take a Break</h2>
+
+                        <div className="space-y-6 text-[17px] text-[#DDDDDD] leading-relaxed font-medium">
+                            <p>You may leave the room, but do not disturb students who are still testing.</p>
+                            <p>Do not exit the app or close your device.</p>
+                            <p>Testing won't resume until you return.</p>
+
+                            <div className="space-y-2">
+                                <p className="font-bold text-white">Follow these rules during the break:</p>
+                                <ol className="list-decimal pl-5 space-y-2">
+                                    <li>Do not access your phone, smartwatch, textbooks, notes, or the internet.</li>
+                                    <li>Do not eat or drink in the testing room.</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
@@ -347,13 +548,15 @@ const PassageViewer = memo(({
     highlights,
     isHighlighterActive,
     onAddHighlight,
-    onRemoveHighlight
+    onRemoveHighlight,
+    onSelectionChange
 }: {
     text: string,
     highlights: HighlightRange[],
     isHighlighterActive: boolean,
     onAddHighlight: (range: HighlightRange) => void,
-    onRemoveHighlight: (index: number) => void
+    onRemoveHighlight: (index: number) => void,
+    onSelectionChange: (selection: { start: number, end: number, text: string } | null) => void
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -365,9 +568,9 @@ const PassageViewer = memo(({
         let lastIndex = 0;
 
         const colorClasses = {
-            yellow: 'bg-yellow-200/60 hover:bg-yellow-300/60',
-            blue: 'bg-blue-200/60 hover:bg-blue-300/60',
-            pink: 'bg-pink-200/60 hover:bg-pink-300/60'
+            yellow: 'bb-highlight-yellow',
+            blue: 'bb-highlight-blue',
+            pink: 'bb-highlight-pink'
         };
 
         sorted.forEach((h, idx) => {
@@ -413,15 +616,15 @@ const PassageViewer = memo(({
         const selectedText = range.toString();
 
         if (selectedText.trim().length > 0) {
-            onAddHighlight({
+            onSelectionChange({
                 start,
                 end,
-                text: selectedText,
-                color: (window as any).nextHighlightColor || 'yellow'
+                text: selectedText
             });
-            selection.removeAllRanges();
+        } else {
+            onSelectionChange(null);
         }
-    }, [isHighlighterActive, onAddHighlight]);
+    }, [isHighlighterActive, onSelectionChange]);
 
     return (
         <div
@@ -455,82 +658,83 @@ const QuestionNavigationModal = ({
     stageTitle: string
 }) => {
     return (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <h3 className="font-bold text-slate-900">{stageTitle}</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-slate-500" />
-                    </button>
-                </div>
+        <div className="bb-nav-modal-overlay" onClick={onClose}>
+            <div className="flex flex-col items-center">
+                <div className="bb-nav-modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-4 flex items-center justify-between">
+                        <div className="w-8" />
+                        <h3 className="text-[18px] font-bold text-slate-800 text-center flex-1 leading-tight">
+                            {stageTitle}<br />Questions
+                        </h3>
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors">
+                            <X className="w-5 h-5 text-slate-600" />
+                        </button>
+                    </div>
 
-                <div className="p-8">
-                    <div className="flex items-center justify-center gap-12 mb-10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-900 ring-4 ring-slate-100" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current</span>
+                    <div className="h-px bg-slate-200 w-full" />
+
+                    <div className="flex items-center justify-center gap-6 py-4">
+                        <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-slate-800" />
+                            <span className="text-[13px] font-medium text-slate-600">Current</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 border-2 border-dashed border-slate-300 rounded-md" />
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unanswered</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-dashed border-slate-700 rounded-sm" />
+                            <span className="text-[13px] font-medium text-slate-600">Unanswered</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Flag className="w-5 h-5 text-rose-500 fill-rose-500" />
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">For Review</span>
+                        <div className="flex items-center gap-2">
+                            <Bookmark className="w-4 h-4 text-rose-600 fill-rose-600" />
+                            <span className="text-[13px] font-medium text-slate-600">For Review</span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-5 sm:grid-cols-8 gap-3 max-h-[40vh] overflow-y-auto p-2 bluebook-scroll">
-                        {questions.map((q, idx) => {
-                            const isActive = currentIndex === idx;
-                            const isAnswered = !!answers[q.id];
-                            const isFlagged = flags.has(q.id);
+                    <div className="h-px bg-slate-200 w-full" />
 
-                            return (
-                                <button
-                                    key={q.id}
-                                    onClick={() => {
-                                        onNavigateToQuestion(idx);
-                                        onClose();
-                                    }}
-                                    className={`
-                                        relative aspect-square rounded-xl border-2 flex items-center justify-center font-bold text-sm transition-all
-                                        ${isActive ? 'border-slate-900 bg-slate-900 text-white ring-4 ring-slate-100 scale-110 z-10' :
-                                            isFlagged ? 'border-rose-200 bg-rose-50 text-rose-700' :
-                                                isAnswered ? 'border-indigo-100 bg-indigo-50/50 text-indigo-700 hover:border-indigo-200' :
-                                                    'border-dashed border-slate-200 bg-white text-slate-400 hover:border-slate-300'}
-                                    `}
-                                >
-                                    {idx + 1}
-                                    {isFlagged && !isActive && (
-                                        <div className="absolute -top-1.5 -right-1.5">
-                                            <Flag className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-                                        </div>
-                                    )}
-                                    {isActive && (
-                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-900 ring-4 ring-slate-100 animate-bounce" />
-                                        </div>
-                                    )}
-                                </button>
-                            );
-                        })}
+                    <div className="p-8 pb-4">
+                        <div className="grid grid-cols-10 gap-x-2 gap-y-6">
+                            {questions.map((q, idx) => {
+                                const isCurrent = currentIndex === idx;
+                                const isAnswered = !!answers[q.id];
+                                const isFlagged = flags.has(q.id);
+
+                                return (
+                                    <div key={idx} className="flex flex-col items-center relative">
+                                        {isCurrent && (
+                                            <div className="absolute -top-6">
+                                                <MapPin className="w-4 h-4 text-slate-900" />
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => {
+                                                onNavigateToQuestion(idx);
+                                                onClose();
+                                            }}
+                                            className={`bb-nav-box ${isAnswered ? 'answered' : 'unanswered'}`}
+                                        >
+                                            <span className="relative z-10">{idx + 1}</span>
+                                            {isFlagged && (
+                                                <Bookmark className="bb-nav-box-bookmark w-3.5 h-3.5 fill-rose-600 stroke-rose-600" />
+                                            )}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    <div className="mt-10 flex justify-center pb-4 border-t border-slate-100 pt-8">
+                    <div className="p-8 pt-4 flex justify-center">
                         <button
                             onClick={() => {
                                 onClose();
                                 onGoToReview();
                             }}
-                            className="h-12 px-8 border-2 border-[#2b59c3] text-[#2b59c3] font-bold rounded-full hover:bg-blue-50 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wider"
+                            className="bb-nav-review-btn"
                         >
                             Go to Review Page
                         </button>
                     </div>
                 </div>
+                <div className="bb-nav-modal-pointer" />
             </div>
         </div>
     );
@@ -552,32 +756,35 @@ const ReviewScreen = ({
     stageTitle: string
 }) => {
     return (
-        <div className="flex flex-col h-full bg-[#F2F4F7]">
-            <div className="max-w-4xl mx-auto w-full flex-1 p-8 overflow-y-auto">
-                <div className="bg-white rounded-[2rem] shadow-xl border border-slate-200 p-12 mb-8 animate-in zoom-in-95 duration-500">
-                    <div className="text-center mb-12">
-                        <h2 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{stageTitle}</h2>
-                        <div className="h-1 w-20 bg-indigo-600 mx-auto rounded-full" />
+        <div className="flex flex-col min-h-screen bg-[#F0F2F5] pb-24 relative overflow-y-auto">
+            {/* Main Center Content Container */}
+            <div className="flex-1 w-full flex items-start justify-center pt-8 md:pt-16 pb-32">
+                <div className="bg-white rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-[800px] px-8 py-12 md:py-16 md:px-16 animate-in zoom-in-95 duration-500">
+
+                    {/* Header + Blue Underline */}
+                    <div className="text-center mb-10">
+                        <h2 className="text-[22px] font-bold text-[#141A29] tracking-tight">{stageTitle}</h2>
+                        <div className="h-[2px] w-[50px] bg-[#3B5998] mx-auto mt-4" />
                     </div>
 
-                    <div className="flex items-center justify-center gap-12 mb-16 pb-12 border-b border-slate-100">
-                        <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-950 ring-4 ring-slate-100" />
-                            </div>
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Current</span>
+                    {/* Legend Header */}
+                    <div className="flex items-center justify-center gap-8 mb-12 pb-8 border-b border-[#F0F2F5]">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                            <span className="text-[11px] font-bold text-[#565C69] tracking-[0.15em] uppercase">Current</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 border-2 border-dashed border-slate-300 rounded-lg" />
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Unanswered</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-[18px] h-[18px] border-[1.5px] border-dashed border-[#A0A5B1] rounded-full" />
+                            <span className="text-[11px] font-bold text-[#565C69] tracking-[0.15em] uppercase">Unanswered</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Flag className="w-5 h-5 text-rose-600 fill-rose-600" />
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest">For Review</span>
+                        <div className="flex items-center gap-2">
+                            <Flag className="w-[14px] h-[14px] text-[#DC2626] fill-[#DC2626]" />
+                            <span className="text-[11px] font-bold text-[#565C69] tracking-[0.15em] uppercase">For Review</span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 px-4">
+                    {/* Question Grid */}
+                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-x-4 gap-y-5 px-4 md:px-8 max-w-[600px] mx-auto">
                         {questions.map((q, idx) => {
                             const isAnswered = !!answers[q.id];
                             const isFlagged = flags.has(q.id);
@@ -587,16 +794,17 @@ const ReviewScreen = ({
                                     key={q.id}
                                     onClick={() => onNavigateToQuestion(idx)}
                                     className={`
-                                        relative aspect-square rounded-2xl border-2 flex items-center justify-center font-black text-lg transition-all hover:scale-105 active:scale-95
-                                        ${isFlagged ? 'border-rose-200 bg-rose-50 text-rose-700' :
-                                            isAnswered ? 'border-indigo-100 bg-indigo-50/50 text-indigo-700 hover:border-indigo-200' :
-                                                'border-dashed border-slate-200 bg-white text-slate-400 hover:border-slate-300'}
+                                        relative w-[50px] h-[46px] rounded-[10px] flex items-center justify-center font-bold text-[14px] transition-all hover:scale-105 active:scale-95 mx-auto
+                                        ${isAnswered
+                                            ? 'border-2 border-[#E1E5F2] bg-[#E1E5F2] text-[#3B5998]'
+                                            : 'border-[1.5px] border-dashed border-[#DEE2E6] bg-transparent text-[#71717A] hover:border-[#CBD5E1]'
+                                        }
                                     `}
                                 >
                                     {idx + 1}
                                     {isFlagged && (
-                                        <div className="absolute -top-1.5 -right-1.5">
-                                            <Flag className="w-4 h-4 text-rose-600 fill-rose-600 drop-shadow-sm" />
+                                        <div className="absolute -top-[5px] -right-[5px] bg-white rounded-full p-[2px]">
+                                            <Flag className="w-[10px] h-[10px] text-[#DC2626] fill-[#DC2626]" />
                                         </div>
                                     )}
                                 </button>
@@ -606,13 +814,14 @@ const ReviewScreen = ({
                 </div>
             </div>
 
-            <div className="p-8 bg-white border-t border-slate-100 flex justify-center sticky bottom-0 z-10">
+            {/* Bottom Actions Container */}
+            <div className="fixed bottom-0 left-0 w-full h-24 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)] flex items-center justify-center z-50">
                 <button
                     onClick={onSubmit}
-                    className="h-14 px-12 bg-[#2b59c3] hover:bg-[#1e3f8a] text-white font-bold text-lg rounded-xl shadow-xl shadow-blue-900/10 transition-all flex items-center gap-4 group"
+                    className="h-12 px-8 bg-[#345BAE] hover:bg-[#2A4B92] text-white font-semibold text-[15px] rounded-lg transition-all flex items-center gap-2 group"
                 >
                     Submit Module
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
             </div>
         </div>
@@ -706,6 +915,11 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const [showNavModal, setShowNavModal] = useState(false);
     const [testDenoms, setTestDenoms] = useState({ math: 22, rw: 27 });
     const [olympiadProfile, setOlympiadProfile] = useState<{ full_name?: string; phone?: string } | null>(null);
+    const [showLineReader, setShowLineReader] = useState(false);
+    const [splitWidth, setSplitWidth] = useState(50); // percentage for passage
+    const [isDraggingSplit, setIsDraggingSplit] = useState(false);
+    const [selectionRect, setSelectionRect] = useState<{ x: number, y: number } | null>(null);
+    const [currentSelection, setCurrentSelection] = useState<{ start: number, end: number, text: string } | null>(null);
 
     // Desmos calculator ref
     const calculatorRef = useRef<DesmosPanelRef>(null);
@@ -720,6 +934,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     });
 
     useEffect(() => {
+        const controller = new AbortController();
         const fetchQ = async () => {
             if (!testId || stage === 'break') return;
             setLoading(true);
@@ -766,63 +981,24 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 setHighlights({});
                 setStruckOptions({});
                 setTimeLeft(stage.startsWith('rw') ? 1920 : 2100);
-            } catch (e) {
+            } catch (e: any) {
+                if (e.name === 'AbortError') return;
                 console.error("Fetch failed", e);
             } finally {
                 setLoading(false);
             }
         };
         fetchQ();
+        return () => controller.abort();
     }, [stage, testId, m2Difficulty, apiBase]);
 
     useEffect(() => {
         if (violationCount >= 3) {
-            const forceSubmit = async () => {
-                setLoading(true);
-                // Construct simplified response payload for partial credit/record
-                const currentModuleResponses = questions.map(q => ({
-                    ...q,
-                    userAnswer: answers[q.id] || null,
-                    section: stage.startsWith('rw') ? 'rw' : 'math',
-                    module: stage
-                }));
-                // Merge with prior
-                const finalData = [...allResponses, ...currentModuleResponses];
-
-                // Submit
-                try {
-                    const correctCount = finalData.filter(r => r.userAnswer === r.answer).length;
-                    const score = Math.round((correctCount / (finalData.length || 1)) * 1200) + 400; // Corrected scoring (Baseline 400)
-
-                    await fetch(`${apiBase}/api/results`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userEmail: user?.email,
-                            testId,
-                            score: 0, // Disqualified? Or just score what they have? Prompt says "severe violations", usually 0.
-                            // Let's give them 0 or distinct status.
-                            // Database schema might not have "status" for results yet, only score.
-                            // Let's give 0 score for now to indicate termination, OR calculate score but frontend will show Terminated.
-                            // Actually, let's keep it simple: Submit what they have.
-                            responses: finalData,
-                            createdAt: new Date().toISOString(),
-                            is_olympiad: isOlympiadMode,
-                            disqualified: true // Add this flag if backend supports it (it might not yet, but useful payload)
-                        })
-                    });
-
-                    alert("Test Terminated due to Security Violations.");
-                    onNavigate('home');
-                } catch (e) {
-                    alert("Termination Error");
-                    onNavigate('home');
-                }
-            };
-
-            forceSubmit();
+            // Log to console but DO NOT redirect the user anymore.
+            // This allows them to continue the test as requested.
+            console.log("Maximum security violations reached. Violation logged to server.");
         }
-    }, [violationCount, questions, answers, allResponses, stage, apiBase, user, testId, isOlympiadMode, onNavigate]);
+    }, [violationCount]);
 
     // Detect Test Type (Olympiad, Math Only, RW Only, Full)
     useEffect(() => {
@@ -1053,6 +1229,27 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         });
     };
 
+    // For split pane dragging
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDraggingSplit) return;
+            const newWidth = (e.clientX / window.innerWidth) * 100;
+            if (newWidth > 20 && newWidth < 80) {
+                setSplitWidth(newWidth);
+            }
+        };
+        const handleMouseUp = () => setIsDraggingSplit(false);
+
+        if (isDraggingSplit) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDraggingSplit]);
+
     if (loading) return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
@@ -1140,55 +1337,83 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     </div>
                 </div>
             )}
-            <header className="h-[72px] bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 relative z-40">
+            <header className="h-[64px] bg-white flex items-center justify-between px-6 shrink-0 relative z-40">
                 <div className="flex flex-col">
                     <h1 className="text-[17px] font-bold text-[#1e293b] leading-tight">
                         {stage === 'rw-m1' ? 'Section 1, Module 1: Reading and Writing' :
                             stage === 'rw-m2' ? 'Section 1, Module 2: Reading and Writing' :
                                 stage === 'math-m1' ? 'Section 2, Module 1: Math' : 'Section 2, Module 2: Math'}
                     </h1>
-                    <button className="text-[13px] font-bold text-[#0077c8] flex items-center gap-1 mt-0.5 hover:underline">
-                        Directions <ChevronDown className="w-3 h-3" />
+                    <button
+                        onClick={() => setShowDirections(!showDirections)}
+                        className="text-[13px] font-bold text-[#0077c8] flex items-center gap-1 mt-0.5 hover:underline"
+                    >
+                        Directions <ChevronDown className={`w-3 h-3 transition-transform ${showDirections ? 'rotate-180' : ''}`} />
                     </button>
                 </div>
 
-                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-                    <div className="flex items-center gap-2">
-                        <span className={`font-bold text-[22px] tracking-tight ${timeLeft < 300 ? 'text-rose-600' : 'text-[#1e293b]'}`}>
-                            {showTimer ? formatTime(timeLeft) : ''}
-                        </span>
-                        <Clock className="w-4 h-4 text-slate-400" />
-                    </div>
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
+                    <span className={`font-bold text-[24px] tracking-tight ${timeLeft < 300 ? 'text-rose-600' : 'text-[#1e293b]'}`}>
+                        {showTimer ? formatTime(timeLeft) : ''}
+                    </span>
                     <button
                         onClick={() => setShowTimer(!showTimer)}
-                        className="px-4 py-0.5 border border-slate-300 rounded-full text-[12px] font-bold text-slate-600 hover:bg-slate-50 shadow-sm"
+                        className="px-4 py-1 border border-slate-300 rounded font-bold text-[13px] text-slate-700 hover:bg-slate-50 transition-colors"
                     >
                         {showTimer ? 'Hide' : 'Show'}
                     </button>
                 </div>
 
-                <div className="flex items-center gap-8">
-                    <button className="flex flex-col items-center gap-1 group">
-                        <div className="p-2 rounded-md group-hover:bg-slate-50 transition-colors">
-                            <PenLine className="w-5 h-4 text-slate-700" />
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Annotate</span>
-                    </button>
-                    <button className="flex flex-col items-center gap-1 group">
-                        <div className="p-2 rounded-md group-hover:bg-slate-50 transition-colors">
-                            <MoreVertical className="w-5 h-4 text-slate-700" />
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">More</span>
+                <div className="flex items-center gap-6">
+                    {stage.startsWith('math') ? (
+                        <>
+                            <button onClick={() => calculatorRef.current?.open()} className="flex flex-col items-center gap-1 group text-slate-800">
+                                <Calculator className="w-5 h-5 group-hover:text-blue-600 transition-colors" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider">Calculator</span>
+                            </button>
+                            <button onClick={() => setShowReference(true)} className="flex flex-col items-center gap-1 group text-slate-800">
+                                <Book className="w-5 h-5 group-hover:text-blue-600 transition-colors" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider">Reference</span>
+                            </button>
+                        </>
+                    ) : (
+                        <button onClick={() => setIsHighlighterActive(!isHighlighterActive)} className={`flex flex-col items-center gap-1 group transition-colors ${isHighlighterActive ? 'text-blue-600' : 'text-slate-800 hover:text-blue-600'}`}>
+                            <PenLine className="w-5 h-5" />
+                            <span className="text-[11px] font-bold uppercase tracking-wider">Annotate</span>
+                        </button>
+                    )}
+
+                    <div className="w-px h-8 bg-slate-200" />
+
+                    <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="flex flex-col items-center gap-1 group text-slate-800 hover:text-blue-600 transition-colors">
+                        <MoreVertical className="w-5 h-5 transition-colors" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider">More</span>
                     </button>
                 </div>
             </header>
 
-            <div className="bluebook-dashed-separator shrink-0" />
+            <div className="bluebook-practice-bar">
+                This is a practice test
+            </div>
+
+
 
             {showDirections && (
-                <div className="bg-[#F6F8FA] border-b border-slate-200 p-6 text-sm text-slate-700 animate-in slide-in-from-top-2 z-10">
-                    <h3 className="font-bold mb-2">Directions</h3>
-                    <p>Each question includes one or more passages. Read carefully and choose the best answer.</p>
+                <div className="fixed inset-x-0 top-[64px] bg-[#F6F8FA] border-b border-slate-200 p-8 text-[15px] text-slate-700 animate-in slide-in-from-top-2 z-50 shadow-lg">
+                    <div className="max-w-4xl mx-auto">
+                        <h3 className="font-bold text-slate-900 mb-4 text-lg">Directions</h3>
+                        <p className="leading-relaxed">
+                            {stage.startsWith('rw')
+                                ? "The questions in this section address a number of important reading and writing skills. Each question includes one or more passages, which may include a table or graph. Read each passage and question carefully, and then choose the best answer to the question based on the passage(s). All questions in this section are multiple-choice with four answer choices. Each question has a single best answer."
+                                : "The questions in this section address a number of important math skills. All questions in this section are multiple-choice with four answer choices. Each question has a single best answer."}
+                        </p>
+                        <button
+                            onClick={() => setShowDirections(false)}
+                            className="mt-6 px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors"
+                        >
+                            Close
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -1201,144 +1426,240 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 <DraggableReference onClose={() => setShowReference(false)} />
             )}
 
-            <main className="flex-1 flex flex-col overflow-hidden bg-white">
+            <main className="flex-1 flex flex-col overflow-hidden bg-white relative">
+
+
                 {/* Question Bar */}
-                <div className="h-[48px] bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 relative">
+                <div className="h-[48px] bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 relative z-10">
                     <div className="flex items-center gap-4">
                         <div className="bluebook-question-num-box">
                             {currentIndex + 1}
                         </div>
                         <button
                             onClick={toggleFlag}
-                            className={`flex items-center gap-2 px-3 py-1.5 transition-colors text-[13px] font-bold ${flags.has(currentQ?.id || 0) ? 'text-rose-600' : 'text-slate-600 hover:text-slate-900 font-medium'}`}
+                            className={`flex items-center gap-2 px-3 py-1.5 transition-colors text-[13px] font-bold ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-slate-600 hover:text-slate-900'}`}
                         >
-                            <Flag className={`w-4 h-4 ${flags.has(currentQ?.id || 0) ? 'fill-current' : ''}`} />
+                            <Bookmark className={`w-4 h-4 ${flags.has(currentQ?.id || 0) ? 'fill-current' : ''}`} />
                             {flags.has(currentQ?.id || 0) ? 'Marked' : 'Mark for Review'}
                         </button>
                     </div>
 
-                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-px overflow-hidden">
-                        <div className="bluebook-dashed-separator w-[400px]" />
-                    </div>
+
 
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsStrikethroughActive(!isStrikethroughActive)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded transition-all border ${isStrikethroughActive ? 'bg-white border-slate-300 text-[#111827] shadow-sm' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded border transition-all ${isStrikethroughActive ? 'bg-slate-100 border-slate-400 text-slate-900' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
                         >
-                            <span className={`text-lg leading-none font-serif ${isStrikethroughActive ? 'line-through decoration-[#111827]' : ''}`}>ABC</span>
+                            <span className="text-[18px] leading-none font-serif font-bold">ABC</span>
+                            <div className="relative">
+                                <div className="absolute inset-0 border-t-2 border-current top-1/2 -translate-y-1/2 rotate-[-45deg]" />
+                            </div>
                         </button>
                     </div>
                 </div>
 
-                <div className="flex-1 flex overflow-hidden">
-                    {currentQ?.passage && (
-                        <div className="w-1/2 border-r border-slate-300 bg-white flex flex-col relative group/pane">
-                            <button className="absolute top-4 right-4 p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors opacity-0 group-hover/pane:opacity-100 z-10">
-                                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current stroke-2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                            </button>
-                            <div className="flex-1 overflow-y-auto p-12 bluebook-scroll select-text cursor-text" onMouseDown={e => e.stopPropagation()}>
-                                <PassageViewer
-                                    text={currentQ.passage}
-                                    highlights={currentQ?.id ? (highlights[currentQ.id] || []) : []}
-                                    isHighlighterActive={isHighlighterActive}
-                                    onAddHighlight={(range) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))}
-                                    onRemoveHighlight={(idx) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))}
-                                />
-                                {currentQ?.imageUrl && <div className="mt-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className={`${currentQ?.passage ? 'w-1/2' : 'w-full max-w-4xl mx-auto'} bg-white flex flex-col relative group/pane-right`}>
-                    {currentQ?.passage && (
-                        <button className="absolute top-4 left-4 p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors opacity-0 group-hover/pane-right:opacity-100 z-10">
-                            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current stroke-2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                        </button>
-                    )}
-                    <div className="flex-1 overflow-y-auto p-12 bluebook-scroll">
-                        {/* Question number moved to action bar */}
-
-                        <div className="mb-8 space-y-4">
-                            {!currentQ?.passage && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
-                            <p className="text-[18px] leading-relaxed text-[#111827] font-medium">{currentQ?.text}</p>
-                        </div>
-
-                        <div className="space-y-3 pb-24">
-                            {!(currentQ?.type === 'numeric' || currentQ?.type === 'spr') && currentQ?.options?.map((opt, idx) => {
-                                const letter = ['A', 'B', 'C', 'D'][idx];
-                                const isSelected = currentQ?.id ? answers[currentQ.id] === letter : false;
-                                const isStruck = currentQ?.id ? struckOptions[currentQ.id]?.has(letter) : false;
-
-                                return (
-                                    <div key={letter} className="relative group/opt">
-                                        <button
-                                            disabled={isStruck}
-                                            onClick={() => {
-                                                if (isStrikethroughActive) toggleStrike(letter);
-                                                else setAnswers(p => ({ ...p, [currentQ.id]: letter }));
-                                            }}
-                                            className={`bluebook-option-button ${isSelected ? 'selected' : ''} ${isStruck ? 'opacity-40 cursor-not-allowed border-dashed' : ''}`}
-                                        >
-                                            <div className="bluebook-option-letter">{letter}</div>
-                                            <div className="flex-1 flex flex-col gap-2">
-                                                <span className={`text-[16px] leading-relaxed text-slate-800 font-medium ${isStruck ? 'line-through decoration-slate-400' : ''}`}>{opt}</span>
-                                                {currentQ.optionImages?.[idx] && (
-                                                    <div className="mt-2 rounded border border-slate-200 overflow-hidden bg-white max-w-sm">
-                                                        <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {isStruck && (
-                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                    <div className="w-full h-[1px] bg-slate-300 -rotate-2" />
-                                                </div>
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); toggleStrike(letter); }}
-                                            className={`absolute top-4 right-4 p-1.5 text-xs font-bold text-slate-300 hover:text-rose-500 transition-opacity opacity-0 group-hover/opt:opacity-100 ${isStruck ? 'text-rose-500 opacity-100' : ''}`}
-                                            title="Eliminate"
-                                        >
-                                            <span className="line-through">ABC</span>
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                            {(currentQ?.type === 'numeric' || currentQ?.type === 'spr' || !currentQ?.options || currentQ.options.length === 0) && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-slate-50 p-10 rounded-2xl border border-slate-200 shadow-sm max-w-xl"
+                <div className="flex-1 flex overflow-hidden relative">
+                    {(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && (
+                        <>
+                            <div
+                                className="border-r border-slate-300 bg-white flex flex-col relative group/pane overflow-hidden"
+                                style={{ width: `${splitWidth}%` }}
+                            >
+                                <div
+                                    className="flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll select-text cursor-text relative"
+                                    onMouseUp={(e) => {
+                                        const selection = window.getSelection();
+                                        if (selection && !selection.isCollapsed) {
+                                            const range = selection.getRangeAt(0);
+                                            const rect = range.getBoundingClientRect();
+                                            setSelectionRect({ x: rect.left + rect.width / 2, y: rect.top });
+                                        } else {
+                                            setSelectionRect(null);
+                                        }
+                                    }}
                                 >
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-8 h-8 rounded-lg bg-[#2b59c3] flex items-center justify-center text-white">
-                                            <Zap className="w-4 h-4 fill-current" />
+                                    {currentQ?.passage ? (
+                                        <PassageViewer
+                                            text={currentQ.passage}
+                                            highlights={currentQ?.id ? (highlights[currentQ.id] || []) : []}
+                                            isHighlighterActive={isHighlighterActive}
+                                            onAddHighlight={(range) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))}
+                                            onRemoveHighlight={(idx) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))}
+                                            onSelectionChange={(sel) => setCurrentSelection(sel)}
+                                        />
+                                    ) : (
+                                        <div className="font-serif text-[#111827] whitespace-pre-wrap pr-4">
+                                            <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
+                                            <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
+                                                <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
+                                                <li>You can enter up to 5 characters for a <strong>positive</strong> answer and up to 6 characters (including the negative sign) for a <strong>negative</strong> answer.</li>
+                                                <li>If your answer is a <strong>fraction</strong> that doesn't fit in the provided space, enter the decimal equivalent.</li>
+                                                <li>If your answer is a <strong>decimal</strong> that doesn't fit in the provided space, enter it by truncating or rounding at the fourth digit.</li>
+                                                <li>If your answer is a <strong>mixed number</strong> (such as 3 1/2), enter it as an improper fraction (7/2) or its decimal equivalent (3.5).</li>
+                                                <li>Don't enter <strong>symbols</strong> such as a percent sign, comma, or dollar sign.</li>
+                                            </ul>
                                         </div>
-                                        <label className="text-xs font-bold text-slate-900 uppercase tracking-widest">Student-Produced Response</label>
-                                    </div>
-                                    <Input
-                                        value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
-                                        onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
-                                        placeholder="Enter your solution..."
-                                        className="bg-white h-16 text-2xl font-bold text-slate-900 border-slate-200 focus:border-[#2b59c3] focus:ring-4 focus:ring-[#2b59c3]/5 rounded-xl transition-all shadow-inner px-6"
+                                    )}
+
+                                    {currentQ?.imageUrl && <div className="mt-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
+                                </div>
+                                {showLineReader && <LineReader onClose={() => setShowLineReader(false)} />}
+                                {selectionRect && isHighlighterActive && (
+                                    <HighlightToolbar
+                                        position={selectionRect}
+                                        onSelectColor={(color) => {
+                                            if (currentSelection && currentQ?.id) {
+                                                setHighlights(prev => ({
+                                                    ...prev,
+                                                    [currentQ.id]: [...(prev[currentQ.id] || []), { ...currentSelection, color }]
+                                                }));
+                                                setCurrentSelection(null);
+                                                setSelectionRect(null);
+                                                window.getSelection()?.removeAllRanges();
+                                            }
+                                        }}
+                                        onRemove={() => {
+                                            setSelectionRect(null);
+                                            setCurrentSelection(null);
+                                            window.getSelection()?.removeAllRanges();
+                                        }}
                                     />
-                                    <p className="mt-6 text-[11px] font-medium text-slate-500 leading-relaxed">
-                                        For math questions without options, enter your final numerical answer or expression in the field above.
-                                    </p>
-                                </motion.div>
-                            )}
+                                )}
+                            </div>
+
+                            <div
+                                className="absolute top-0 bottom-0 z-30 flex items-center justify-center"
+                                style={{ left: `${splitWidth}%`, transform: 'translateX(-50%)' }}
+                            >
+                                <div
+                                    className="bluebook-split-dragger"
+                                    onMouseDown={() => setIsDraggingSplit(true)}
+                                >
+                                    <div className="flex flex-col gap-1">
+                                        <div className="w-1 h-1 rounded-full bg-slate-400" />
+                                        <div className="w-1 h-1 rounded-full bg-slate-400" />
+                                        <div className="w-1 h-1 rounded-full bg-slate-400" />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <div
+                        className="bg-white flex flex-col relative group/pane-right overflow-hidden"
+                        style={{ width: (currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? `${100 - splitWidth}%` : '100%' }}
+                    >
+                        <div className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll ${!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                            <div className="mb-10 space-y-6">
+                                {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
+                                <p className="text-[18px] leading-[1.6] text-[#111827] font-medium">{currentQ?.text}</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {!(currentQ?.type === 'numeric' || currentQ?.type === 'spr') && currentQ?.options?.map((opt, idx) => {
+                                    const letter = ['A', 'B', 'C', 'D'][idx];
+                                    const isSelected = currentQ?.id ? answers[currentQ.id] === letter : false;
+                                    const isStruck = currentQ?.id ? struckOptions[currentQ.id]?.has(letter) : false;
+
+                                    return (
+                                        <div key={letter} className="flex items-center gap-4 group/opt-row">
+                                            <button
+                                                disabled={isStruck}
+                                                onClick={() => {
+                                                    setAnswers(p => ({ ...p, [currentQ.id]: letter }));
+                                                }}
+                                                className={`bluebook-option-button flex-1 ${isSelected ? 'selected text-blue-900' : ''} ${isStruck ? 'struck' : ''}`}
+                                            >
+                                                <div className="bluebook-option-letter">{letter}</div>
+                                                <div className="flex-1 flex flex-col gap-2">
+                                                    <span className={`text-[16px] leading-relaxed text-slate-800 font-medium ${isStruck ? 'line-through text-slate-400' : ''}`}>{opt}</span>
+                                                    {currentQ.optionImages?.[idx] && (
+                                                        <div className="mt-2 rounded border border-slate-200 overflow-hidden bg-white max-w-sm">
+                                                            <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleStrike(letter); }}
+                                                className={`bluebook-eliminate-circle ${isStruck ? 'active' : 'opacity-0 group-hover/opt-row:opacity-100'}`}
+                                                title="Eliminate"
+                                            >
+                                                <span>{letter}</span>
+                                                {isStruck && <div className="bb-slash" />}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                                {(currentQ?.type === 'numeric' || currentQ?.type === 'spr' || !currentQ?.options || currentQ.options.length === 0) && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-8 space-y-8"
+                                    >
+                                        <div className="w-[120px]">
+                                            <Input
+                                                value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
+                                                onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
+                                                className="h-[52px] text-[20px] bg-white text-[#111827] font-medium border border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-4 tracking-wider"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-[18px] text-[#111827] mb-2">Answer Preview:</div>
+                                            <div className="text-[20px] text-[#111827] tracking-wider min-h-[30px]">
+                                                {currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </main>
 
-            <footer className="h-20 bg-white border-t border-slate-200 flex items-center justify-between px-8 relative shrink-0 z-30">
-                <div className="flex items-center gap-4 min-w-[240px]">
-                    <span className="font-bold text-[#111827] text-[15px] lowercase">
-                        {isOlympiadMode ? (olympiadProfile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]) : (user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'user')}
-                    </span>
+            {showMoreMenu && (
+                <div className="fixed top-[60px] right-6 bg-white border border-slate-200 shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200">
+                    <button
+                        onClick={() => { setShowLineReader(true); setShowMoreMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
+                    >
+                        <Accessibility className="w-4 h-4 text-slate-500" />
+                        <span>Line Reader</span>
+                    </button>
+                    <button className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors">
+                        <Settings className="w-4 h-4 text-slate-500" />
+                        <span>Settings</span>
+                    </button>
+                    <button className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors">
+                        <HelpIcon className="w-4 h-4 text-slate-500" />
+                        <span>Help</span>
+                    </button>
+                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                    <button
+                        onClick={() => onNavigate('dashboard')}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-rose-600 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>Save and Exit</span>
+                    </button>
+                </div>
+            )}
+
+            <footer className="h-[72px] bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 z-40">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+                        <span className="text-slate-500 font-bold text-sm">
+                            {(olympiadProfile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+                        </span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[14px] font-black text-slate-900 tracking-tight leading-none">
+                            {olympiadProfile?.full_name || user?.email?.split('@')[0] || 'User'}
+                        </span>
+                    </div>
                 </div>
 
                 {/* Question Navigation Pill (Bluebook Style) */}
@@ -1348,22 +1669,21 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         className="bluebook-nav-button"
                     >
                         <span>Question {currentIndex + 1} of {questions.length}</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showNavModal ? 'rotate-180' : ''}`} />
+                        <ChevronDown className="w-4 h-4 ml-2 rotate-180" />
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3 min-w-[240px] justify-end">
-                    {currentIndex > 0 && (
-                        <button
-                            onClick={handleBack}
-                            className="h-11 px-8 bg-[#a0b4e8] text-white font-bold rounded-md hover:bg-[#8da2d4] transition-all text-sm"
-                        >
-                            Back
-                        </button>
-                    )}
+                <div className="flex items-center gap-3">
+                    <button
+                        disabled={currentIndex === 0}
+                        onClick={handleBack}
+                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all ${currentIndex === 0 ? 'opacity-30' : 'hover:bg-slate-50'}`}
+                    >
+                        Back
+                    </button>
                     <button
                         onClick={handleNext}
-                        className="h-11 px-10 bg-[#2b59c3] text-white font-bold rounded-md hover:bg-[#1e3f8a] transition-all shadow-md text-sm"
+                        className="h-10 px-8 rounded-lg bg-[#111827] text-white font-bold text-[14px] hover:bg-slate-800 transition-all"
                     >
                         {currentIndex === questions.length - 1 ? 'Review' : 'Next'}
                     </button>
@@ -1380,9 +1700,9 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     onNavigateToQuestion={setCurrentIndex}
                     onClose={() => setShowNavModal(false)}
                     onGoToReview={() => setScreen('review')}
-                    stageTitle={stage === 'rw-m1' ? 'Reading and Writing Module 1' :
-                        stage === 'rw-m2' ? 'Reading and Writing Module 2' :
-                            stage === 'math-m1' ? 'Math Module 1' : 'Math Module 2'}
+                    stageTitle={stage === 'rw-m1' ? 'Section 1, Module 1: Reading and Writing' :
+                        stage === 'rw-m2' ? 'Section 1, Module 2: Reading and Writing' :
+                            stage === 'math-m1' ? 'Section 2, Module 1: Math' : 'Section 2, Module 2: Math'}
                 />
             )}
         </div>

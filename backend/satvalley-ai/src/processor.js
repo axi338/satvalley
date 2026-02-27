@@ -55,7 +55,7 @@ let lastRequestTime = 0;
 
 // Make this configurable (PDF calls are heavy)
 const RATE_LIMIT_DELAY =
-    Number(process.env.AI_RATE_LIMIT_DELAY_MS) || 20000; // default 20s
+    Number(process.env.AI_RATE_LIMIT_DELAY_MS) || 5000; // default 5s (reduced from 20s)
 
 let inFlight = Promise.resolve();
 
@@ -318,6 +318,110 @@ IMPORTANT EXTRACTION RULES:
     } catch (error) {
         logAiActivity("ERROR", "PDF_SPLIT", error?.message || String(error));
         console.error("AI Processing Error:", error);
+        throw error;
+    }
+}
+
+/**
+ * Generates high-quality vocabulary details (Cambridge-style definition, example) using Gemini.
+ */
+export async function generateVocabularyAI(word, theme = "Standard") {
+    const prompt = `
+Generate vocabulary details for the following word:
+WORD: "${word}"
+THEME: "${theme}" (Standard, GenZ, or Oxford)
+
+OUTPUT FORMAT (Strict JSON):
+{
+  "definition": "A high-quality, Cambridge-style definition that is clear and pedagogical",
+  "example": "A high-quality example sentence illustrating the usage."
+}
+
+RULES:
+1. Output ONLY the JSON object.
+2. The definition MUST follow the Cambridge Dictionary style (pedagogical and clear).
+3. The example should match the theme (e.g., GenZ should use slang like 'vibe', 'no cap', etc.).
+`;
+
+    try {
+        const request = buildTextRequestOrThrow(prompt);
+        const result = await generateWithRetry(request);
+        const text = extractTextFromVertexResponse(result.response);
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No valid JSON found in response");
+
+        const data = JSON.parse(jsonMatch[0]);
+        logAiActivity("SUCCESS", "VOCAB_GEN", `Generated for: ${word}`);
+        return data;
+    } catch (error) {
+        logAiActivity("ERROR", "VOCAB_GEN", error?.message || String(error));
+        throw error;
+    }
+}
+
+/**
+ * Analyzes student performance and gives comprehensive, skill-based pedagogical suggestions.
+ */
+export async function analyzePerformanceAI(responses) {
+    const prompt = `
+Analyze the following student SAT practice test performance data. 
+Provide a deep pedagogical synthesis including a skill-by-skill breakdown, a roadmap for improvement, and an overall readiness score.
+
+RESPONSES:
+${JSON.stringify(responses, null, 2)}
+
+OUTPUT FORMAT (Strict JSON):
+{
+  "mastery_score": 85, // Scale 0-100 indicating overall readiness
+  "encouragement": "A high-energy, motivational one-liner.",
+  "overall_critique": "A professional, pedagogical summary of the performance.",
+  "skill_breakdown": [
+    {
+      "skill": "Heart of Algebra", // e.g., "Heart of Algebra", "Rhetoric", "Standard English Conventions"
+      "mastery": 70, // 0-100 score for this specific skill
+      "insight": "Briefly explain why this score was given based on their answers."
+    }
+  ],
+  "roadmap": [
+    {
+      "step": 1,
+      "title": "Master Linear Equations",
+      "action": "Focus on isolating variables in complex word problems. Spend 30 mins each day on multi-step equations."
+    }
+  ]
+}
+
+CATEGORIES TO ANALYZE (If applicable):
+- Information and Ideas
+- Craft and Structure
+- Expression of Ideas
+- Standard English Conventions
+- Heart of Algebra
+- Problem Solving and Data Analysis
+- Passport to Advanced Math
+- Geometry and Trigonometry
+
+RULES:
+1. Output ONLY the JSON object.
+2. Be encouraging but direct and technical.
+3. If specific question data is missing for a category, omit that category from the breakdown.
+4. Ensure the roadmap steps are sequential and highly specific.
+`;
+
+    try {
+        const request = buildTextRequestOrThrow(prompt);
+        const result = await generateWithRetry(request);
+        const text = extractTextFromVertexResponse(result.response);
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No valid JSON found in response");
+
+        const data = JSON.parse(jsonMatch[0]);
+        logAiActivity("SUCCESS", "PERF_ANALYZE", `Analyzed ${responses.length} responses.`);
+        return data;
+    } catch (error) {
+        logAiActivity("ERROR", "PERF_ANALYZE", error?.message || String(error));
         throw error;
     }
 }

@@ -53,9 +53,13 @@ export default function App() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log(`DEBUG: Auth State Changed Event: ${event}`, session);
-      setUser(session?.user ?? null);
+      const newUser = session?.user ?? null;
+      setUser(newUser);
+
       if (event === 'SIGNED_IN') {
-        setCurrentPage('dashboard');
+        // Only redirect to dashboard if they are on a "guest" page (home or auth)
+        // This prevents kicking them out of a test session if the session refreshes.
+        setCurrentPage(prev => (prev === 'home' || prev === 'auth') ? 'dashboard' : prev);
       } else if (event === 'SIGNED_OUT') {
         setCurrentPage('home');
       }

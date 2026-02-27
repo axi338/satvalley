@@ -21,9 +21,9 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
         const fetchUserStats = async () => {
             try {
                 const { data: results, error } = await supabase
-                    .from('test_sessions')
+                    .from('results')
                     .select('score, created_at')
-                    .eq('user_id', user.id)
+                    .eq('user_email', user.email)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -192,9 +192,32 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
                         <div className="pt-8 border-t border-white/5">
                             <h4 className="text-sm font-bold text-white mb-4">Achievements</h4>
                             <div className="flex flex-wrap gap-3">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400" title="Getting Started">
+                                {/* Always have a getting started badge */}
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20" title="Getting Started">
                                     <Award size={24} />
                                 </div>
+
+                                {stats.testsTaken >= 1 && (
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]" title="First Test Complete">
+                                        <Target size={24} />
+                                    </div>
+                                )}
+
+                                {stats.testsTaken >= 5 && (
+                                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/20 shadow-[0_0_15px_rgba(251,191,36,0.1)]" title="Dedicated Scholar (5 Tests)">
+                                        <BookOpen size={24} />
+                                    </div>
+                                )}
+
+                                {stats.avgScore >= 1400 && (
+                                    <div className="w-12 h-12 rounded-2xl bg-rose-500/20 flex items-center justify-center text-rose-400 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]" title="Top Scorer (1400+ Avg)">
+                                        <Sparkles size={24} />
+                                    </div>
+                                )}
+
+                                {stats.testsTaken === 0 && (
+                                    <div className="text-xs text-slate-500 italic mt-2 w-full">Complete practice tests to unlock more badges!</div>
+                                )}
                             </div>
                         </div>
                     </div>
