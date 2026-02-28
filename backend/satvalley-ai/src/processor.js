@@ -58,7 +58,8 @@ export async function normalizeQuestion(rawText) {
       "subject": "math or rw",
       "difficulty": "easy, medium, hard",
       "skill_tags": ["tag1", "tag2"],
-      "bbox": [ymin, xmin, ymax, xmax] // Array of numbers or null
+      "bbox": [ymin, xmin, ymax, xmax], // Array of numbers or null
+      "has_image": false // Set to true if the question/passage contains an [IMAGE] placeholder
     }
     
     RULES:
@@ -67,11 +68,12 @@ export async function normalizeQuestion(rawText) {
     3. Ensure "subject" is lowercase.
     4. If it is a math question without options, set "type" to "spr" and "options" to null.
     5. If options are not clearly labeled, infer them from the text and set "type" to "multiple-choice".
-    6. PRESERVE ALL GRAPH/IMAGE DESCRIPTIONS found in the text.
+    6. If the text contains [IMAGE], do NOT write a description. Set "has_image" to true in the JSON and leave the image placeholder as-is in "text" or "passage". Do NOT invent or describe the image content.
     7. EXTRACT the [bbox: ...] tag from raw text and put it in the "bbox" field as an array of integers.
     8. DETERMINE SUBJECT:
        - If the question involves calculation, algebra, geometry, or data analysis -> "math"
        - If the question involves reading a passage, grammar, vocabulary, or rhetorics -> "rw"
+    9. Do NOT include any UI text in output. Ignore phrases like "Mark for Review", "Back", "Next", "Question X of Y", etc.
     `;
 
     try {
@@ -100,19 +102,20 @@ export async function processPdfCandidates(fileBuffer, mimeType = 'application/p
     const prompt = `
     You are an expert SAT exam digitizer.
     Your task is to extract ALL questions from this document.
-    
-    CRITICAL INSTRUCTION FOR IMAGES/GRAPHS:
-    - You must specificially look for graphs, tables, and diagrams.
-    - When you find one, you MUST include a textual description of it in the question text.
-    - NEW: You MUST also provide the BOUNDING BOX coordinates of the diagram on the page.
+
+    CRITICAL RULES - READ CAREFULLY:
+    1. Extract ONLY real SAT question content.
+    2. DO NOT copy any UI elements, interface text, or navigation text such as: "Mark for Review", "Back", "Next", "Question X of Y", "Go to question", "Bookmark", page numbers, section headers/footers, or any other non-question text.
+    3. For GRAPHS, TABLES, CHARTS, DIAGRAMS, or any IMAGE: DO NOT describe them. Simply write [IMAGE] as a placeholder. The image will be handled separately.
+    4. You MUST provide the BOUNDING BOX coordinates of any diagram/graph/table/image on the page.
     - Format: [bbox: ymin, xmin, ymax, xmax] (on a scale of 0-1000)
-    - Example: "[Graph: linear function...] [bbox: 150, 100, 450, 900]"
-    - NEW: You MUST indiciate which Page Number (1-based) the question is on.
+    - Example: "[IMAGE] [bbox: 150, 100, 450, 900]"
+    5. You MUST indicate which Page Number (1-based) the question is on.
     - Format: [Page: X]
-    
+
     OUTPUT FORMAT:
     Return each question separated by the delimiter "---QUESTION_START---".
-    Include the full question text, any header/passage, the image description, the BBOX, the [Page: X] tag, and all options.
+    Include the full question text, any reading passage text (not images), the [IMAGE] placeholder with [bbox:] if applicable, the [Page: X] tag, and all answer options.
     Do not output JSON yet, just the raw separated content blocks.
     `;
 
