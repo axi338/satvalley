@@ -1,4 +1,5 @@
 import React, { memo, useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { MathText } from '../ui/MathText';
 import { supabase } from '../../lib/supabase';
 import {
     ChevronLeft,
@@ -659,38 +660,38 @@ const QuestionNavigationModal = ({
 }) => {
     return (
         <div className="bb-nav-modal-overlay" onClick={onClose}>
-            <div className="flex flex-col items-center">
-                <div className="bb-nav-modal-content" onClick={(e) => e.stopPropagation()}>
-                    <div className="p-4 flex items-center justify-between">
+            <div className="flex flex-col items-center max-w-[500px] w-full mt-24">
+                <div className="bg-white rounded-[10px] shadow-2xl overflow-hidden w-full border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-5 flex items-start justify-between">
                         <div className="w-8" />
-                        <h3 className="text-[18px] font-bold text-slate-800 text-center flex-1 leading-tight">
-                            {stageTitle}<br />Questions
+                        <h3 className="text-[17px] font-bold text-[#141A29] text-center flex-1 leading-[1.3] px-4">
+                            {stageTitle}: {stageTitle.includes('Section 1') ? 'Reading and Writing' : 'Math'}<br />Questions
                         </h3>
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors">
-                            <X className="w-5 h-5 text-slate-600" />
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors shrink-0">
+                            <X className="w-5 h-5 text-slate-500" />
                         </button>
                     </div>
 
                     <div className="h-px bg-slate-200 w-full" />
 
-                    <div className="flex items-center justify-center gap-6 py-4">
+                    <div className="flex items-center justify-center gap-6 py-5">
                         <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-slate-800" />
-                            <span className="text-[13px] font-medium text-slate-600">Current</span>
+                            <MapPin className="w-4 h-4 text-slate-800" strokeWidth={2} />
+                            <span className="text-[14px] font-medium text-slate-600">Current</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border border-dashed border-slate-700 rounded-sm" />
-                            <span className="text-[13px] font-medium text-slate-600">Unanswered</span>
+                            <div className="w-[18px] h-[18px] border-[1.5px] border-dashed border-[#A0A5B1] rounded-full" />
+                            <span className="text-[14px] font-medium text-slate-600">Unanswered</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Bookmark className="w-4 h-4 text-rose-600 fill-rose-600" />
-                            <span className="text-[13px] font-medium text-slate-600">For Review</span>
+                            <Bookmark className="w-[14px] h-[14px] text-[#DC2626] fill-[#DC2626]" />
+                            <span className="text-[14px] font-medium text-slate-600">For Review</span>
                         </div>
                     </div>
 
                     <div className="h-px bg-slate-200 w-full" />
 
-                    <div className="p-8 pb-4">
+                    <div className="p-6 pb-2 overflow-y-auto max-h-[350px]">
                         <div className="grid grid-cols-10 gap-x-2 gap-y-6">
                             {questions.map((q, idx) => {
                                 const isCurrent = currentIndex === idx;
@@ -700,8 +701,8 @@ const QuestionNavigationModal = ({
                                 return (
                                     <div key={idx} className="flex flex-col items-center relative">
                                         {isCurrent && (
-                                            <div className="absolute -top-6">
-                                                <MapPin className="w-4 h-4 text-slate-900" />
+                                            <div className="absolute -top-[22px]">
+                                                <MapPin className="w-[18px] h-[18px] text-slate-900" />
                                             </div>
                                         )}
                                         <button
@@ -709,11 +710,21 @@ const QuestionNavigationModal = ({
                                                 onNavigateToQuestion(idx);
                                                 onClose();
                                             }}
-                                            className={`bb-nav-box ${isAnswered ? 'answered' : 'unanswered'}`}
+                                            className={`
+                                                w-[32px] h-[32px] rounded-[4px] flex items-center justify-center font-bold text-[14px] 
+                                                transition-all hover:scale-105 active:scale-95
+                                                ${isAnswered
+                                                    ? 'bg-[#E1E5F2] text-[#3B5998] border border-transparent'
+                                                    : 'bg-white text-slate-800 border-[1.5px] border-dashed border-slate-700'}
+                                                ${isCurrent && isAnswered ? 'border-2 border-slate-900' : ''}
+                                                ${isCurrent && !isAnswered ? 'border-2 border-slate-900 border-solid' : ''}
+                                            `}
                                         >
-                                            <span className="relative z-10">{idx + 1}</span>
+                                            {idx + 1}
                                             {isFlagged && (
-                                                <Bookmark className="bb-nav-box-bookmark w-3.5 h-3.5 fill-rose-600 stroke-rose-600" />
+                                                <div className="absolute -top-1 -right-1 bg-white rounded-full p-[1px]">
+                                                    <Bookmark className="w-2.5 h-2.5 text-[#DC2626] fill-[#DC2626]" />
+                                                </div>
                                             )}
                                         </button>
                                     </div>
@@ -722,13 +733,13 @@ const QuestionNavigationModal = ({
                         </div>
                     </div>
 
-                    <div className="p-8 pt-4 flex justify-center">
+                    <div className="p-8 pb-10 flex justify-center">
                         <button
                             onClick={() => {
                                 onClose();
                                 onGoToReview();
                             }}
-                            className="bb-nav-review-btn"
+                            className="h-[44px] px-8 rounded-full border border-[#345BAE] text-[#345BAE] font-bold text-[15px] hover:bg-blue-50 transition-colors"
                         >
                             Go to Review Page
                         </button>
@@ -756,73 +767,74 @@ const ReviewScreen = ({
     stageTitle: string
 }) => {
     return (
-        <div className="flex flex-col min-h-screen bg-[#F0F2F5] pb-24 relative overflow-y-auto">
-            {/* Main Center Content Container */}
-            <div className="flex-1 w-full flex items-start justify-center pt-8 md:pt-16 pb-32">
-                <div className="bg-white rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-[800px] px-8 py-12 md:py-16 md:px-16 animate-in zoom-in-95 duration-500">
-
-                    {/* Header + Blue Underline */}
-                    <div className="text-center mb-10">
-                        <h2 className="text-[22px] font-bold text-[#141A29] tracking-tight">{stageTitle}</h2>
-                        <div className="h-[2px] w-[50px] bg-[#3B5998] mx-auto mt-4" />
+        <div className="flex flex-col min-h-screen bg-[#F0F2F5] pb-24 relative overflow-y-auto items-center justify-center">
+            <div className="flex flex-col items-center max-w-[500px] w-full my-auto">
+                <div className="bg-white rounded-[10px] shadow-sm border border-slate-200 w-full overflow-hidden animate-in zoom-in-95 duration-500">
+                    <div className="p-5 flex items-start justify-center">
+                        <h3 className="text-[17px] font-bold text-[#141A29] text-center flex-1 leading-[1.3] px-4">
+                            {stageTitle}: {stageTitle.includes('Section 1') ? 'Reading and Writing' : 'Math'}<br />Questions
+                        </h3>
                     </div>
 
-                    {/* Legend Header */}
-                    <div className="flex items-center justify-center gap-8 mb-12 pb-8 border-b border-[#F0F2F5]">
+                    <div className="h-px bg-slate-200 w-full" />
+
+                    <div className="flex items-center justify-center gap-6 py-5">
                         <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                            <span className="text-[11px] font-bold text-[#565C69] tracking-[0.15em] uppercase">Current</span>
+                            <MapPin className="w-4 h-4 text-slate-800" strokeWidth={2} />
+                            <span className="text-[14px] font-medium text-slate-600">Current</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-[18px] h-[18px] border-[1.5px] border-dashed border-[#A0A5B1] rounded-full" />
-                            <span className="text-[11px] font-bold text-[#565C69] tracking-[0.15em] uppercase">Unanswered</span>
+                            <span className="text-[14px] font-medium text-slate-600">Unanswered</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Flag className="w-[14px] h-[14px] text-[#DC2626] fill-[#DC2626]" />
-                            <span className="text-[11px] font-bold text-[#565C69] tracking-[0.15em] uppercase">For Review</span>
+                            <Bookmark className="w-[14px] h-[14px] text-[#DC2626] fill-[#DC2626]" />
+                            <span className="text-[14px] font-medium text-slate-600">For Review</span>
                         </div>
                     </div>
 
-                    {/* Question Grid */}
-                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-x-4 gap-y-5 px-4 md:px-8 max-w-[600px] mx-auto">
-                        {questions.map((q, idx) => {
-                            const isAnswered = !!answers[q.id];
-                            const isFlagged = flags.has(q.id);
+                    <div className="h-px bg-slate-200 w-full" />
 
-                            return (
-                                <button
-                                    key={q.id}
-                                    onClick={() => onNavigateToQuestion(idx)}
-                                    className={`
-                                        relative w-[50px] h-[46px] rounded-[10px] flex items-center justify-center font-bold text-[14px] transition-all hover:scale-105 active:scale-95 mx-auto
-                                        ${isAnswered
-                                            ? 'border-2 border-[#E1E5F2] bg-[#E1E5F2] text-[#3B5998]'
-                                            : 'border-[1.5px] border-dashed border-[#DEE2E6] bg-transparent text-[#71717A] hover:border-[#CBD5E1]'
-                                        }
-                                    `}
-                                >
-                                    {idx + 1}
-                                    {isFlagged && (
-                                        <div className="absolute -top-[5px] -right-[5px] bg-white rounded-full p-[2px]">
-                                            <Flag className="w-[10px] h-[10px] text-[#DC2626] fill-[#DC2626]" />
-                                        </div>
-                                    )}
-                                </button>
-                            );
-                        })}
+                    <div className="p-6 pb-2">
+                        <div className="grid grid-cols-10 gap-x-2 gap-y-6">
+                            {questions.map((q, idx) => {
+                                const isAnswered = !!answers[q.id];
+                                const isFlagged = flags.has(q.id);
+
+                                return (
+                                    <div key={q.id} className="flex flex-col items-center relative">
+                                        <button
+                                            onClick={() => onNavigateToQuestion(idx)}
+                                            className={`
+                                                w-[32px] h-[32px] rounded-[4px] flex items-center justify-center font-bold text-[14px] 
+                                                transition-all hover:scale-105 active:scale-95
+                                                ${isAnswered
+                                                    ? 'bg-[#E1E5F2] text-[#3B5998] border border-transparent'
+                                                    : 'bg-white text-slate-800 border-[1.5px] border-dashed border-slate-700'}
+                                            `}
+                                        >
+                                            {idx + 1}
+                                            {isFlagged && (
+                                                <div className="absolute -top-1 -right-1 bg-white rounded-full p-[1px]">
+                                                    <Bookmark className="w-2.5 h-2.5 text-[#DC2626] fill-[#DC2626]" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="p-8 pb-10 flex justify-center mt-2">
+                        <button
+                            onClick={onSubmit}
+                            className="h-[44px] px-8 rounded-full border border-[#345BAE] text-[#345BAE] font-bold text-[15px] hover:bg-blue-50 transition-colors flex items-center gap-2"
+                        >
+                            Next <ChevronRight className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            {/* Bottom Actions Container */}
-            <div className="fixed bottom-0 left-0 w-full h-24 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)] flex items-center justify-center z-50">
-                <button
-                    onClick={onSubmit}
-                    className="h-12 px-8 bg-[#345BAE] hover:bg-[#2A4B92] text-white font-semibold text-[15px] rounded-lg transition-all flex items-center gap-2 group"
-                >
-                    Submit Module
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
             </div>
         </div>
     );
@@ -1396,6 +1408,42 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
 
 
 
+            {showMoreMenu && (
+                <div className="fixed top-[60px] right-6 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                    <button
+                        onClick={() => {
+                            setShowMoreMenu(false);
+                            alert("Settings functionality would open here.");
+                        }}
+                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-slate-700 transition-colors"
+                    >
+                        <Settings className="w-4 h-4" />
+                        <span className="text-[14px] font-medium">Settings</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setShowMoreMenu(false);
+                            alert("Help dialog would open here.");
+                        }}
+                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-slate-700 transition-colors"
+                    >
+                        <HelpIcon className="w-4 h-4" />
+                        <span className="text-[14px] font-medium">Help</span>
+                    </button>
+                    <div className="h-px bg-slate-200 my-2" />
+                    <button
+                        onClick={() => {
+                            setShowMoreMenu(false);
+                            onNavigate('dashboard');
+                        }}
+                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-rose-600 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-[14px] font-medium">Save and Exit</span>
+                    </button>
+                </div>
+            )}
+
             {showDirections && (
                 <div className="fixed inset-x-0 top-[64px] bg-[#F6F8FA] border-b border-slate-200 p-8 text-[15px] text-slate-700 animate-in slide-in-from-top-2 z-50 shadow-lg">
                     <div className="max-w-4xl mx-auto">
@@ -1428,34 +1476,45 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
 
 
                 {/* Question Bar */}
-                <div className="h-[48px] bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 relative z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="bluebook-question-num-box">
-                            {currentIndex + 1}
-                        </div>
-                        <button
-                            onClick={toggleFlag}
-                            className={`flex items-center gap-2 px-3 py-1.5 transition-colors text-[13px] font-bold ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-slate-600 hover:text-slate-900'}`}
-                        >
-                            <Bookmark className={`w-4 h-4 ${flags.has(currentQ?.id || 0) ? 'fill-current' : ''}`} />
-                            {flags.has(currentQ?.id || 0) ? 'Marked' : 'Mark for Review'}
-                        </button>
-                    </div>
-
-
-
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsStrikethroughActive(!isStrikethroughActive)}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded border transition-all ${isStrikethroughActive ? 'bg-slate-100 border-slate-400 text-slate-900' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
-                        >
-                            <span className="text-[18px] leading-none font-serif font-bold">ABC</span>
-                            <div className="relative">
-                                <div className="absolute inset-0 border-t-2 border-current top-1/2 -translate-y-1/2 rotate-[-45deg]" />
+                <div className="h-[48px] bg-slate-100/50 flex flex-col justify-end px-8 shrink-0 relative z-10 pt-2 pb-0">
+                    <div className="flex items-center justify-between w-full h-full pb-1">
+                        <div className="flex items-center gap-4 h-full">
+                            <div className="bg-[#111111] text-white font-bold text-[18px] w-8 h-8 flex items-center justify-center font-serif leading-none shrink-0 self-end mb-0.5">
+                                {currentIndex + 1}
                             </div>
-                        </button>
+                            <button
+                                onClick={toggleFlag}
+                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-[#333333] hover:text-black'}`}
+                            >
+                                <Bookmark className={`w-4 h-5 ${flags.has(currentQ?.id || 0) ? 'fill-[#0077c8] text-[#0077c8]' : 'text-[#666666]'}`} strokeWidth={1.5} />
+                                <span className={flags.has(currentQ?.id || 0) ? 'font-bold' : ''}>Mark for Review</span>
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-4 self-end mb-1">
+                            <button
+                                onClick={() => setIsStrikethroughActive(!isStrikethroughActive)}
+                                className={`flex items-center justify-center w-[42px] h-[28px] rounded border transition-all ${isStrikethroughActive ? 'bg-slate-200 border-slate-400 text-slate-900' : 'bg-white border-slate-400 text-slate-800 hover:border-slate-500'}`}
+                                title="Cross-out"
+                            >
+                                <div className="relative flex items-center justify-center">
+                                    <span className="text-[13px] leading-none font-sans font-semibold tracking-tighter">ABC</span>
+                                    <div className="absolute inset-0 border-b-[1.5px] border-slate-800 top-1/2 -translate-y-1/2 rotate-[-20deg] w-[calc(100%+4px)] -left-[2px]" />
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    {/* Dashed line */}
+                    <div className="flex h-[2px] w-full gap-[4px] mt-auto">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className={`h-full flex-1 ${i % 7 === 0 ? 'bg-[#FFD700]' : i % 5 === 0 ? 'bg-[#0077c8]' : 'bg-[#666666]'}`} />
+                        ))}
                     </div>
                 </div>
+
+
+
+
 
                 <div className="flex-1 flex overflow-hidden relative">
                     {(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && (
@@ -1477,6 +1536,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                         }
                                     }}
                                 >
+                                    {currentQ?.imageUrl && <div className="mt-8 mb-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question Image" className="w-full h-auto" /></div>}
                                     {currentQ?.passage ? (
                                         <PassageViewer
                                             text={currentQ.passage}
@@ -1500,7 +1560,6 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                         </div>
                                     )}
 
-                                    {currentQ?.imageUrl && <div className="mt-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
                                 </div>
                                 {showLineReader && <LineReader onClose={() => setShowLineReader(false)} />}
                                 {selectionRect && isHighlighterActive && (
@@ -1551,7 +1610,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         <div className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll ${!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <div className="mb-10 space-y-6">
                                 {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
-                                <p className="text-[18px] leading-[1.6] text-[#111827] font-medium">{currentQ?.text}</p>
+                                <p className="text-[18px] leading-[1.6] text-[#111827] font-medium"><MathText text={currentQ?.text} className="block" /></p>
                             </div>
 
                             <div className="space-y-4">
@@ -1571,7 +1630,9 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                             >
                                                 <div className="bluebook-option-letter">{letter}</div>
                                                 <div className="flex-1 flex flex-col gap-2">
-                                                    <span className={`text-[16px] leading-relaxed text-slate-800 font-medium ${isStruck ? 'line-through text-slate-400' : ''}`}>{opt}</span>
+                                                    <span className={`text-[16px] leading-relaxed text-slate-800 font-medium ${isStruck ? 'line-through text-slate-400' : ''}`}>
+                                                        <MathText text={opt} />
+                                                    </span>
                                                     {currentQ.optionImages?.[idx] && (
                                                         <div className="mt-2 rounded border border-slate-200 overflow-hidden bg-white max-w-sm">
                                                             <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" />
@@ -1675,7 +1736,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     <button
                         disabled={currentIndex === 0}
                         onClick={handleBack}
-                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all ${currentIndex === 0 ? 'opacity-30' : 'hover:bg-slate-50'}`}
+                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all focus:outline-none focus:ring-0 ${currentIndex === 0 ? "bg-[#111827] text-white" : "bg-transparent text-black"}`}
                     >
                         Back
                     </button>

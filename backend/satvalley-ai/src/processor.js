@@ -228,6 +228,9 @@ RULES:
 9. DETERMINE SUBJECT:
    - If the question involves calculation, algebra, geometry, or data analysis -> "math"
    - If the question involves reading a passage, grammar, vocabulary, or rhetoric -> "rw"
+10. OPTION PREFIX STRIPPING: You MUST strip the alphabetical letters like "A)", "A.", "(A)", "B)", etc. from the actual string choice in the "options" array. The strings in the "options" array should contain ONLY the text of the option itself. For example, if the text says "A) 5", the option array should just contain "5".
+11. ANSWER KEY MAPPING: Look for an answer key provided by the extraction phase. If "CORRECT ANSWER: [Letter/Value]" is included in the raw text, use that to accurately determine the "correct_answer".
+12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^2$ instead of x^2. Output $x$ instead of just x when referencing a variable in text.
 `;
 
     try {
@@ -247,6 +250,13 @@ RULES:
         // Programmatic cleanup of AI noise
         if (data.text) data.text = sanitizeAiText(data.text);
         if (data.passage) data.passage = sanitizeAiText(data.passage);
+        if (Array.isArray(data.options)) {
+            data.options = data.options.map(opt => {
+                if (typeof opt !== 'string') return opt;
+                // Strip "A)", "B.", "(C)", etc. case-insensitively at the start of the string
+                return opt.replace(/^[\s(]*[a-eA-E][).\]]\s*/i, '').trim();
+            });
+        }
 
         logAiActivity(
             "SUCCESS",
@@ -271,10 +281,11 @@ Extract ALL SAT questions from this PDF.
 Separate each question with "---QUESTION_START---".
 
 IMPORTANT EXTRACTION RULES:
-1. EXCLUDE all UI-related text such as "Mark for Review", "Question X of Y", "Directions", or page footer/header metadata.
-2. DO NOT transcribe detailed tables or complex diagrams in full. Instead, simply note their presence if they contain textual labels and focus on the question/passage text. 
-3. The user uploads separate images for tables/diagrams, so only extract the core question stem and reading passage.
-4. Keep the output clean of OCR noise and non-academic text.
+    1. EXCLUDE all UI - related text such as "Mark for Review", "Question X of Y", "Directions", or page footer / header metadata.
+2. DO NOT transcribe detailed tables or complex diagrams in full.Instead, simply note their presence if they contain textual labels and focus on the question / passage text. 
+3. The user uploads separate images for tables / diagrams, so only extract the core question stem and reading passage.
+4. Keep the output clean of OCR noise and non - academic text.
+5. ANSWER KEYS: If you find an Answer Key at the end of the document, you MUST map the correct answer to its corresponding question.For EACH question that you extract, append the matched answer from the Answer Key at the very end of the question's text chunk in this exact format: "CORRECT ANSWER: [A/B/C/D or numeric value]".
 `;
 
     try {
@@ -297,12 +308,12 @@ IMPORTANT EXTRACTION RULES:
         try {
             const debugFilePath = path.join(__dirname, "../../last_extraction.txt");
             fs.writeFileSync(debugFilePath, text);
-            console.log(`DEBUG: Saved raw extraction to ${debugFilePath}`);
+            console.log(`DEBUG: Saved raw extraction to ${debugFilePath} `);
         } catch (e) {
             console.error("Failed to save debug extraction:", e);
         }
 
-        console.log(`DEBUG: Extracted text length: ${text.length}`);
+        console.log(`DEBUG: Extracted text length: ${text.length} `);
 
         const questions = text
             .split("---QUESTION_START---")
@@ -328,19 +339,19 @@ IMPORTANT EXTRACTION RULES:
 export async function generateVocabularyAI(word, theme = "Standard") {
     const prompt = `
 Generate vocabulary details for the following word:
-WORD: "${word}"
-THEME: "${theme}" (Standard, GenZ, or Oxford)
+        WORD: "${word}"
+    THEME: "${theme}"(Standard, GenZ, or Oxford)
 
-OUTPUT FORMAT (Strict JSON):
-{
-  "definition": "A high-quality, Cambridge-style definition that is clear and pedagogical",
-  "example": "A high-quality example sentence illustrating the usage."
-}
+OUTPUT FORMAT(Strict JSON):
+    {
+        "definition": "A high-quality, Cambridge-style definition that is clear and pedagogical",
+            "example": "A high-quality example sentence illustrating the usage."
+    }
 
-RULES:
-1. Output ONLY the JSON object.
-2. The definition MUST follow the Cambridge Dictionary style (pedagogical and clear).
-3. The example should match the theme (e.g., GenZ should use slang like 'vibe', 'no cap', etc.).
+    RULES:
+    1. Output ONLY the JSON object.
+2. The definition MUST follow the Cambridge Dictionary style(pedagogical and clear).
+3. The example should match the theme(e.g., GenZ should use slang like 'vibe', 'no cap', etc.).
 `;
 
     try {
@@ -352,7 +363,7 @@ RULES:
         if (!jsonMatch) throw new Error("No valid JSON found in response");
 
         const data = JSON.parse(jsonMatch[0]);
-        logAiActivity("SUCCESS", "VOCAB_GEN", `Generated for: ${word}`);
+        logAiActivity("SUCCESS", "VOCAB_GEN", `Generated for: ${word} `);
         return data;
     } catch (error) {
         logAiActivity("ERROR", "VOCAB_GEN", error?.message || String(error));
@@ -366,44 +377,44 @@ RULES:
 export async function analyzePerformanceAI(responses) {
     const prompt = `
 Analyze the following student SAT practice test performance data. 
-Provide a deep pedagogical synthesis including a skill-by-skill breakdown, a roadmap for improvement, and an overall readiness score.
+Provide a deep pedagogical synthesis including a skill - by - skill breakdown, a roadmap for improvement, and an overall readiness score.
 
-RESPONSES:
+        RESPONSES:
 ${JSON.stringify(responses, null, 2)}
 
-OUTPUT FORMAT (Strict JSON):
-{
-  "mastery_score": 85, // Scale 0-100 indicating overall readiness
-  "encouragement": "A high-energy, motivational one-liner.",
-  "overall_critique": "A professional, pedagogical summary of the performance.",
-  "skill_breakdown": [
+OUTPUT FORMAT(Strict JSON):
     {
-      "skill": "Heart of Algebra", // e.g., "Heart of Algebra", "Rhetoric", "Standard English Conventions"
-      "mastery": 70, // 0-100 score for this specific skill
-      "insight": "Briefly explain why this score was given based on their answers."
+        "mastery_score": 85, // Scale 0-100 indicating overall readiness
+            "encouragement": "A high-energy, motivational one-liner.",
+                "overall_critique": "A professional, pedagogical summary of the performance.",
+                    "skill_breakdown": [
+                        {
+                            "skill": "Heart of Algebra", // e.g., "Heart of Algebra", "Rhetoric", "Standard English Conventions"
+                            "mastery": 70, // 0-100 score for this specific skill
+                            "insight": "Briefly explain why this score was given based on their answers."
+                        }
+                    ],
+                        "roadmap": [
+                            {
+                                "step": 1,
+                                "title": "Master Linear Equations",
+                                "action": "Focus on isolating variables in complex word problems. Spend 30 mins each day on multi-step equations."
+                            }
+                        ]
     }
-  ],
-  "roadmap": [
-    {
-      "step": 1,
-      "title": "Master Linear Equations",
-      "action": "Focus on isolating variables in complex word problems. Spend 30 mins each day on multi-step equations."
-    }
-  ]
-}
 
-CATEGORIES TO ANALYZE (If applicable):
-- Information and Ideas
-- Craft and Structure
-- Expression of Ideas
-- Standard English Conventions
-- Heart of Algebra
-- Problem Solving and Data Analysis
-- Passport to Advanced Math
-- Geometry and Trigonometry
+CATEGORIES TO ANALYZE(If applicable):
+    - Information and Ideas
+        - Craft and Structure
+            - Expression of Ideas
+                - Standard English Conventions
+                    - Heart of Algebra
+                        - Problem Solving and Data Analysis
+                            - Passport to Advanced Math
+                                - Geometry and Trigonometry
 
-RULES:
-1. Output ONLY the JSON object.
+    RULES:
+    1. Output ONLY the JSON object.
 2. Be encouraging but direct and technical.
 3. If specific question data is missing for a category, omit that category from the breakdown.
 4. Ensure the roadmap steps are sequential and highly specific.

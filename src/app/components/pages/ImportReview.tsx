@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Check, X, Edit3, ChevronRight, ChevronLeft, Loader2, Sparkles, Save, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Check, X, FileEdit, Edit3, Trash2, Globe, Sparkles, Image as ImageIcon, Loader2, Save, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { MathText } from '../ui/MathText';
 
 interface Candidate {
     id: string;
@@ -151,6 +152,39 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
         } catch (err) {
             console.error('Image upload error:', err);
             toast.error('Failed to upload image');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleOptionImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, optionIndex: number) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const file = e.target.files[0];
+
+        try {
+            setActionLoading(true);
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed');
+
+            const data = await response.json();
+            const newOptionImages = [...(editData.option_images || ['', '', '', ''])];
+            newOptionImages[optionIndex] = data.url;
+            setEditData({ ...editData, option_images: newOptionImages });
+            toast.success(`Option ${['A', 'B', 'C', 'D'][optionIndex]} image uploaded successfully`);
+        } catch (err) {
+            console.error('Option image upload error:', err);
+            toast.error('Failed to upload option image');
         } finally {
             setActionLoading(false);
         }
@@ -341,8 +375,22 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             {['options[0]', 'options[1]', 'options[2]', 'options[3]'].map((opt, i) => (
-                                                <div key={i} className="space-y-2">
-                                                    <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Option {['A', 'B', 'C', 'D', 'E', 'F'][i]}</label>
+                                                <div key={i} className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Option {['A', 'B', 'C', 'D'][i]}</label>
+                                                        {editData.option_images && typeof editData.option_images[i] === 'string' && editData.option_images[i] !== '' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newImg = [...(editData.option_images || ['', '', '', ''])];
+                                                                    newImg[i] = '';
+                                                                    setEditData({ ...editData, option_images: newImg });
+                                                                }}
+                                                                className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                     <input
                                                         type="text"
                                                         value={editData.options ? editData.options[i] : ''}
@@ -351,8 +399,23 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                             newOpts[i] = e.target.value;
                                                             setEditData({ ...editData, options: newOpts });
                                                         }}
-                                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium outline-none focus:border-indigo-500 transition-colors"
+                                                        className="w-full px-4 py-3 rounded-xl bg-[#020617]/50 border border-white/10 text-white font-medium outline-none focus:border-indigo-500 transition-colors mb-2"
                                                     />
+
+                                                    {editData.option_images && typeof editData.option_images[i] === 'string' && editData.option_images[i] !== '' ? (
+                                                        <div className="relative group rounded-lg overflow-hidden border border-white/10 bg-black/20 mt-2">
+                                                            <img src={editData.option_images[i]} alt={`Option ${['A', 'B', 'C', 'D'][i]}`} className="w-full h-24 object-contain" />
+                                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <button onClick={() => document.getElementById(`opt-image-${i}`)?.click()} className="text-[10px] px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white font-bold backdrop-blur-sm transition-all">Change</button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button onClick={() => document.getElementById(`opt-image-${i}`)?.click()} className="w-full h-10 rounded-lg bg-white/5 border border-dashed border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all flex items-center justify-center gap-2 group mt-2">
+                                                            <ImageIcon className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-[10px] font-bold text-indigo-200/60 group-hover:text-indigo-300">Add Image</span>
+                                                        </button>
+                                                    )}
+                                                    <input id={`opt-image-${i}`} type="file" className="hidden" accept="image/*" onChange={(e) => handleOptionImageUpload(e, i)} />
                                                 </div>
                                             ))}
                                         </div>
@@ -480,7 +543,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                             <div className="space-y-2">
                                                 <h3 className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Passage</h3>
                                                 <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-indigo-100/80 italic text-sm leading-relaxed">
-                                                    {currentCandidate.normalized_json.passage}
+                                                    <MathText text={currentCandidate.normalized_json.passage} className="block" />
                                                 </div>
                                             </div>
                                         )}
@@ -489,7 +552,9 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                             <h3 className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">
                                                 {currentCandidate.normalized_json?.type === 'spr' ? 'Solve for' : 'Stem'}
                                             </h3>
-                                            <p className="text-white font-bold leading-relaxed">{currentCandidate.normalized_json?.text || "No question text available."}</p>
+                                            <p className="text-white font-bold leading-relaxed">
+                                                <MathText text={currentCandidate.normalized_json?.text || "No question text available."} className="block" />
+                                            </p>
                                         </div>
 
                                         {currentCandidate.normalized_json?.type !== 'spr' && (
@@ -505,7 +570,9 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                             }`}>
                                                             {['A', 'B', 'C', 'D'][i]}
                                                         </div>
-                                                        <span className="text-white/80 font-medium break-words pt-1">{opt}</span>
+                                                        <span className="text-white/80 font-medium break-words pt-1">
+                                                            <MathText text={opt} />
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -518,7 +585,9 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Correct Response</span>
-                                                    <span className="text-white font-bold">{currentCandidate.normalized_json.correct_answer}</span>
+                                                    <span className="text-white font-bold">
+                                                        <MathText text={currentCandidate.normalized_json.correct_answer} />
+                                                    </span>
                                                 </div>
                                             </div>
                                         )}
@@ -526,7 +595,9 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                         {currentCandidate.normalized_json?.explanation && (
                                             <div className="space-y-2 border-t border-white/5 pt-4">
                                                 <h3 className="text-[10px] font-black text-indigo-200/40 uppercase tracking-widest ml-1">Explanation</h3>
-                                                <p className="text-indigo-200/60 text-sm leading-relaxed">{currentCandidate.normalized_json.explanation}</p>
+                                                <p className="text-indigo-200/60 text-sm leading-relaxed">
+                                                    <MathText text={currentCandidate.normalized_json.explanation} className="block" />
+                                                </p>
                                             </div>
                                         )}
 
@@ -562,7 +633,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                 skill_tags: [],
                                                 explanation: '',
                                                 image_url: null,
-                                                option_images: [],
+                                                option_images: ['', '', '', ''],
                                                 ...currentCandidate.normalized_json
                                             });
                                             setIsEditing(true);

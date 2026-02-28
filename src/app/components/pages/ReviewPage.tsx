@@ -3,6 +3,7 @@ import { Award, BookOpen, Calculator, ExternalLink, Zap, Globe, ArrowLeft, Loade
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '../../lib/supabase';
+import { MathText } from '../ui/MathText';
 
 const DOMAINS = {
   rw: [
@@ -147,7 +148,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
 
               {r.passage && (
                 <div className="bg-[#0A0F1E] p-8 rounded-2xl border border-white/5 font-serif text-[18px] leading-relaxed text-slate-300">
-                  {r.passage}
+                  <MathText text={r.passage} className="block" />
                 </div>
               )}
 
@@ -157,7 +158,9 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                 </div>
               )}
 
-              <p className="text-[20px] font-bold text-slate-200 leading-relaxed">{r.text}</p>
+              <p className="text-[20px] font-bold text-slate-200 leading-relaxed">
+                <MathText text={r.text} className="block" />
+              </p>
             </div>
           </div>
 
@@ -195,7 +198,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                       </div>
                       <div className="flex-1">
                         <p className={`text-[15px] font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
-                          {r.options?.[i] || `Choice ${letter}`}
+                          <MathText text={r.options?.[i] || `Choice ${letter}`} />
                         </p>
                         {r.optionImages?.[i] && (
                           <div className="mt-2 rounded-lg border border-white/10 overflow-hidden bg-white/5 max-w-xs p-2">
@@ -216,7 +219,9 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                     <Zap className="w-4 h-4 text-indigo-400 fill-current" />
                     <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
                   </div>
-                  <p className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">{r.explanation}</p>
+                  <p className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    <MathText text={r.explanation} className="block" />
+                  </p>
                 </div>
               )}
             </div>
@@ -501,7 +506,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                           {r.passage && (
                             <div className="space-y-6">
                               <div className="bg-[#0A0F1E] border border-white/5 p-8 rounded-3xl font-serif text-lg text-slate-300 leading-loose max-h-[400px] overflow-y-auto custom-scrollbar">
-                                {r.passage}
+                                <MathText text={r.passage} className="block" />
                               </div>
                               {r.imageUrl && (
                                 <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
@@ -515,7 +520,9 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                               <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
                             </div>
                           )}
-                          <p className="text-xl text-white font-bold tracking-tight leading-relaxed">{r.text}</p>
+                          <p className="text-xl text-white font-bold tracking-tight leading-relaxed">
+                            <MathText text={r.text} className="block" />
+                          </p>
                         </div>
 
                         <div className="space-y-6">
@@ -549,7 +556,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
 
                                 <div className="flex-1 flex flex-col gap-2 z-10">
                                   <span className={`text-sm font-medium ${r.answer === letter ? 'text-emerald-200' : r.userAnswer === letter ? 'text-rose-200' : 'text-slate-400'}`}>
-                                    {r.options?.[i] || `Sequence ${letter}`}
+                                    <MathText text={r.options?.[i] || `Sequence ${letter}`} />
                                   </span>
                                   {r.optionImages?.[i] && (
                                     <div className="mt-1 rounded-lg border border-white/10 overflow-hidden bg-black/40 max-w-xs">
@@ -581,7 +588,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                           Neural Synthesis
                         </h4>
                         <p className="text-indigo-100/70 text-sm font-medium leading-relaxed whitespace-pre-wrap">
-                          {r.explanation || "No synthesis available for this iteration."}
+                          <MathText text={r.explanation || "No synthesis available for this iteration."} className="block" />
                         </p>
                       </div>
                     </div>

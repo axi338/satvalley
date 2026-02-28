@@ -127,14 +127,18 @@ const recalculateTestCounts = async (testId) => {
       .map(l => l.questions)
       .filter(q => q);
 
-    const mathCount = questions.filter(q => q.subject === 'math').length;
-    // Count 'rw', 'reading', 'writing' as RW
-    const rwCount = questions.filter(q => ['reading', 'writing', 'rw'].includes(q.subject)).length;
+    const mathQuestions = questions.filter(q => q.subject === 'math');
+    const rwQuestions = questions.filter(q => ['reading', 'writing', 'rw'].includes(q.subject));
+
+    const m1_math = mathQuestions.filter(q => (q.module || 'm1').startsWith('m1')).length;
+    const m2_math = mathQuestions.filter(q => (q.module || '').startsWith('m2')).length;
+    const m1_rw = rwQuestions.filter(q => (q.module || 'm1').startsWith('m1')).length;
+    const m2_rw = rwQuestions.filter(q => (q.module || '').startsWith('m2')).length;
 
     // 2. Construct sections
     const newSections = [];
-    if (mathCount > 0) newSections.push(`Math: ${mathCount}Q`);
-    if (rwCount > 0) newSections.push(`Reading & Writing: ${rwCount}Q`);
+    if (mathQuestions.length > 0) newSections.push(`Math: ${mathQuestions.length}Q (M1:${m1_math}, M2:${m2_math})`);
+    if (rwQuestions.length > 0) newSections.push(`Reading & Writing: ${rwQuestions.length}Q (M1:${m1_rw}, M2:${m2_rw})`);
     if (newSections.length === 0) newSections.push('Empty: 0Q');
 
     // 3. Update test
@@ -142,14 +146,14 @@ const recalculateTestCounts = async (testId) => {
       .from("tests")
       .update({
         sections: newSections,
-        mathq: String(mathCount),
-        readingq: String(rwCount),
+        mathq: String(mathQuestions.length),
+        readingq: String(rwQuestions.length),
         writingq: "0",
         updated_at: new Date().toISOString()
       })
       .eq("id", testId);
 
-    console.log(`Updated test ${testId} metadata: Math=${mathCount}, RW=${rwCount}`);
+    console.log(`Updated test ${testId} metadata: Math=${mathQuestions.length}, RW=${rwQuestions.length}`);
   } catch (err) {
     console.error(`Failed to recalculate test counts:`, err);
   }
@@ -307,10 +311,13 @@ app.get("/api/questions", async (req, res) => {
 
       if (linkError) throw linkError;
 
-      // Extract questions from the nested structure
+      // Extract questions from the nested structure and attach orderIndex
       let questions = (linkedQuestions || [])
-        .map(link => link.questions)
-        .filter(q => q !== null);
+        .map(link => ({
+          ...link.questions,
+          orderIndex: link.order_index
+        }))
+        .filter(q => q.id !== null);
 
       // Apply additional filters if provided
       if (module && module !== "undefined" && module !== "") {
@@ -418,6 +425,28 @@ app.post("/api/questions", async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Link to test if test_id exists
+    if (finalTestId) {
+      const { data: currentQuestions } = await supabase
+        .from("test_questions")
+        .select("order_index")
+        .eq("test_id", finalTestId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+
+      const nextOrder = (currentQuestions?.[0]?.order_index ?? -1) + 1;
+
+      await supabase.from("test_questions").insert({
+        test_id: finalTestId,
+        question_id: data.id,
+        order_index: nextOrder
+      });
+
+      // Auto-update test metadata
+      await recalculateTestCounts(finalTestId);
+    }
+
     res.json({ question: data, success: true });
   } catch (err) {
     console.error("Error creating question:", err);
@@ -452,6 +481,39 @@ app.put("/api/questions/:id", async (req, res) => {
       .eq("id", id);
 
     if (error) throw error;
+
+    // Ensure linked in test_questions if testId provided
+    if (testId) {
+      // Check if already linked
+      const { data: existingLink } = await supabase
+        .from("test_questions")
+        .select("order_index")
+        .eq("test_id", testId)
+        .eq("question_id", id)
+        .maybeSingle();
+
+      if (!existingLink) {
+        // Get next order index
+        const { data: currentQuestions } = await supabase
+          .from("test_questions")
+          .select("order_index")
+          .eq("test_id", testId)
+          .order("order_index", { ascending: false })
+          .limit(1);
+
+        const nextOrder = (currentQuestions?.[0]?.order_index ?? -1) + 1;
+
+        await supabase.from("test_questions").insert({
+          test_id: testId,
+          question_id: id,
+          order_index: nextOrder
+        });
+      }
+
+      // Auto-update test metadata
+      await recalculateTestCounts(testId);
+    }
+
     res.json({ success: true, id });
   } catch (err) {
     res.status(500).json({ error: "update_failed", message: err.message });
@@ -903,7 +965,12 @@ app.get("/api/admin/tests/:testId/module-counts", async (req, res) => {
 
       const module = q.module || 'm1';
       const subject = q.subject || 'math';
-      const key = `${module}_${subject}`;
+
+      // Map adaptive modules to top-level buckets
+      let modulePrefix = 'm1';
+      if (module.startsWith('m2')) modulePrefix = 'm2';
+
+      const key = `${modulePrefix}_${subject}`;
 
       if (counts.hasOwnProperty(key)) {
         counts[key]++;
@@ -941,7 +1008,9 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
       const key = `${module}_${subject}`;
       const currentCount = questions?.filter(tq => {
         const q = tq.questions;
-        return q && q.module === module && q.subject === subject;
+        if (!q) return false;
+        const qModule = q.module || 'm1';
+        return qModule.startsWith(module) && q.subject === subject;
       }).length || 0;
 
       const limit = subject === 'math' ? 22 : 27;
@@ -1144,7 +1213,7 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
     // 1. Get candidate
     const { data: candidate, error: fetchError } = await supabase
       .from("import_candidates")
-      .select("*, import_jobs(destination_test_id)")
+      .select("*, import_jobs(destination_test_id, config)")
       .eq("id", id)
       .single();
 
@@ -1183,6 +1252,7 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
 
     // 2. Insert into questions table
     const testId = candidate.import_jobs?.destination_test_id;
+    const jobConfig = candidate.import_jobs?.config || {};
 
     const { data: question, error: qError } = await supabase
       .from("questions")
@@ -1192,13 +1262,13 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
         options: questionData.options,
         answer: questionData.answer,
         explanation: questionData.explanation,
-        subject: questionData.subject,
+        subject: jobConfig.subject || questionData.subject,
         difficulty: questionData.difficulty,
         type: questionData.type,
         tags: questionData.tags,
         skill: questionData.skill,
         test_id: testId || null,
-        module: rawData.module || 'm1',
+        module: jobConfig.module || rawData.module || 'm1',
         image_url: rawData.image_url || null,
         option_images: rawData.option_images || []
       })
