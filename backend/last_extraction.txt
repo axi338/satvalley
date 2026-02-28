@@ -1,276 +1,173 @@
 ---QUESTION_START---
-The following text is from Mark Twain's 1876 novel The Adventures of Tom Sawyer. Tom, a child, has been told by his aunt to paint their house's fence.
-
-Tom appeared on the sidewalk with a bucket of whitewash and a long-handled brush. He surveyed the fence, and all gladness left him and a deep melancholy settled down upon his spirit. Thirty yards of board fence nine feet high.
-
-As used in the text, what does the word "surveyed" most nearly mean?
-A Promoted
-B Organized
-C Transformed
-D Examined
+A total of 215 toothpicks of equal length were used to construct two types of figures: triangles and squares. The triangles and squares were constructed so that no two figures had a common side. The equation 3x + 4y = 215 represents this situation, where x is the number of triangles constructed and y is the number of squares constructed. What is the best interpretation of (x, y) = (25, 35) in this context?
+A If 25 triangles were constructed, then 35 squares were constructed.
+B If 25 triangles were constructed, then 35 toothpicks were used.
+C If 35 triangles were constructed, then 25 squares were constructed.
+D If 35 triangles were constructed, than 25 toothpicks were used.
 
 ---QUESTION_START---
-Though Vasily Grossman's novel Stalingrad is not as beloved as his later work Life and Fate, some critics commend it despite its mangling by Soviet censors: Luke Harding in The Guardian called it "one of the great novels of the twentieth century." Several draft versions have been ______ and translators consulted those drafts when working on what they hoped would be a definitive English edition.
-
-Which choice completes the text with the most logical and precise word or phrase?
-A assigned
-B hypothesized
-C debunked
-D preserved
+The function f is defined by f(x) = 2x + b, where b is a constant and f(4) = 1. What is the value of b?
 
 ---QUESTION_START---
-Writer Lydia Davis observed that while _______ literary forms, such as the novel, are recognizable as such even as they evolve, there are path-breaking "intergeneric" forms that might, for example, use elements of both fiction and essays to create something unclassifiable. The late-period pieces of James Tate arguably fit in this category, since they straddle the line between prose and poetry.
-
-Which choice completes the text with the most logical and precise word or phrase?
-A established
-B ambiguous
-C innovative
-D elusive
-
----QUESTION_START---
-Analysis of preserved plants cataloged in the United States Virtual Herbarium indicates that rising temperatures correlate with earlier leaf production, but such specimens represent only brief moments in plants' overall development. ______ this research with studies involving live plants would enable a fuller understanding of how these observed changes affect plant fitness.
-
-Which choice completes the text with the most logical and precise word or phrase?
-A Foregrounding
-B Complementing
-C Categorizing
-D Anticipating
+Moving from left to right, the curve passes from quadrant 2 to quadrant 3 to quadrant 4 to quadrant 1 to quadrant 4.
+The curve has 1 relative minimum and 1 relative maximum.
+The curve crosses the axes at the following points:
+(negative 2 comma 0)
+approximately (0 comma negative 4.8)
+(1 comma 0)
+(2 comma 0)
+The graph of y = f(x) is shown, where the function f is defined by f(x) = ax³ + bx² + cx + d and a, b, c, and d are constants. For how many values of x does f(x) = 0?
+A One
+B Two
+C Three
+D Four
 
 ---QUESTION_START---
-One challenge faced by researchers studying global urbanization is that different countries have different definitions of what constitutes an urban settlement. Many countries define urban settlements based on the number of people living in them. However, countries do not all use the same number to define an urban settlement; for example, Iceland uses a minimum population of 200, while Mali uses 30,000. Other countries use a combination of population and other factors, like the number of buildings in the area. This variation makes it difficult for researchers to compare aspects of urbanization in different countries.
-
-Which choice best states the main purpose of the text?
-A To compare the urban populations of two different countries.
-B To explain why researchers are interested in studying global urbanization.
-C To illustrate a problem faced by researchers studying global urbanization.
-D To object to a method that some countries use to classify different types of settlements.
+If 3(x-4)² = 243, what is the value of x² - 8x?
+A 49
+B 65
+C 81
+D 97
 
 ---QUESTION_START---
-In their study of fossils of the extinct arthropod Mollisonia symmetrica, Javier Ortega-Hernández, Rudy Lerosey-Aubril, and team reported some obvious indications of M. symmetrica's nervous system-for example, nerves extending into the animal's body parts. Most intriguingly, they also saw signs of what might be a synganglion, a brain-like nerve mass, in the animal's head. This is an exciting possibility; without evidence of a synganglion, we can't tell exactly how M. symmetrica relates to mosquitoes, slipper lobsters, and other arthropods.
-
-Which choice best states the main purpose of the text?
-A To describe M. symmetrica and the way nerves extending into the animal's body parts functioned.
-B To question whether the fossils the team studied were actually of M. symmetrica.
-C To discuss a significant feature that may have been found in a study of M. symmetrica fossils.
-D To argue that M. symmetrica may have been more similar to mosquitoes than to slipper lobsters.
-
----QUESTION_START---
-Charles Fuller's critically acclaimed play The Brownsville Raid was produced in 1976 by the groundbreaking Negro Ensemble Company (NEC). NEC cofounder Douglas Turner Ward, who worked as an actor, director, and playwright, had met actor and producer Robert Hooks while they were performing in a 1960 touring production of Lorraine Hansberry's play A Raisin in the Sun. Together, they envisioned a theater company that would nurture and showcase the work of Black theater professionals. Since NEC's founding in 1967, its workshops and performances have given Black playwrights, including Fuller, a forum for their compelling stories.
-
-Which choice best describes the function of the underlined sentence in the text as a whole?
-A It provides additional information about a person mentioned in the text.
-B It emphasizes the ongoing significance of the theater company discussed in the text.
-C It illustrates the widespread influence of a play discussed earlier in the text.
-D It explains the circumstances that led to the formation of the theater company discussed in the text.
+The scatterplot has 8 data points.
+The data points are in a quadratic pattern opening downward.
+Which of the following equations is the most appropriate quadratic model for the data shown?
+A y = -0.005(x-50)² + 34
+B y = -0.005(x-34)² + 50
+C y = -0.005(x+50)² + 34
+D y = -0.005(x+34)² + 50
 
 ---QUESTION_START---
-In the Greek village of Pyrgi, the buildings are embellished with xysta, a traditional design featuring rows upon rows of carved geometric shapes on the facades of buildings. Deeply rooted in Pyrgi's cultural history and handed down over generations, the techniques used for creating these precise patterns involve mathematical principles and tools, such as compasses and rulers. Studying the history of xysta, therefore, has given researchers an understanding of how mathematics has been used in this region dating to the medieval period.
-
-Which choice best states the main idea of the text?
-A Research on techniques used to construct xysta has helped reveal the role of mathematics in the culture of Pyrgi.
-B There is more academic interest in the tools the Pyrgi people use to construct xysta than in the appearance of xysta.
-C The people of Pyrgi constructed xysta on their buildings to show an appreciation for mathematics.
-D The construction of xysta on buildings was first completed in the village of Pyrgi during the medieval period.
+A right circular cylinder has a volume of 36,501 cubic inches. The height of the cylinder is 3 times its radius. What is the radius, in inches, of the cylinder?
+A 23
+B 69
+C 529
+D 1587
 
 ---QUESTION_START---
-Online surveys are a common tool researchers use to collect information. These surveys are usually designed for use on personal computers (PCs), but more people are using smartphones to complete them than they are PCs. This shift in device usage may change how participants interact with online surveys. When researchers Jean Philippe Décieux and Philipp E. Sischka investigated, they found that PC users were more likely to multitask while taking surveys than smartphone users were, but PC users were also more likely to complete the surveys.
-
-Which choice best states the main idea of the text?
-A People are choosing to take online surveys on smartphones more often than they are on PCs because smartphones are convenient.
-B A study shows that the type of device people use to complete online surveys affects how they interact with these surveys.
-C Researchers prefer online surveys to other ways of collecting information because they think online survey results are more reliable.
-D Researchers are investigating why survey completion rates are higher on PCs than they are on smartphones, despite increased multitasking on PCs.
+The function g is defined by g(x) = 16x + 39. For what value of x does g(x) = 43?
 
 ---QUESTION_START---
-Memoirs of Elleanor Eldridge is an 1838 historical account by Elleanor Eldridge and Frances Harriet Whipple Green. In the book, the authors suggest that many memoirs of renowned people aren't particularly straightforward or candid, writing,
-
-Which quotation from Memoirs of Elleanor Eldridge most effectively illustrates the claim?
-A "There is often a kind of [deceptive] light, playing around such [famous] names, calculated to dazzle and mislead, by their false lustre, until the eye can no longer receive the pure light of Truth, or the mind appreciate real excellence, or intrinsic worth."
-B "It should not be considered essential to the interest and value of biography, that its subject be of exalted rank, or illustrious name."
-C "How careful ought we to be to speak nothing but the truth, even in regard to the most trifling circumstances; and not only so, but to be well assured that what we suppose to be true, is truth, before we receive it as such."
-D "Then let no one turn with too much [fussiness], from the simple story of the humble Elleanor, though it may contain few, or none, of the thrilling charms of poetry and passion."
+In the xy-plane, an equation of circle R is (x + 7)² + (y + 19)² = 100. Circle S is obtained by shifting circle R to the right 2 units. An equation defining circle S is (x + h)² + (y + k)² = 100, where h and k are constants. What is the value of h?
+A -5
+B -7
+C -9
+D -11
 
 ---QUESTION_START---
-Andrea Sommese, Akos Pogány, and team investigated head-tilting behavior in a group of forty dogs, which included thirty-four typical dogs from five different breeds (including Enzo, a whippet) and six dogs that had previously demonstrated giftedness at learning words, all of which were border collies. The researchers recorded the dogs' head-tilting behavior in response to requests to fetch a toy that had been introduced early in the study. They found that all six gifted dogs tilted their heads at least some of the time when asked to retrieve the toy by name, while the typical dogs almost never tilted their heads. After reviewing the study, a student concludes that a tendency to tilt their heads is a characteristic trait of all border collies.
-
-Which finding from the study, if true, would most directly challenge the student's conclusion?
-A The typical dogs that tilted their heads appeared to be processing the meaning of the requests.
-B The border collies successfully fetched the toy more often than the dogs of other breeds did.
-C The majority of dogs in the typical group were border collies.
-D Most of the gifted dogs tilted their heads to the same side in each trial.
-
----QUESTION_START---
-Cane is a 1923 novel by Jean Toomer. In the novel, Toomer mentions a road in rural Georgia called Dixie Pike and describes it as having a deep connection to a faraway place, writing,
-
-Which quotation from Cane most effectively illustrates the claim?
-A "If it were dusk, then [Fern's eyes would] wait for the search-light of the evening train which you could see miles up the track before it flared across the Dixie Pike, close to her home."
-B "And when the wind is from the South, soil of my homeland falls like a fertile shower upon the lean streets of [Washington, DC]."
-C "The Dixie Pike has grown from a goat path in Africa."
-D "I leave the men around the stove to follow [Carma] with my eyes down the red dust road."
+For a linear relationship between x and y, the table gives three values of x and their corresponding values of y, where t is a constant. Which equation represents this relationship?
+x | y
+-26 | 0
+0 | 29
+t | 58
+A y = -2x + t + 29
+B y = 2x + t + 29
+C y = -x + t + 58
+D y = x + t + 58
 
 ---QUESTION_START---
-Myoglobin (Mb) is a protein that primarily aids in oxygen storage and diffusion across the mitochondrial membrane in cardiac muscle cells; these are necessary functions in aerobic organisms, including teleost fish. Carrying out these functions typically requires Mb to be expressed at high levels, evidenced by red heart tissue. The table shows the average Mb levels and their standard deviations (indicating how dispersed the Mb levels of individual fish are in relation to the average) of three teleost fish species, as calculated by Daniel J. Macqueen et al. Based on the data, the researchers concluded that for some teleost species, oxygen storage and diffusion may occur with negligible assistance from Mb.
-
-Myoglobin (Mb) Levels in the Cardiac Tissue of Three Teleost Species
-Species | Heart tissue color | Average Mb level | Standard deviation of Mb level | Number of healthy fish observed
-Bunocephalus coracoideus | red | 18.02 | 0.59 | 3
-Chitala chitala | red | 4.75 | 1.07 | 4
-Pantodon buchholzi | white | 0.01 | 0.02 | 4
-
-Which choice most effectively uses data from the table to support Macqueen et al.'s conclusion?
-A Greater average Mb levels in a certain species were associated with greater variance in Mb levels among individuals of that species.
-B On average, B. coracoideus had higher Mb levels in their cardiac tissue than C. chitala and P. buchholzi had.
-C P. buchholzi had very low Mb levels in its cardiac tissue.
-D Less variation in Mb levels was observed among P. buchholzi individuals than among B. coracoideus and C. chitala individuals.
+5(7x) + 8(6y) = 266
+5(7x) - 8(6y) = -406
+The solution to the given system of equations is (x, y). What is the value of 7x + 6y?
+A -56
+B -14
+C 28
+D 42
 
 ---QUESTION_START---
-Coffee farming around the world has changed greatly over time. Originally, coffee plants grew in the shade of tropical forests. Today coffee is often grown without shade cover. This is because full-sun coffee farms can produce more coffee beans. But the lack of trees on such farms means a lack of spaces for many species of birds to roost. Therefore, compared with full-sun coffee farms, shaded farms tend to ______.
-
-Which choice most logically completes the text?
-A experience generally milder weather conditions.
-B have fewer problems with insects and other pests.
-C be home to a more diverse range of birds.
-D have better soil quality.
-
----QUESTION_START---
-Zooarchaeologist Ophélie Lebrasseur and her team examined a fox skeleton discovered in 1991 at an archaeological site alongside artifacts of human habitation (like spear points) in central Argentina. Lebrasseur et al. determined that the fox was Dusicyon avus, an extinct species resembling a jackal, and radiocarbon dating placed the fox at the site at the same time as human inhabitants. (Indeed, the inhabitants may have deliberately buried the fox.) In addition, while wild foxes have a diet entirely made of meat, isotopic signatures of the skeleton's teeth indicated that the fox's diet, like that of the humans, was partly composed of plant material. Lebrasseur et al. therefore concluded that ______.
-
-Which choice most logically completes the text?
-A the fox had a diet more similar to that of jackals than to that of wild foxes.
-B the humans who were alive at the same time as the fox most likely ate more meat than the fox did.
-C the humans who were alive at the same time as the fox hunted using the spears whose points were also found at the site.
-D the fox may have been a companion animal of the humans who inhabited the site at the same time.
-
----QUESTION_START---
-Cycads are palmlike plants with cones. ______ plants were abundant throughout the Mesozoic Era (66 to 252 million years ago).
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A These
-B That
-C This
-D Each
+y < (1/3)x + 12
+For which of the following tables are all the values of x and their corresponding values of y solutions to the given inequality?
+A
+x | y
+2 | 21
+4 | 81
+6 | 73
+B
+x | y
+2 | 21
+4 | 47
+6 | 73
+C
+x | y
+2 | 38
+4 | 64
+6 | 90
+D
+x | y
+2 | 38
+4 | 47
+6 | 90
 
 ---QUESTION_START---
-The theory of plate tectonics explains how large pieces of Earth's crust, called tectonic plates, move and interact. According to the theory, the movement of tectonic plates forms ______, creates volcanoes, and causes earthquakes.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A mountains;
-B mountains
-C mountains,
-D mountains:
+The function f is defined by the equation f(x) = 9x² + b, where b is a constant. In the xy-plane, the graph of y = f(x) contains the points (0, 72) and (3, p + 16), where p is a constant. What is the value of p?
+A 49
+B 65
+C 81
+D 97
 
 ---QUESTION_START---
-Philosopher Gottlob Frege (1848-1925) explored how multiple names can be used to refer to the same object or person yet still have different meanings. For instance, the fictional character Clark Kent and his alter ego Superman are the same person, yet the two personas are distinct. For Frege, this raises further questions about how ______.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A can we hold contradictory beliefs about a single thing.
-B we can hold contradictory beliefs about a single thing.
-C we can hold contradictory beliefs about a single thing?
-D can we hold contradictory beliefs about a single thing?
-
----QUESTION_START---
-Choreographers George Balanchine and Martha Graham both contributed sections to the dance piece Episodes, which premiered at New York's City Center of Music and Drama in 1959. This cross-genre collaboration brought together the distinct features of Balanchine's neoclassical ballet and Graham's modern ______ the stylistic diversity and creative innovation within the dance world.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A dance, showcasing
-B dance, it showcased
-C dance. Which showcased
-D dance. Showcasing
+2x - 20x - 37 = kx + m(x+4)
+In the given equation, k and m are constants. The equation has infinitely many solutions. What is the value of m?
+A -10
+B -23
+C -37
+D -83
 
 ---QUESTION_START---
-In her Silueta sculpture series, the Cuban American artist Ana ______, what she called an "omnipresent female force," utilized a variety of natural materials to create outlines—or silhouettes of her own body.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A Mendieta, hoping
-B Mendieta hope
-C Mendieta had hoped
-D Mendieta was hoping
-
----QUESTION_START---
-The United Nations' Trade and Development organization divides exports into five key categories: food items, agricultural materials, fuels, ores and raw metals, and manufactured goods (i.e., most nonfood goods made by machinery or by hand). In 2022, the majority (77 percent) of Malta's exports were manufactured goods. ______ integrated circuits, medicines, and postage stamps were its top exports.
-
-Which choice completes the text with the most logical transition?
-A In a broader sense,
-B Within this category,
-C In the future,
-D Despite this majority,
+f(x) = 5,000(1.003)^(2x)
+The given function f models the balance of a bank account, in dollars, x years after it is opened. Which statement is the best interpretation of (1.003)^(2x)?
+A Every 6 months, the balance increases by about $3.
+B Every 2 years, the balance increases by about $3.
+C At the end of every 6-month interval, the balance increases by about 0.3% of the balance at the beginning of the 6-month interval.
+D At the end of every 2-year interval, the balance increases by about 0.3% of the balance at the beginning of the 2-year interval.
 
 ---QUESTION_START---
-Barium is one of a variety of potentially useful trace elements contained in the chemical-rich brine that remains after seawater is purified through desalination. However, routine extraction of barium and other such elements from brine is not yet technologically or economically feasible. ______ most trace elements have only been extracted from seawater on an experimental basis.
-
-Which choice completes the text with the most logical transition?
-A Finally,
-B Similarly,
-C In doing so,
-D To date,
+At a hotel, guests used the pool for a total of t hours in March. At the same hotel, guests used the pool for 3.78t hours in April. What is the percent increase in the number of hours guests used the pool from March to April?
+A 2.78%
+B 3.78%
+C 278%
+D 378%
 
 ---QUESTION_START---
-While researching a topic, a student has taken the following notes:
-• A synthesis reaction is a type of chemical reaction.
-• In a synthesis reaction, two or more substances combine to form a new substance.
-• When sodium and chloride combine, they form a substance called sodium chloride.
-• This substance is more commonly known as table salt.
-
-The student wants to define the term "synthesis reaction." Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A When sodium and chloride combine, they form a substance commonly known as table salt.
-B The substance sodium chloride, also known as table salt, is formed by a chemical reaction.
-C A new substance is formed when a chemical reaction combines sodium and chloride.
-D A synthesis reaction is a chemical reaction in which two or more substances combine to form a new substance.
+7xy + xyz = 9yz
+In the given equation, x, y, and z are positive numbers. Which expression is equivalent to y?
+A 7x - 9z
+B (1)/(7x - 9z)
+C (1)/(9xz - 7x)
+D (1)/(9xz² - 7x²z)
 
 ---QUESTION_START---
-While researching a topic, a student has taken the following notes:
-• The Highpointers Club is a hiking club.
-• One of the main goals among club members is to reach the highest points in all fifty US states.
-• Those who achieve this are called 50 Completers.
-• In Suk Han became a 50 Completer on November 15, 2013.
-• The highest point in West Virginia is Spruce Knob, at 4,863 ft.
-• The highest point in Colorado is Mount Elbert, at 14,440 ft.
-
-Which choice most effectively uses information from the given sentences to explain the 50 Completers hiking challenge to a new audience?
-A Hikers aiming to count themselves among the 50 Completers must reach not only West Virginia's Spruce Knob but also the even higher peak of Mount Elbert in Colorado.
-B Not until after you have reached the highest points in all fifty US states—including Spruce Knob in West Virginia and Mount Elbert in Colorado—can you include yourself among the 50 Completers of the Highpointers Club.
-C If you are looking for a new hiking challenge, consider joining the Highpointers Club, as did In Suk Han, a hiker who successfully reached the highest point in every US state.
-D On November 15, 2013, In Suk Han finally completed the feat of reaching the highest point in all fifty US states, including Spruce Knob in West Virginia and Mount Elbert in Colorado.
+A researcher selected 23 guinea pigs from one habitat and 19 wild cavies from another habitat at random in Venezuela. A field of a specific size within each habitat was divided into equally-sized virtual squares, and the animals were allowed to wander in the field for a fixed amount of time. To observe their behavior, the researcher counted the number of times the guinea pigs and wild cavies crossed the virtual squares in their field during early adolescence and again during late adolescence. The researcher found that in early adolescence, the number of virtual squares the wild cavies crossed was significantly more than the number of virtual squares the guinea pigs crossed. The researcher also found that the number of virtual squares crossed by both the wild cavies and the guinea pigs decreased from early adolescence to late adolescence. Based on the researcher's findings, which of the following statements is an appropriate conclusion that can be drawn from this study?
+A The statistically significant difference in behavior between the two age groups was caused by the differences in habitat.
+B The statistically significant difference in behavior between the two age groups was caused by aging.
+C The statistically significant difference in behavior during early adolescence between the two groups of animals can be generalized to all guinea pigs and wild cavies.
+D The statistically significant difference in behavior during early adolescence between the two groups of animals can only be generalized to the habitats in the study.
 
 ---QUESTION_START---
-While researching a topic, a student has taken the following notes:
-• Epistolary novels are novels written primarily as a series of fictional documents, typically letters.
-• Sometimes, the documents are journal entries, newspaper clippings, and more.
-• Hyperion (1797) is an epistolary novel by German author Friedrich Hölderlin.
-• It consists primarily of letters sent between a Greek hermit named Hyperion and his friend Bellarmin.
-• Absolutely Normal Chaos (1990) is an epistolary novel by US author Sharon Creech.
-• It consists primarily of journal entries written by a student during her summer vacation.
-
-The student wants to emphasize a difference between the two novels. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A While the novel Hyperion consists primarily of letters, the novel Absolutely Normal Chaos consists primarily of journal entries.
-B Hyperion and Absolutely Normal Chaos are epistolary novels, which means they are written primarily as a series of documents.
-C Some epistolary novels consist primarily of journal entries, but most, like Friedrich Hölderlin's Hyperion, consist primarily of letters.
-D Both Friedrich Hölderlin and Sharon Creech have written epistolary novels.
+The quadratic function g models the depth, in meters, below the surface of the water of a Weddell seal t minutes after the seal entered the water during a dive. The function estimates that the seal reached its maximum depth of 409.6 meters 8 minutes after it entered the water and then reached the surface of the water 16 minutes after it entered the water. Based on the function, what was the estimated depth, to the nearest meter, of the seal 11 minutes after it entered the water?
 
 ---QUESTION_START---
-While researching a topic, a student has taken the following notes:
-• The Ellicott Slough National Wildlife Refuge (NWR) is a protected natural area in California.
-• It encompasses 139 acres.
-• The Ellicott Slough NWR was established to safeguard the habitat of the Santa Cruz long-toed salamander, an endangered species.
-• The Ellicott Slough NWR is managed by the US Fish & Wildlife Service.
-• The US Fish & Wildlife Service limits human activities in the area.
-
-The student wants to emphasize the role the US Fish & Wildlife Service plays in safeguarding the habitat of the Santa Cruz long-toed salamander. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A By limiting human activities in the Ellicott Slough NWR, the US Fish & Wildlife Service safeguards the habitat of the Santa Cruz long-toed salamander.
-B The 139-acre Ellicott Slough NWR was established to safeguard the habitat of the Santa Cruz long-toed salamander, an endangered species.
-C Human activities are limited in the Ellicott Slough NWR, a protected natural area in California.
-D The Santa Cruz long-toed salamander is an endangered species whose habitat is protected within the Ellicott Slough National Wildlife Refuge, a 139-acre natural area in California.
+The measure of angle G is (10/9)π radians. If the measure of angle G is 9n degrees, where n is a constant, what is the value of n?
+A 2
+B 9
+C 10
+D 18
 
 ---QUESTION_START---
-While researching a topic, a student has taken the following notes:
-• Henry W. Sobel is a US particle physicist.
-• Particle physicists study subatomic particles.
-• Neutrinos are some of the least understood subatomic particles.
-• Neutrinos were first discovered in the mid-twentieth century.
-• Sobel is known for his research on neutrino oscillations.
+In triangle XYZ, the measure of angle X is 90. Point W lies on segment YZ, and segment WX is perpendicular to segment YZ. The length of segment WY is 684, and the length of segment WX is 513. What is the value of tan Z?
+A 3/4
+B 4/3
+C 3/5
+D 4/5
 
-The student wants to provide an example of a particle physicist whose research focuses on neutrinos. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A The research done on neutrino oscillations exemplifies the work particle physicists do to advance our understanding of subatomic particles.
-B Particle physicist Henry W. Sobel is known for his research on neutrino oscillations.
-C By studying neutrino oscillations—to name just one example—particle physicists can learn more about neutrinos.
-D Neutrinos are a type of subatomic particle that particle physicists are still trying to understand.
+---QUESTION_START---
+2 + qr = 4r + 5
+In the given equation, q is an integer constant. The given equation has no real solutions. What is the largest possible value of q?
+
+---QUESTION_START---
+In triangle ABC, the measure of angle B is 90 and BD is an altitude of the triangle. The length of AB is 15 and the length of AC is 17 greater than the length of AB. What is the value of BD?
+A 15/17
+B 17/15
+C (15 * 17) / 32
+D (15 * 32) / 17

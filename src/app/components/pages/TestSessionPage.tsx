@@ -954,7 +954,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     }
                 }
 
-                const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : `m2-${m2Difficulty || 'easy'}`;
+                const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : `m2-${m2Difficulty || 'hard'}`;
                 const subject = stage.startsWith('rw') ? 'rw' : 'math';
                 const url = `${apiBase}/api/questions?testId=${testId}&module=${modPart}&subject=${subject}`;
                 const res = await fetch(url, { signal: controller.signal });
@@ -1125,8 +1125,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         setAllResponses(newTotalResponses);
 
         if (stage === 'rw-m1') {
-            const correct = questions.filter(q => answers[q.id] === q.answer).length;
-            setM2Difficulty(correct / questions.length > 0.6 ? 'hard' : 'easy');
+            setM2Difficulty('hard');
             setStage('rw-m2');
         } else if (stage === 'rw-m2') {
             if (testType === 'rw') {
@@ -1138,8 +1137,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         } else if (stage === 'break') {
             setStage('math-m1');
         } else if (stage === 'math-m1') {
-            const correct = questions.filter(q => answers[q.id] === q.answer).length;
-            setM2Difficulty(correct / questions.length > 0.6 ? 'hard' : 'easy');
+            setM2Difficulty('hard');
             setStage('math-m2');
         } else {
             submitFinal(newTotalResponses, currentTotalTime);
