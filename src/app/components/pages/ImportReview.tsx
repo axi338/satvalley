@@ -548,211 +548,298 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                             </span>
                         )}
                     </div>
-                </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {isEditing ? (
+                            <div className="p-8 space-y-8">
+                                {/* Passage */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Passage</label>
+                                    <textarea
+                                        value={editData.passage || ''}
+                                        onChange={(e) => setEditData({ ...editData, passage: e.target.value })}
+                                        rows={4}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-colors resize-none text-sm"
+                                        placeholder="Enter passage text (if any)..."
+                                    />
+                                </div>
 
-                {/* Meta fields */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
-                        <select
-                            value={editData.subject || 'math'}
-                            onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-bold outline-none focus:border-indigo-400 transition-colors text-sm"
-                        >
-                            <option value="math">Math</option>
-                            <option value="rw">Reading & Writing</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Difficulty</label>
-                        <select
-                            value={editData.difficulty || 'medium'}
-                            onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-bold outline-none focus:border-indigo-400 transition-colors text-sm"
-                        >
-                            <option value="easy">Easy</option>
-                            <option value="medium">Medium</option>
-                            <option value="hard">Hard</option>
-                        </select>
-                    </div>
-                </div>
+                                {/* Question Stem */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Question Stem</label>
+                                    <textarea
+                                        value={editData.text || ''}
+                                        onChange={(e) => setEditData({ ...editData, text: e.target.value })}
+                                        rows={3}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-colors resize-none text-sm"
+                                        placeholder="Enter question text..."
+                                    />
+                                </div>
 
-                {/* Explanation */}
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Explanation</label>
-                    <textarea
-                        value={editData.explanation || ''}
-                        onChange={(e) => setEditData({ ...editData, explanation: e.target.value })}
-                        rows={2}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-colors resize-none text-sm"
-                        placeholder="Explanation for the correct answer..."
-                    />
+                                {/* Options */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Answer Options</label>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {['A', 'B', 'C', 'D'].map((letter, i) => (
+                                            <div key={letter} className="flex gap-3">
+                                                <button
+                                                    onClick={() => setEditData({ ...editData, correct_answer: letter })}
+                                                    className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center border transition-all ${editData.correct_answer === letter ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-300'}`}
+                                                >
+                                                    {letter}
+                                                </button>
+                                                <div className="flex-1 space-y-2">
+                                                    <input
+                                                        value={editData.options[i] || ''}
+                                                        onChange={(e) => {
+                                                            const newOpts = [...editData.options];
+                                                            newOpts[i] = e.target.value;
+                                                            setEditData({ ...editData, options: newOpts });
+                                                        }}
+                                                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium outline-none focus:border-indigo-400 transition-colors text-sm"
+                                                        placeholder={`Option ${letter}`}
+                                                    />
+                                                    {/* Option Image Upload */}
+                                                    <div className="flex items-center gap-3">
+                                                        {editData.option_images?.[i] ? (
+                                                            <div className="relative group rounded-lg overflow-hidden border border-slate-200 bg-white inline-block">
+                                                                <img src={editData.option_images[i]} alt={`Option ${letter}`} className="h-16 w-32 object-contain" />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const newImages = [...editData.option_images];
+                                                                        newImages[i] = '';
+                                                                        setEditData({ ...editData, option_images: newImages });
+                                                                    }}
+                                                                    className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => document.getElementById(`opt-image-${i}`)?.click()}
+                                                                className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                                                            >
+                                                                <ImageIcon className="w-3.5 h-3.5" /> Add Image
+                                                            </button>
+                                                        )}
+                                                        <input
+                                                            id={`opt-image-${i}`}
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={(e) => handleOptionImageUpload(e, i)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Meta fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
+                                        <select
+                                            value={editData.subject || 'math'}
+                                            onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-bold outline-none focus:border-indigo-400 transition-colors text-sm"
+                                        >
+                                            <option value="math">Math</option>
+                                            <option value="rw">Reading & Writing</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Difficulty</label>
+                                        <select
+                                            value={editData.difficulty || 'medium'}
+                                            onChange={(e) => setEditData({ ...editData, difficulty: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-bold outline-none focus:border-indigo-400 transition-colors text-sm"
+                                        >
+                                            <option value="easy">Easy</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="hard">Hard</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Explanation */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Explanation</label>
+                                    <textarea
+                                        value={editData.explanation || ''}
+                                        onChange={(e) => setEditData({ ...editData, explanation: e.target.value })}
+                                        rows={3}
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-colors resize-none text-sm"
+                                        placeholder="Explanation for the correct answer..."
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            /* VIEW MODE - SAT interface style */
+                            <div className="flex flex-col h-full bg-white">
+                                {/* Question number + flag row */}
+                                <div className="flex items-center justify-between px-8 pt-6 pb-4 border-b border-slate-100">
+                                    <div className="bg-slate-900 text-white text-sm font-bold px-3 py-1 rounded-sm min-w-[2rem] text-center">
+                                        {currentIndex + 1}
+                                    </div>
+                                    <button className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
+                                        <Flag className="w-4 h-4" /> Mark for Review
+                                    </button>
+                                </div>
+
+                                <div className="px-8 py-6 space-y-6">
+                                    {/* Passage with live highlighting */}
+                                    {nj.passage && (
+                                        <PassageViewer
+                                            text={nj.passage}
+                                            highlights={highlights[currentCandidate.id] || []}
+                                            isHighlighterActive={isHighlighterActive}
+                                            activeColor={activeHighlightColor}
+                                            onAddHighlight={(range) =>
+                                                setHighlights(prev => ({
+                                                    ...prev,
+                                                    [currentCandidate.id]: [...(prev[currentCandidate.id] || []), range]
+                                                }))
+                                            }
+                                            onRemoveHighlight={(idx) =>
+                                                setHighlights(prev => ({
+                                                    ...prev,
+                                                    [currentCandidate.id]: (prev[currentCandidate.id] || []).filter((_, i) => i !== idx)
+                                                }))
+                                            }
+                                        />
+                                    )}
+
+                                    {/* Image indicator */}
+                                    {nj.has_image && (
+                                        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                                            <span className="text-sm font-bold text-amber-700">This question contains an image/graph that needs to be uploaded manually after approval.</span>
+                                        </div>
+                                    )}
+
+                                    {/* Question stem */}
+                                    <p className="font-serif text-[17px] leading-8 text-slate-900 select-text">
+                                        <MathText text={nj.text || "No question text available."} />
+                                    </p>
+
+                                    {/* Answer options with eliminate (strikethrough) */}
+                                    <div className="space-y-2">
+                                        {(nj.options || []).map((opt: string, i: number) => {
+                                            const letter = ['A', 'B', 'C', 'D'][i];
+                                            const isCorrect = nj.correct_answer === letter;
+                                            const struck = struckOptions[currentCandidate.id]?.has(letter);
+
+                                            return (
+                                                <div key={i} className="relative group">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isStrikeActive) {
+                                                                setStruckOptions(prev => {
+                                                                    const cur = new Set(prev[currentCandidate.id] || []);
+                                                                    if (cur.has(letter)) cur.delete(letter); else cur.add(letter);
+                                                                    return { ...prev, [currentCandidate.id]: cur };
+                                                                });
+                                                            }
+                                                        }}
+                                                        className={`w-full flex flex-col items-start gap-2 p-4 rounded border text-left transition-all ${struck
+                                                            ? 'opacity-40 bg-slate-50 border-slate-200 cursor-not-allowed'
+                                                            : isCorrect
+                                                                ? 'border-[#001E3C] bg-[#E7F0F8] ring-1 ring-[#001E3C]'
+                                                                : isStrikeActive
+                                                                    ? 'border-slate-300 bg-white hover:border-rose-300 hover:bg-rose-50 cursor-pointer'
+                                                                    : 'border-slate-300 bg-white'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-start gap-4">
+                                                            <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isCorrect && !struck
+                                                                ? 'bg-[#001E3C] text-white border-[#001E3C]'
+                                                                : 'border-slate-300 text-slate-500 bg-white'
+                                                                }`}>
+                                                                {letter}
+                                                            </div>
+                                                            <span className={`font-serif text-[15px] leading-7 text-slate-800 pt-0.5 ${struck ? 'line-through decoration-slate-400 opacity-50' : ''}`}>
+                                                                <MathText text={opt} />
+                                                            </span>
+                                                        </div>
+                                                        {nj.option_images?.[i] && (
+                                                            <div className="mt-2 rounded-lg border border-slate-100 overflow-hidden bg-white/50 inline-block">
+                                                                <img src={nj.option_images[i]} alt={`Option ${letter}`} className="max-h-48 object-contain" />
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                    {/* Inline ABC eliminate button (hover) */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setStruckOptions(prev => {
+                                                                const cur = new Set(prev[currentCandidate.id] || []);
+                                                                if (cur.has(letter)) cur.delete(letter); else cur.add(letter);
+                                                                return { ...prev, [currentCandidate.id]: cur };
+                                                            });
+                                                        }}
+                                                        className={`absolute top-1/2 -translate-y-1/2 -right-8 p-1 text-xs font-bold uppercase tracking-wider transition-colors opacity-0 group-hover:opacity-100 ${struck ? 'text-rose-500 opacity-100' : 'text-slate-300 hover:text-rose-500'}`}
+                                                        title="Eliminate"
+                                                    >
+                                                        abc
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {
+                                            nj.type === 'spr' && (!nj.options || nj.options.length === 0) && (
+                                                <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-center">
+                                                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Student-Produced Response (No Options)</span>
+                                                </div>
+                                            )
+                                        }
+                                    </div>
+
+                                    {/* Skill tags */}
+                                    {nj.skill_tags?.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {nj.skill_tags.map((tag: string) => (
+                                                <span key={tag} className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-black uppercase tracking-widest">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Explanation */}
+                                    {nj.explanation && (
+                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Explanation</p>
+                                            <p className="text-sm text-slate-700 leading-relaxed">
+                                                <MathText text={nj.explanation} />
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-            ) : (
-            /* VIEW MODE - SAT interface style */
-            <div className="flex flex-col h-full">
-                {/* Question number + flag row */}
-                <div className="flex items-center justify-between px-8 pt-6 pb-4 border-b border-slate-100">
-                    <div className="bg-slate-900 text-white text-sm font-bold px-3 py-1 rounded-sm min-w-[2rem] text-center">
-                        {currentIndex + 1}
-                    </div>
-                    <button className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
-                        <Flag className="w-4 h-4" /> Mark for Review
+
+            {/* Bottom footer toolbar - SAT style */}
+            <div className="h-16 bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-[0_-4px_15px_rgba(0,0,0,0.04)] z-30">
+                {/* Left: navigation */}
+                <div className="flex items-center gap-2 min-w-[160px]">
+                    <button
+                        disabled={currentIndex === 0}
+                        onClick={() => { setCurrentIndex(currentIndex - 1); setIsEditing(false); }}
+                        className="h-9 px-4 border border-slate-300 text-slate-700 font-bold rounded text-sm hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                    >
+                        <ChevronLeft className="w-4 h-4" /> Back
                     </button>
                 </div>
 
-                <div className="px-8 py-6 space-y-6">
-                    {/* Passage with live highlighting */}
-                    {nj.passage && (
-                        <PassageViewer
-                            text={nj.passage}
-                            highlights={highlights[currentCandidate.id] || []}
-                            isHighlighterActive={isHighlighterActive}
-                            activeColor={activeHighlightColor}
-                            onAddHighlight={(range) =>
-                                setHighlights(prev => ({
-                                    ...prev,
-                                    [currentCandidate.id]: [...(prev[currentCandidate.id] || []), range]
-                                }))
-                            }
-                            onRemoveHighlight={(idx) =>
-                                setHighlights(prev => ({
-                                    ...prev,
-                                    [currentCandidate.id]: (prev[currentCandidate.id] || []).filter((_, i) => i !== idx)
-                                }))
-                            }
-                        />
-                    )}
-
-                    {/* Image indicator */}
-                    {nj.has_image && (
-                        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-                            <span className="text-sm font-bold text-amber-700">This question contains an image/graph that needs to be uploaded manually after approval.</span>
-                        </div>
-                    )}
-
-                    {/* Question stem */}
-                    <p className="font-serif text-[17px] leading-8 text-slate-900 select-text">
-                        <MathText text={nj.text || "No question text available."} />
-                    </p>
-
-                    {/* Answer options with eliminate (strikethrough) */}
-                    <div className="space-y-2">
-                        {(nj.options || []).map((opt: string, i: number) => {
-                            const letter = ['A', 'B', 'C', 'D'][i];
-                            const isCorrect = nj.correct_answer === letter;
-                            const struck = struckOptions[currentCandidate.id]?.has(letter);
-
-                            return (
-                                <div key={i} className="relative group">
-                                    <button
-                                        onClick={() => {
-                                            if (isStrikeActive) {
-                                                setStruckOptions(prev => {
-                                                    const cur = new Set(prev[currentCandidate.id] || []);
-                                                    if (cur.has(letter)) cur.delete(letter); else cur.add(letter);
-                                                    return { ...prev, [currentCandidate.id]: cur };
-                                                });
-                                            }
-                                        }}
-                                        className={`w-full flex flex-col items-start gap-2 p-4 rounded border text-left transition-all ${struck
-                                            ? 'opacity-40 bg-slate-50 border-slate-200 cursor-not-allowed'
-                                            : isCorrect
-                                                ? 'border-[#001E3C] bg-[#E7F0F8] ring-1 ring-[#001E3C]'
-                                                : isStrikeActive
-                                                    ? 'border-slate-300 bg-white hover:border-rose-300 hover:bg-rose-50 cursor-pointer'
-                                                    : 'border-slate-300 bg-white'
-                                            }`}
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isCorrect && !struck
-                                                ? 'bg-[#001E3C] text-white border-[#001E3C]'
-                                                : 'border-slate-300 text-slate-500 bg-white'
-                                                }`}>
-                                                {letter}
-                                            </div>
-                                            <span className={`font-serif text-[15px] leading-7 text-slate-800 pt-0.5 ${struck ? 'line-through decoration-slate-400 opacity-50' : ''}`}>
-                                                <MathText text={opt} />
-                                            </span>
-                                        </div>
-                                        {nj.option_images?.[i] && (
-                                            <div className="mt-2 rounded-lg border border-slate-100 overflow-hidden bg-white/50 inline-block">
-                                                <img src={nj.option_images[i]} alt={`Option ${letter}`} className="max-h-48 object-contain" />
-                                            </div>
-                                        )}
-                                    </button>
-                                    {/* Inline ABC eliminate button (hover) */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setStruckOptions(prev => {
-                                                const cur = new Set(prev[currentCandidate.id] || []);
-                                                if (cur.has(letter)) cur.delete(letter); else cur.add(letter);
-                                                return { ...prev, [currentCandidate.id]: cur };
-                                            });
-                                        }}
-                                        className={`absolute top-1/2 -translate-y-1/2 -right-8 p-1 text-xs font-bold uppercase tracking-wider transition-colors opacity-0 group-hover:opacity-100 ${struck ? 'text-rose-500 opacity-100' : 'text-slate-300 hover:text-rose-500'}`}
-                                        title="Eliminate"
-                                    >
-                                        abc
-                                    </button>
-                                </div>
-                            );
-                        })}
-
-                        {
-                            nj.type === 'spr' && (!nj.options || nj.options.length === 0) && (
-                                <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-center">
-                                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Student-Produced Response (No Options)</span>
-                                </div>
-                            )
-                        }
-                    </div >
-
-                    {nj.skill_tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-2">
-                            {nj.skill_tags.map((tag: string) => (
-                                <span key={tag} className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-black uppercase tracking-widest">
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-
-                    {nj.explanation && (
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Explanation</p>
-                            <p className="text-sm text-slate-700 leading-relaxed">
-                                <MathText text={nj.explanation} />
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-                    )}
-        </div >
-                </div >
-            </div >
-
-    {/* Bottom footer toolbar - SAT style */ }
-    < div className = "h-16 bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-[0_-4px_15px_rgba(0,0,0,0.04)] z-30" >
-        {/* Left: navigation */ }
-        < div className = "flex items-center gap-2 min-w-[160px]" >
-            <button
-                disabled={currentIndex === 0}
-                onClick={() => { setCurrentIndex(currentIndex - 1); setIsEditing(false); }}
-                className="h-9 px-4 border border-slate-300 text-slate-700 font-bold rounded text-sm hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1"
-            >
-                <ChevronLeft className="w-4 h-4" /> Back
-            </button>
-                </div >
-
-    {/* Center: action buttons */ }
-    < div className = "flex items-center gap-3" >
-    {
-        isEditing?(
+                {/* Center: action buttons */}
+                <div className="flex items-center gap-3">
+                    {isEditing ? (
                         <>
                             <button
                                 onClick={() => setIsEditing(false)}
@@ -770,77 +857,75 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                             </button>
                         </>
                     ) : (
-    <>
-        {/* Reject */}
-        <button
-            disabled={actionLoading || isRejected}
-            onClick={handleReject}
-            className="h-10 px-4 border border-rose-200 text-rose-600 font-bold rounded text-sm hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-        >
-            <X className="w-4 h-4" /> Reject
-        </button>
+                        <>
+                            {/* Reject */}
+                            <button
+                                disabled={actionLoading || isRejected}
+                                onClick={handleReject}
+                                className="h-10 px-4 border border-rose-200 text-rose-600 font-bold rounded text-sm hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                            >
+                                <X className="w-4 h-4" /> Reject
+                            </button>
 
-        {/* Edit */}
-        <button
-            onClick={startEdit}
-            className="h-10 px-4 border border-slate-300 text-slate-700 font-bold rounded text-sm hover:bg-slate-50 transition-all flex items-center gap-2"
-        >
-            <Edit3 className="w-4 h-4" /> Edit
-        </button>
+                            {/* Edit */}
+                            <button
+                                onClick={startEdit}
+                                className="h-10 px-4 border border-slate-300 text-slate-700 font-bold rounded text-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+                            >
+                                <Edit3 className="w-4 h-4" /> Edit
+                            </button>
 
-        {/* Approve */}
-        <button
-            disabled={isApproved || actionLoading}
-            onClick={handleApprove}
-            className={`h-10 px-6 font-bold rounded text-sm transition-all flex items-center gap-2 shadow ${isApproved
-                ? 'bg-emerald-100 text-emerald-600 border border-emerald-200 cursor-not-allowed'
-                : 'bg-[#001E3C] text-white hover:bg-[#002D5C] hover:scale-[1.02]'
-                }`}
-        >
-            {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            {isApproved ? 'Approved' : 'Approve'}
-        </button>
-    </>
-)}
-                </div >
+                            {/* Approve */}
+                            <button
+                                disabled={isApproved || actionLoading}
+                                onClick={handleApprove}
+                                className={`h-10 px-6 font-bold rounded text-sm transition-all flex items-center gap-2 shadow ${isApproved
+                                    ? 'bg-emerald-100 text-emerald-600 border border-emerald-200 cursor-not-allowed'
+                                    : 'bg-[#001E3C] text-white hover:bg-[#002D5C] hover:scale-[1.02]'
+                                    }`}
+                            >
+                                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                {isApproved ? 'Approved' : 'Approve'}
+                            </button>
+                        </>
+                    )}
+                </div>
 
-    {/* Right: next navigation */ }
-    < div className = "flex items-center gap-2 min-w-[160px] justify-end" >
-        <button
-            onClick={() => {
-                setIsEditing(false);
-                if (currentIndex < total - 1) setCurrentIndex(currentIndex + 1);
-                else setCurrentIndex(total); // triggers success screen
-            }}
-            className="h-9 px-4 border border-slate-300 text-slate-700 font-bold rounded text-sm hover:bg-slate-50 transition-all flex items-center gap-1"
-        >
-            Next <ChevronRight className="w-4 h-4" />
-        </button>
-                </div >
-            </div >
+                {/* Right: next navigation */}
+                <div className="flex items-center gap-2 min-w-[160px] justify-end">
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            if (currentIndex < total - 1) setCurrentIndex(currentIndex + 1);
+                            else setCurrentIndex(total); // triggers success screen
+                        }}
+                        className="h-9 px-4 border border-slate-300 text-slate-700 font-bold rounded text-sm hover:bg-slate-50 transition-all flex items-center gap-1"
+                    >
+                        Next <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
 
-    {/* Question navigator dots */ }
-    < div className = "bg-[#001E3C]/5 border-t border-slate-200/50 px-6 py-2 flex items-center justify-center gap-1.5 flex-wrap shrink-0" >
-    {
-        candidates.map((c, i) => (
-            <button
-                key={c.id}
-                onClick={() => { setCurrentIndex(i); setIsEditing(false); }}
-                title={`Question ${i + 1} - ${c.status}`}
-                className={`w-7 h-7 rounded text-xs font-bold transition-all border ${i === currentIndex
-                    ? 'bg-[#001E3C] text-white border-[#001E3C] scale-110'
-                    : c.status === 'approved'
-                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
-                        : c.status === 'rejected'
-                            ? 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200'
-                            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
-                    }`}
-            >
-                {i + 1}
-            </button>
-        ))
-    }
-            </div >
-        </div >
+            {/* Question navigator dots */}
+            <div className="bg-[#001E3C]/5 border-t border-slate-200/50 px-6 py-2 flex items-center justify-center gap-1.5 flex-wrap shrink-0">
+                {candidates.map((c, i) => (
+                    <button
+                        key={c.id}
+                        onClick={() => { setCurrentIndex(i); setIsEditing(false); }}
+                        title={`Question ${i + 1} - ${c.status}`}
+                        className={`w-7 h-7 rounded text-xs font-bold transition-all border ${i === currentIndex
+                            ? 'bg-[#001E3C] text-white border-[#001E3C] scale-110'
+                            : c.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
+                                : c.status === 'rejected'
+                                    ? 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200'
+                                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                            }`}
+                    >
+                        {i + 1}
+                    </button>
+                ))}
+            </div>
+        </div>
     );
 };
