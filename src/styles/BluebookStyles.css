@@ -6,38 +6,147 @@
   --bluebook-light-blue: #a0b4e8;
   --bluebook-light-blue-hover: #8da2d4;
   --bluebook-accent-blue: #0077c8;
+  --bluebook-dark-blue: #1e2267;
+  /* The iconic dark blue bar color */
   --bluebook-footer-bg: #ffffff;
   --bluebook-bg-light: #ffffff;
   --bluebook-bar-gray: #ffffff;
   --bluebook-text-slate: #1e293b;
   --bluebook-text-muted: #64748b;
   --bluebook-border: #e2e8f0;
+  --bb-yellow: #FFF5A1;
+  --bb-blue: #D1E9FF;
+  --bb-pink: #FFD1E8;
 }
 
-/* Iconic 4-Color Dashed Separator (Blue, Yellow, Pink, Gray) */
+/* Practice Test Bar */
+.bluebook-practice-bar {
+  height: 32px;
+  background: var(--bluebook-dark-blue);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Split Pane Dragger */
+.bluebook-split-dragger {
+  width: 12px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bluebook-split-dragger::after {
+  content: '';
+  width: 2px;
+  height: 16px;
+  border-left: 2px solid #94a3b8;
+  border-right: 2px solid #94a3b8;
+}
+
+/* Line Reader */
+.bluebook-line-reader {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 100;
+  cursor: grab;
+  pointer-events: auto;
+  outline: none;
+}
+
+.bluebook-line-reader:focus {
+  box-shadow: 0 0 0 2px var(--bluebook-accent-blue);
+}
+
+.bluebook-line-reader-window {
+  width: 100%;
+  height: 60px;
+  background: transparent;
+  border-top: 4px solid #1e2267;
+  border-bottom: 4px solid #1e2267;
+  box-shadow:
+    0 -100vh 0 100vw rgba(0, 0, 0, 0.7),
+    0 100vh 0 100vw rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  position: relative;
+}
+
+.bluebook-line-reader-handle {
+  width: 48px;
+  height: 32px;
+  background: #1e2267;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 120;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+}
+
+.bluebook-line-reader-instruction {
+  position: absolute;
+  bottom: 80px;
+  /* Positioned above the handle */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 130;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Blue Dashed Separator */
 .bluebook-dashed-separator {
   height: 4px;
   width: 100%;
-  background: white;
+  background-image: linear-gradient(to right, #2b59c3 50%, transparent 50%);
+  background-size: 16px 4px;
+  background-repeat: repeat-x;
 }
 
 /* Solid Black Navigation Pill */
 .bluebook-nav-button {
   height: 40px;
   padding: 0 24px;
-  background: #000000;
+  background: #111827;
   color: white;
-  border-radius: 9999px;
+  border-radius: 8px;
+  /* Square with slight rounding in screenshot */
   display: flex;
   align-items: center;
   gap: 12px;
   font-weight: 700;
   font-size: 14px;
-  transition: all 0.2s;
-}
-
-.bluebook-nav-button:hover {
-  background: #262626;
 }
 
 /* Circle Letters for Options */
@@ -47,82 +156,267 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 2px solid #cbd5e1;
+  border: 1px solid #1e293b;
   border-radius: 50%;
   font-weight: 700;
-  font-size: 14px;
-  color: #475569;
+  font-size: 15px;
+  color: #1e293b;
   transition: all 0.2s;
   flex-shrink: 0;
+  background: white;
 }
 
 .bluebook-option-button {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 12px 20px;
   width: 100%;
   text-align: left;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  /* Smoother rounding in screenshot */
   background: white;
-  transition: all 0.2s;
-}
-
-.bluebook-option-button:hover:not(:disabled) {
-  border-color: var(--bluebook-blue);
-  background-color: #f8faff;
-}
-
-.bluebook-option-button.selected {
-  border-color: var(--bluebook-blue);
-  background-color: #eef2ff;
-  border-width: 2px;
-}
-
-.bluebook-option-button.selected .bluebook-option-letter {
-  background-color: var(--bluebook-blue);
-  border-color: var(--bluebook-blue);
-  color: white;
-}
-
-/* Header & Question Bar */
-.bluebook-header {
-  height: 64px;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+  transition: all 0.1s;
   position: relative;
 }
 
-.bluebook-question-bar {
-  height: 48px;
-  background: #f3f4f6;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+.bluebook-option-button:hover:not(:disabled) {
+  background-color: #fcfdfe;
+  border-color: #1e293b;
 }
 
-.bluebook-question-num-box {
-  width: 36px;
-  height: 36px;
-  background: #111827;
+.bluebook-option-button.selected {
+  border-color: #2b59c3;
+  border-width: 2px;
+  padding: 11px 19px;
+  /* Offset for 2px border */
+}
+
+.bluebook-option-button.selected .bluebook-option-letter {
+  border-color: #2b59c3;
+  color: #2b59c3;
+  border-width: 2px;
+}
+
+.bluebook-option-button.selected {
+  border-color: #1e293b;
+  border-width: 2px;
+  padding: 11px 15px;
+  /* Adjust for border width info */
+}
+
+.bluebook-option-button.selected .bluebook-option-letter {
+  background-color: #1e293b;
   color: white;
+}
+
+/* Eliminate (ABC) icons */
+.bluebook-eliminate-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.bluebook-eliminate-btn.active {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #1e293b;
+}
+
+.bluebook-option-button.struck {
+  opacity: 0.5;
+}
+
+.bluebook-option-button.struck .bluebook-option-letter {
+  opacity: 0.3;
+}
+
+/* Eliminate button refinement */
+.bluebook-eliminate-circle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #94a3b8;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  border-radius: 4px;
+  font-size: 14px;
+  color: #94a3b8;
+  position: relative;
+  background: white;
+  transition: all 0.2s;
 }
 
-/* Custom Scrollbar to match Bluebook */
+.bluebook-eliminate-circle:hover {
+  background: #f8fafc;
+  border-color: #1e293b;
+  color: #1e293b;
+}
+
+.bluebook-eliminate-circle.active {
+  border-color: #1e293b;
+  color: #1e293b;
+}
+
+.bluebook-eliminate-circle .bb-slash {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
+/* Highlights */
+mark.bb-highlight-yellow {
+  background-color: var(--bb-yellow);
+}
+
+mark.bb-highlight-blue {
+  background-color: var(--bb-blue);
+}
+
+mark.bb-highlight-pink {
+  background-color: var(--bb-pink);
+}
+
+mark.bb-highlight-yellow:hover {
+  filter: brightness(0.95);
+}
+
+mark.bb-highlight-blue:hover {
+  filter: brightness(0.95);
+}
+
+mark.bb-highlight-pink:hover {
+  filter: brightness(0.95);
+}
+
+/* Navigation Modal (Bluebook Style) */
+.bb-nav-modal-overlay {
+  background: transparent;
+  /* Click outside to close handled in JS */
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 80px;
+  /* Above footer */
+}
+
+.bb-nav-modal-content {
+  background: white;
+  width: 520px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bb-nav-modal-pointer {
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 12px solid white;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.1));
+}
+
+.bb-nav-box {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.bb-nav-box.answered {
+  background: #2b59c3;
+  color: white;
+}
+
+.bb-nav-box.unanswered {
+  border: 1.5px dashed #222;
+  background: white;
+  color: #222;
+}
+
+.bb-nav-box.current {
+  /* Location marker is handled via absolute positioning in JSX */
+}
+
+.bb-nav-box-bookmark {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  color: #ef4444;
+  z-index: 10;
+}
+
+.bb-nav-current-marker {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #222;
+}
+
+.bb-nav-legend-item {
+  display: flex;
+  items-center: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.bb-nav-review-btn {
+  border: 1.5px solid #2b59c3;
+  color: #2b59c3;
+  padding: 10px 32px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.bb-nav-review-btn:hover {
+  background: #f0f4ff;
+}
+
+/* Custom Scrollbar */
 .bluebook-scroll::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .bluebook-scroll::-webkit-scrollbar-track {
@@ -131,7 +425,8 @@
 
 .bluebook-scroll::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 5px;
+  border: 2px solid #f1f5f9;
 }
 
 .bluebook-scroll::-webkit-scrollbar-thumb:hover {

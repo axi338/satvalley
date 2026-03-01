@@ -8,33 +8,9 @@ import path from "path";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
-import { fileURLToPath } from 'url';
-
-import { normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI } from "./satvalley-ai/src/processor.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { normalizeQuestion, splitTextToCandidates } from "./satvalley-ai/src/processor.js";
 
 dotenv.config();
-import { v4 as uuidv4 } from 'uuid';
-// import sharp from 'sharp';
-// import pdfImgConvert from 'pdf-img-convert';
-
-// Global Crash Logger
-const logCrash = (type, err) => {
-  const msg = `[${new Date().toISOString()}] ${type}: ${err.message}\n${err.stack}\n\n`;
-  console.error(msg); // Print to console still
-  try {
-    fs.appendFileSync(path.join(process.cwd(), 'crash.log'), msg);
-  } catch (e) {
-    console.error("Failed to write to crash.log", e);
-  }
-};
-
-process.on('uncaughtException', (err) => logCrash('UNCAUGHT_EXCEPTION', err));
-process.on('unhandledRejection', (reason, promise) => {
-  logCrash('UNHANDLED_REJECTION', reason instanceof Error ? reason : new Error(String(reason)));
-});
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey =
@@ -100,63 +76,7 @@ const verifyAdmin = async (req) => {
   if (isAdmin) {
     return user;
   }
-  console.warn(`WARN: Admin access denied for ${email}. Checked against allowList: [${allowList.join(", ")}]`);
   throw Object.assign(new Error("Not an admin"), { status: 403 });
-};
-
-// Helper: Recalculate and update test metadata (counts and sections)
-const recalculateTestCounts = async (testId) => {
-  if (!testId) return;
-  try {
-    // 1. Get all linked questions
-    const { data: linkedQuestions, error: linkError } = await supabase
-      .from("test_questions")
-      .select(`
-        questions (
-          subject
-        )
-      `)
-      .eq("test_id", testId);
-
-    if (linkError) {
-      console.error(`Error fetching linked questions for layout update:`, linkError);
-      return;
-    }
-
-    const questions = linkedQuestions
-      .map(l => l.questions)
-      .filter(q => q);
-
-    const mathQuestions = questions.filter(q => q.subject === 'math');
-    const rwQuestions = questions.filter(q => ['reading', 'writing', 'rw'].includes(q.subject));
-
-    const m1_math = mathQuestions.filter(q => (q.module || 'm1').startsWith('m1')).length;
-    const m2_math = mathQuestions.filter(q => (q.module || '').startsWith('m2')).length;
-    const m1_rw = rwQuestions.filter(q => (q.module || 'm1').startsWith('m1')).length;
-    const m2_rw = rwQuestions.filter(q => (q.module || '').startsWith('m2')).length;
-
-    // 2. Construct sections
-    const newSections = [];
-    if (mathQuestions.length > 0) newSections.push(`Math: ${mathQuestions.length}Q (M1:${m1_math}, M2:${m2_math})`);
-    if (rwQuestions.length > 0) newSections.push(`Reading & Writing: ${rwQuestions.length}Q (M1:${m1_rw}, M2:${m2_rw})`);
-    if (newSections.length === 0) newSections.push('Empty: 0Q');
-
-    // 3. Update test
-    await supabase
-      .from("tests")
-      .update({
-        sections: newSections,
-        mathq: String(mathQuestions.length),
-        readingq: String(rwQuestions.length),
-        writingq: "0",
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", testId);
-
-    console.log(`Updated test ${testId} metadata: Math=${mathQuestions.length}, RW=${rwQuestions.length}`);
-  } catch (err) {
-    console.error(`Failed to recalculate test counts:`, err);
-  }
 };
 
 app.get("/listUsers", async (req, res) => {
@@ -296,47 +216,11 @@ app.delete("/api/tests/:id", async (req, res) => {
 app.get("/api/questions", async (req, res) => {
   try {
     const { testId, module, subject } = req.query || {};
-
-    // If testId is provided, use the test_questions junction table
-    if (testId && testId !== "undefined" && testId !== "") {
-      // Query through the junction table to get linked questions
-      const { data: linkedQuestions, error: linkError } = await supabase
-        .from("test_questions")
-        .select(`
-          order_index,
-          questions (*)
-        `)
-        .eq("test_id", testId)
-        .order("order_index", { ascending: true });
-
-      if (linkError) throw linkError;
-
-      // Extract questions from the nested structure and attach orderIndex
-      let questions = (linkedQuestions || [])
-        .map(link => ({
-          ...link.questions,
-          orderIndex: link.order_index
-        }))
-        .filter(q => q.id !== null);
-
-      // Apply additional filters if provided
-      if (module && module !== "undefined" && module !== "") {
-        questions = questions.filter(q => {
-          // Allow 'm2' questions to show up for 'm2-easy' or 'm2-hard' requests
-          if (module.startsWith('m2') && q.module === 'm2') return true;
-          return q.module === module;
-        });
-      }
-      if (subject && subject !== "undefined" && subject !== "") {
-        questions = questions.filter(q => q.subject === subject);
-      }
-
-      return res.json({ questions });
-    }
-
-    // Fallback: query questions table directly (for backward compatibility)
     let query = supabase.from("questions").select("*");
 
+    if (testId && testId !== "undefined" && testId !== "") {
+      query = query.eq("test_id", testId);
+    }
     if (module && module !== "undefined" && module !== "") {
       query = query.eq("module", module);
     }
@@ -425,28 +309,6 @@ app.post("/api/questions", async (req, res) => {
       .single();
 
     if (error) throw error;
-
-    // Link to test if test_id exists
-    if (finalTestId) {
-      const { data: currentQuestions } = await supabase
-        .from("test_questions")
-        .select("order_index")
-        .eq("test_id", finalTestId)
-        .order("order_index", { ascending: false })
-        .limit(1);
-
-      const nextOrder = (currentQuestions?.[0]?.order_index ?? -1) + 1;
-
-      await supabase.from("test_questions").insert({
-        test_id: finalTestId,
-        question_id: data.id,
-        order_index: nextOrder
-      });
-
-      // Auto-update test metadata
-      await recalculateTestCounts(finalTestId);
-    }
-
     res.json({ question: data, success: true });
   } catch (err) {
     console.error("Error creating question:", err);
@@ -481,39 +343,6 @@ app.put("/api/questions/:id", async (req, res) => {
       .eq("id", id);
 
     if (error) throw error;
-
-    // Ensure linked in test_questions if testId provided
-    if (testId) {
-      // Check if already linked
-      const { data: existingLink } = await supabase
-        .from("test_questions")
-        .select("order_index")
-        .eq("test_id", testId)
-        .eq("question_id", id)
-        .maybeSingle();
-
-      if (!existingLink) {
-        // Get next order index
-        const { data: currentQuestions } = await supabase
-          .from("test_questions")
-          .select("order_index")
-          .eq("test_id", testId)
-          .order("order_index", { ascending: false })
-          .limit(1);
-
-        const nextOrder = (currentQuestions?.[0]?.order_index ?? -1) + 1;
-
-        await supabase.from("test_questions").insert({
-          test_id: testId,
-          question_id: id,
-          order_index: nextOrder
-        });
-      }
-
-      // Auto-update test metadata
-      await recalculateTestCounts(testId);
-    }
-
     res.json({ success: true, id });
   } catch (err) {
     res.status(500).json({ error: "update_failed", message: err.message });
@@ -606,9 +435,7 @@ app.post("/api/results", async (req, res) => {
         .maybeSingle();
 
       const isAdmin = allowList.includes(userEmail?.toLowerCase());
-
-      // ONLY block duplicate submissions for Olympiad tests
-      if (existingResult && !isAdmin && is_olympiad) {
+      if (existingResult && !isAdmin) {
         return res.status(400).json({ error: "already_submitted", message: "You have already submitted this test. Only one attempt is permitted." });
       }
     }
@@ -665,25 +492,6 @@ app.post("/api/results", async (req, res) => {
       .single();
 
     if (insertError) throw insertError;
-
-    // Trigger AI Analysis in Background (Non-blocking)
-    if (responses && responses.length > 0) {
-      console.log(`Starting background analysis for result ${savedResult.id}...`);
-      analyzePerformanceAI(responses)
-        .then(async (analysis) => {
-          const { error: updError } = await supabase
-            .from("results")
-            .update({ ai_suggestions: analysis })
-            .eq("id", savedResult.id);
-
-          if (updError) console.error(`Background analysis DB update failed for ${savedResult.id}:`, updError);
-          else console.log(`Background analysis completed and saved for result ${savedResult.id}`);
-        })
-        .catch(err => {
-          console.error(`Background analysis failed for result ${savedResult.id}:`, err);
-        });
-    }
-
     res.json({ result: savedResult });
   } catch (err) {
     console.error("Result save error:", err);
@@ -937,93 +745,12 @@ app.delete("/api/results/:id", async (req, res) => {
 
 // --- SAT IMPORT PIPELINE ENDPOINTS ---
 
-// Get question counts per module for a specific test
-app.get("/api/admin/tests/:testId/module-counts", async (req, res) => {
-  try {
-    await verifyAdmin(req);
-    const { testId } = req.params;
-
-    // Get all questions for this test with their modules and subjects
-    const { data: questions, error } = await supabase
-      .from("test_questions")
-      .select("question_id, questions(module, subject)")
-      .eq("test_id", testId);
-
-    if (error) throw error;
-
-    // Count questions by module and subject
-    const counts = {
-      m1_math: 0,
-      m2_math: 0,
-      m1_rw: 0,
-      m2_rw: 0
-    };
-
-    questions?.forEach(tq => {
-      const q = tq.questions;
-      if (!q) return;
-
-      const module = q.module || 'm1';
-      const subject = q.subject || 'math';
-
-      // Map adaptive modules to top-level buckets
-      let modulePrefix = 'm1';
-      if (module.startsWith('m2')) modulePrefix = 'm2';
-
-      const key = `${modulePrefix}_${subject}`;
-
-      if (counts.hasOwnProperty(key)) {
-        counts[key]++;
-      }
-    });
-
-    res.json({ counts });
-  } catch (err) {
-    res.status(500).json({ error: "fetch_module_counts_failed", message: err.message });
-  }
-});
-
 app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => {
   try {
     const user = await verifyAdmin(req);
     if (!req.file) return res.status(400).json({ error: "no_file" });
 
-    const { testId, testType, subject, module } = req.body;
-
-    // Validate subject and module if provided
-    if (testId && (!subject || !module)) {
-      return res.status(400).json({
-        error: "missing_module_info",
-        message: "Subject and module are required when uploading to a specific test"
-      });
-    }
-
-    // If uploading to a test, check question limits
-    if (testId && subject && module) {
-      const { data: questions } = await supabase
-        .from("test_questions")
-        .select("question_id, questions(module, subject)")
-        .eq("test_id", testId);
-
-      const key = `${module}_${subject}`;
-      const currentCount = questions?.filter(tq => {
-        const q = tq.questions;
-        if (!q) return false;
-        const qModule = q.module || 'm1';
-        return qModule.startsWith(module) && q.subject === subject;
-      }).length || 0;
-
-      const limit = subject === 'math' ? 22 : 27;
-
-      if (currentCount >= limit) {
-        return res.status(400).json({
-          error: "module_full",
-          message: `This module already has ${currentCount}/${limit} questions. Cannot add more.`,
-          currentCount,
-          limit
-        });
-      }
-    }
+    const { testId, testType } = req.body;
 
     // 1. Create Import Job
     const { data: job, error: jobError } = await supabase
@@ -1033,11 +760,7 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
         filename: req.file.originalname,
         status: 'extracting',
         destination_test_id: testId || null,
-        config: {
-          testType: testType || 'sat-math',
-          subject: subject || null,
-          module: module || null
-        }
+        config: { testType: testType || 'sat-math' }
       })
       .select()
       .single();
@@ -1047,86 +770,48 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
     // 2. Respond immediately to the client
     res.json({ success: true, jobId: job.id });
 
-    // 3. Background process (Direct PDF -> Multimodal AI)
+    // 3. Background process (Text extraction -> Splitting -> Normalization)
     (async () => {
-      const reportProgress = async (status, configUpdates = {}) => {
-        try {
-          const { data: currentJob } = await supabase
-            .from("import_jobs")
-            .select("config")
-            .eq("id", job.id)
-            .single();
-
-          await supabase
-            .from("import_jobs")
-            .update({
-              status,
-              config: { ...(currentJob?.config || {}), ...configUpdates }
-            })
-            .eq("id", job.id);
-        } catch (e) {
-          console.error("Failed to report progress:", e);
-        }
-      };
-
       try {
-        await reportProgress('candidate_split', { progress_message: 'Starting PDF analysis...' });
-
-        // We now pass the buffer directly to Gemini 1.5 Flash
-        // It handles PDF parsing and image extraction natively
-        const candidates = await splitTextToCandidates(
-          req.file.buffer,
-          req.file.mimetype,
-          (msg) => reportProgress('candidate_split', { progress_message: msg })
-        );
-
-        if (!candidates || candidates.length === 0) {
-          throw new Error("No SAT questions were detected in this PDF. Please ensure the file is readable and contains text.");
+        let text = "";
+        if (req.file.mimetype === 'application/pdf') {
+          const parser = new pdf.PDFParse({ data: req.file.buffer });
+          const pdfData = await parser.getText();
+          text = pdfData.text;
+        } else {
+          text = req.file.buffer.toString('utf-8');
         }
 
-        await reportProgress('normalizing', {
-          total_candidates: candidates.length,
-          processed_candidates: 0,
-          progress_message: `Extracted ${candidates.length} candidates. Starting normalization...`
-        });
+        await supabase.from("import_jobs").update({ status: 'candidate_split' }).eq("id", job.id);
 
-        let successCount = 0;
+        const candidates = await splitTextToCandidates(text);
 
-        for (const candidateText of candidates) {
+        await supabase.from("import_jobs").update({
+          status: 'normalizing',
+          config: { ...job.config, total_candidates: candidates.length, processed_candidates: 0 }
+        }).eq("id", job.id);
+
+        let processedCount = 0;
+        for (const rawText of candidates) {
           try {
-            const normalized = await normalizeQuestion(
-              candidateText,
-              (msg) => reportProgress('normalizing', { progress_message: `Candidate ${successCount + 1}/${candidates.length}: ${msg}` })
-            );
-
-            let imageUrl = null;
-
-            // 3. Save to import_candidates ONLY (User will approve/publish later in ImportReview)
-            const { error: candidateError } = await supabase.from("import_candidates").insert({
+            const normalized = await normalizeQuestion(rawText);
+            await supabase.from("import_candidates").insert({
               job_id: job.id,
-              raw_text: candidateText,
+              raw_text: rawText,
               normalized_json: normalized,
               status: 'review_required'
             });
 
-            if (candidateError) {
-              console.error("Failed to insert candidate to database:", candidateError);
-              // logAiActivity("ERROR", "DB_INSERT_CANDIDATE", `Job ${job.id} | Error: ${JSON.stringify(candidateError)}`); // This function is not defined
-            } else {
-              successCount++;
-            }
-
-            await reportProgress('normalizing', {
-              processed_candidates: successCount,
-              progress_message: `Normalized ${successCount}/${candidates.length} questions...`
-            });
+            processedCount++;
+            await supabase.from("import_jobs").update({
+              config: { ...job.config, total_candidates: candidates.length, processed_candidates: processedCount }
+            }).eq("id", job.id);
           } catch (normError) {
             console.error("Candidate normalization failed:", normError);
-            // Optionally update message about failure
           }
         }
 
-        await reportProgress('review_required', { progress_message: 'Import complete. Review required.' });
+        await supabase.from("import_jobs").update({ status: 'review_required' }).eq("id", job.id);
       } catch (err) {
         console.error("Background import processing failed:", err);
         await supabase.from("import_jobs").update({
@@ -1154,27 +839,6 @@ app.get("/api/admin/import/jobs", async (req, res) => {
     res.json({ jobs: data });
   } catch (err) {
     res.status(500).json({ error: "list_jobs_failed", message: err.message });
-  }
-});
-
-app.delete("/api/admin/import/jobs/:id", async (req, res) => {
-  try {
-    await verifyAdmin(req);
-    const { id } = req.params;
-
-    // First delete candidates related to this job
-    await supabase.from("import_candidates").delete().eq("job_id", id);
-
-    // Then delete the job itself
-    const { error } = await supabase
-      .from("import_jobs")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-    res.json({ success: true, id });
-  } catch (err) {
-    res.status(500).json({ error: "delete_job_failed", message: err.message });
   }
 });
 
@@ -1213,7 +877,7 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
     // 1. Get candidate
     const { data: candidate, error: fetchError } = await supabase
       .from("import_candidates")
-      .select("*, import_jobs(destination_test_id, config)")
+      .select("*, import_jobs(destination_test_id)")
       .eq("id", id)
       .single();
 
@@ -1234,10 +898,7 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       subject: rawData.subject || "math",
       difficulty: rawData.difficulty || "medium",
       type: rawData.type || "multiple-choice",
-      skill: rawData.skill || (rawData.skill_tags && rawData.skill_tags[0]) || null,
-      tags: rawData.skill_tags || [],
-      image_url: rawData.image_url || null,
-      option_images: rawData.option_images || []
+      tags: rawData.skill_tags || []
     };
 
     // Ensure options is an array or null
@@ -1252,7 +913,6 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
 
     // 2. Insert into questions table
     const testId = candidate.import_jobs?.destination_test_id;
-    const jobConfig = candidate.import_jobs?.config || {};
 
     const { data: question, error: qError } = await supabase
       .from("questions")
@@ -1262,15 +922,12 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
         options: questionData.options,
         answer: questionData.answer,
         explanation: questionData.explanation,
-        subject: jobConfig.subject || questionData.subject,
+        subject: questionData.subject,
         difficulty: questionData.difficulty,
         type: questionData.type,
         tags: questionData.tags,
-        skill: questionData.skill,
         test_id: testId || null,
-        module: jobConfig.module || rawData.module || 'm1',
-        image_url: rawData.image_url || null,
-        option_images: rawData.option_images || []
+        module: rawData.module || 'm1' // Default to m1 if not specified
       })
       .select()
       .single();
@@ -1278,17 +935,6 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
     if (qError) {
       log(`DEBUG: Question insert error: ${JSON.stringify(qError)}`);
       throw qError;
-    }
-
-    // 2b. Link question_id back to candidate
-    log(`DEBUG: Updating candidate ${id} with question_id ${question.id}`);
-    const { error: candUpdateError } = await supabase
-      .from("import_candidates")
-      .update({ question_id: question.id })
-      .eq("id", id);
-
-    if (candUpdateError) {
-      log(`DEBUG: Candidate update error (linking question_id): ${JSON.stringify(candUpdateError)}`);
     }
 
     // 3. Link to test if destination_test_id exists
@@ -1313,33 +959,11 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
       });
 
       if (linkError) log(`DEBUG: Linking error: ${JSON.stringify(linkError)}`);
-      else {
-        log("DEBUG: Link successful.");
-        // Auto-update test metadata
-        await recalculateTestCounts(testId);
-      }
+      else log("DEBUG: Link successful.");
     }
-
 
     // 4. Update candidate status
     await supabase.from("import_candidates").update({ status: 'approved' }).eq("id", id);
-
-    // 5. Check if job is complete
-    if (candidate.job_id) {
-      const { count, error: countError } = await supabase
-        .from("import_candidates")
-        .select("*", { count: 'exact', head: true })
-        .eq("job_id", candidate.job_id)
-        .eq("status", "review_required");
-
-      if (!countError) {
-        log(`DEBUG: Job ${candidate.job_id} remaining candidates: ${count}`);
-        if (count === 0) {
-          await supabase.from("import_jobs").update({ status: 'done' }).eq("id", candidate.job_id);
-          log(`DEBUG: Job ${candidate.job_id} marked as done.`);
-        }
-      }
-    }
 
     res.json({ success: true, questionId: question.id });
   } catch (err) {
@@ -1358,29 +982,7 @@ app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
   try {
     await verifyAdmin(req);
     const { id } = req.params;
-
-    // Get candidate to find job_id
-    const { data: candidate } = await supabase
-      .from("import_candidates")
-      .select("job_id")
-      .eq("id", id)
-      .single();
-
     await supabase.from("import_candidates").update({ status: 'rejected' }).eq("id", id);
-
-    // Check if job is complete
-    if (candidate?.job_id) {
-      const { count, error: countError } = await supabase
-        .from("import_candidates")
-        .select("*", { count: 'exact', head: true })
-        .eq("job_id", candidate.job_id)
-        .eq("status", "review_required");
-
-      if (!countError && count === 0) {
-        await supabase.from("import_jobs").update({ status: 'done' }).eq("id", candidate.job_id);
-      }
-    }
-
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "rejection_failed", message: err.message });
@@ -1671,7 +1273,7 @@ app.put("/api/vocabulary/words/:id", async (req, res) => {
   try {
     const user = await verifyUser(req);
     const { id } = req.params;
-    const { word, definition, translation, example, theme, mastered } = req.body;
+    const { word, definition, example, theme, mastered } = req.body;
 
     const updates = {
       updated_at: new Date().toISOString()
@@ -1758,68 +1360,6 @@ app.delete("/api/vocabulary/words/:id", async (req, res) => {
   }
 });
 
-/**
- * AI Generation for vocabulary
- * POST /api/vocabulary/ai-generate
- */
-app.post("/api/vocabulary/ai-generate", async (req, res) => {
-  try {
-    await verifyUser(req);
-    const { word, theme } = req.body;
-    if (!word) return res.status(400).json({ error: "word_required" });
-
-    const data = await generateVocabularyAI(word, theme);
-    res.json(data);
-  } catch (err) {
-    console.error("AI Generation Error:", err);
-    res.status(500).json({ error: "ai_generation_failed", message: err.message });
-  }
-});
-
-/**
- * AI Analysis for test results
- * POST /api/results/:id/analyze
- */
-app.post("/api/results/:id/analyze", async (req, res) => {
-  try {
-    const user = await verifyUser(req);
-    const { id } = req.params;
-
-    // Fetch result
-    const { data: result, error: fetchError } = await supabase
-      .from("results")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (fetchError || !result) {
-      return res.status(404).json({ error: "result_not_found" });
-    }
-
-    // Verify authorship or admin
-    const isAdmin = allowList.includes(user.email?.toLowerCase());
-    if (result.user_email?.toLowerCase() !== user.email?.toLowerCase() && !isAdmin) {
-      return res.status(403).json({ error: "forbidden" });
-    }
-
-    // Analyze
-    const analysis = await analyzePerformanceAI(result.responses || []);
-
-    // Save to DB
-    const { error: updateError } = await supabase
-      .from("results")
-      .update({ ai_suggestions: analysis })
-      .eq("id", id);
-
-    if (updateError) throw updateError;
-
-    res.json({ success: true, analysis });
-  } catch (err) {
-    console.error("AI Analysis Error:", err);
-    res.status(500).json({ error: "analysis_failed", message: err.message });
-  }
-});
-
 // Upload vocabulary set cover image
 app.post("/api/vocabulary/upload-image", upload.single('image'), async (req, res) => {
   try {
@@ -1851,6 +1391,7 @@ app.post("/api/vocabulary/upload-image", upload.single('image'), async (req, res
 
 
 // Serve static files from the 'dist' directory (Vite build)
+const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Serve static files from 'dist' (root) or '../dist' (if running from backend/)

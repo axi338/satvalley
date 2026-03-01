@@ -6,6 +6,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { supabase } from '../../lib/supabase';
+import { MathText } from '../ui/MathText';
 
 interface AdminPageProps {
   onNavigate: (page: string) => void;
@@ -55,6 +56,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [architecturalMean, setArchitecturalMean] = useState('1547');
   const [questionFilterTestId, setQuestionFilterTestId] = useState<string>('');
   const [questionFilterSubject, setQuestionFilterSubject] = useState<string>('');
+  const [questionFilterModule, setQuestionFilterModule] = useState<string>('');
   const [flash, setFlash] = useState<string | null>(null);
   const [users, setUsers] = useState<Array<{ uid: string; email: string; lastLogin?: string }> | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
@@ -265,6 +267,21 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     }
   };
 
+  const handleRemoveQuestionImage = () => {
+    setQuestionImage(null);
+    setQuestionImagePreview(null);
+  };
+
+  const handleRemoveOptionImage = (index: number) => {
+    const newImages = [...optionImages];
+    newImages[index] = null;
+    setOptionImages(newImages);
+
+    const newPreviews = [...optionImagePreviews];
+    newPreviews[index] = null;
+    setOptionImagePreviews(newPreviews);
+  };
+
   const uploadImage = async (file: File): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -382,7 +399,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setQuestionSubject(q.subject || 'rw');
     setOptionImages([null, null, null, null]);
     setOptionImagePreviews(q.optionImages || [null, null, null, null]);
-    window.scrollTo({ top: 300, behavior: 'smooth' });
+    // Do not scroll anywhere, allow inline editing.
   };
 
   const handleDeleteQuestion = (id: string) => {
@@ -476,6 +493,139 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       showFlash(err.message);
     }
   };
+
+  const renderQuestionForm = () => (
+    <div className="space-y-6 max-w-3xl animate-in fade-in slide-in-from-top-4 duration-300">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Subject</label>
+          <div className="flex p-1 bg-white/5 border border-white/10 rounded-xl">
+            <button onClick={() => setQuestionSubject('rw')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${questionSubject === 'rw' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-white'}`}>RW</button>
+            <button onClick={() => setQuestionSubject('math')} className={`flex-1 py-1 rounded-lg text-sm font-bold transition-all ${questionSubject === 'math' ? 'bg-amber-500/20 text-amber-500' : 'text-muted-foreground hover:text-white'}`}>Math</button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Module</label>
+          <select value={moduleType} onChange={e => setModuleType(e.target.value as any)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
+            <option value="m1">Module 1</option>
+            <option value="m2-easy">Module 2 (Easy)</option>
+            <option value="m2-hard">Module 2 (Hard)</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Test Link</label>
+          <select value={selectedTestId} onChange={e => setSelectedTestId(e.target.value)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
+            <option value="">Independent</option>
+            {tests.map(t => <option key={t.id} value={t.id}>{t.title} {t.is_olympiad ? '(Olympiad)' : ''}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Type & Skill</label>
+          <div className="flex gap-2">
+            <select value={questionType} onChange={e => setQuestionType(e.target.value as any)} className="flex-1 h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
+              <option value="multiple-choice">MCQ</option>
+              <option value="numeric">SPR</option>
+            </select>
+            <Input value={testedSkill} onChange={e => setTestedSkill(e.target.value)} placeholder="Skill..." className="flex-1 bg-white/5 border-white/10 h-12" />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm text-muted-foreground">Passage & Question</label>
+        <Textarea value={passage} onChange={e => setPassage(e.target.value)} placeholder="Passage..." className="bg-white/5 border-white/10 min-h-24 text-white mb-2" />
+
+        <div className="flex gap-4 items-center mb-2">
+          <div className="flex-1">
+            <label className="text-[10px] uppercase text-muted-foreground block mb-1">Graph/Figure (Passage Image)</label>
+            <Input type="file" onChange={handleImageChange} className="bg-white/5 border-white/10 h-10 file:bg-primary/20 file:text-primary file:border-0 cursor-pointer text-xs" />
+          </div>
+          {questionImagePreview && (
+            <div className="relative">
+              <img src={questionImagePreview} className="w-12 h-12 rounded border border-white/10 object-cover" />
+              <button
+                onClick={handleRemoveQuestionImage}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 border border-background shadow-sm"
+              >
+                <CloseIcon className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <Textarea value={questionText} onChange={e => setQuestionText(e.target.value)} placeholder="Question..." className="bg-white/5 border-white/10 min-h-20 text-white" />
+      </div>
+
+      {questionType === 'multiple-choice' && (
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { state: optionA, setState: setOptionA, key: 'A', idx: 0 },
+            { state: optionB, setState: setOptionB, key: 'B', idx: 1 },
+            { state: optionC, setState: setOptionC, key: 'C', idx: 2 },
+            { state: optionD, setState: setOptionD, key: 'D', idx: 3 },
+          ].map(opt => (
+            <div key={opt.key} className="space-y-2">
+              <label className="text-xs text-muted-foreground">Choice {opt.key}</label>
+              <div className="flex gap-2">
+                <Input value={opt.state} onChange={e => opt.setState(e.target.value)} className="bg-white/5 border-white/10 h-11 text-sm text-white" />
+                {questionSubject === 'math' && (
+                  <div className="relative">
+                    <Input type="file" id={`opt-${opt.idx}`} className="hidden" onChange={e => handleOptionImageChange(opt.idx, e)} />
+                    <label htmlFor={`opt-${opt.idx}`} className="flex items-center justify-center w-11 h-11 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-primary/50 text-muted-foreground hover:text-white transition-colors">
+                      <Plus className="w-4 h-4" />
+                    </label>
+                    {optionImagePreviews[opt.idx] && (
+                      <>
+                        <img src={optionImagePreviews[opt.idx]!} className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-white/40 object-cover" />
+                        <button
+                          onClick={() => handleRemoveOptionImage(opt.idx)}
+                          className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 border border-background z-10 shadow-sm"
+                        >
+                          <CloseIcon className="w-2.5 h-2.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Correct Answer</label>
+          {questionType === 'multiple-choice' ? (
+            <select value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white font-bold">
+              <option value="">-</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+          ) : (
+            <Input value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} placeholder="0.5, 3/4..." className="bg-white/5 border-white/10 h-12 text-white font-mono" />
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground">Explanation</label>
+          <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} className="bg-white/5 border-white/10 min-h-12 h-12 text-white text-sm" />
+        </div>
+      </div>
+
+      <div className="flex gap-4 pt-4">
+        <Button onClick={handleAddQuestion} className="bg-primary text-primary-foreground min-w-[140px]">
+          {editingQuestionId ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+          {editingQuestionId ? 'Update' : 'Add'}
+        </Button>
+        <Button variant="outline" onClick={resetQuestionForm} className="border-white/10 hover:bg-white/5">Cancel</Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen pt-32 pb-24 bg-background">
@@ -679,143 +829,164 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                 </div>
               </div>
 
-              <div className="space-y-6 max-w-3xl">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Subject</label>
-                    <div className="flex p-1 bg-white/5 border border-white/10 rounded-xl">
-                      <button onClick={() => setQuestionSubject('rw')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${questionSubject === 'rw' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-white'}`}>RW</button>
-                      <button onClick={() => setQuestionSubject('math')} className={`flex-1 py-1 rounded-lg text-sm font-bold transition-all ${questionSubject === 'math' ? 'bg-amber-500/20 text-amber-500' : 'text-muted-foreground hover:text-white'}`}>Math</button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Module</label>
-                    <select value={moduleType} onChange={e => setModuleType(e.target.value as any)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
-                      <option value="m1">Module 1</option>
-                      <option value="m2-easy">Module 2 (Easy)</option>
-                      <option value="m2-hard">Module 2 (Hard)</option>
-                    </select>
-                  </div>
-                </div>
+              {/* Question Summary Dashboard */}
+              {(() => {
+                const filtered = questions.filter(q => !questionFilterTestId || q.testId === questionFilterTestId);
+                const stats = {
+                  total: filtered.length,
+                  math: filtered.filter(q => q.subject === 'math').length,
+                  rw: filtered.filter(q => q.subject === 'rw' || q.subject === 'reading' || q.subject === 'writing').length,
+                  m1: filtered.filter(q => q.module === 'm1').length,
+                  m2: filtered.filter(q => q.module?.startsWith('m2')).length,
+                  m2Hard: filtered.filter(q => q.module === 'm2-hard').length,
+                  m2Easy: filtered.filter(q => q.module === 'm2-easy').length,
+                };
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Test Link</label>
-                    <select value={selectedTestId} onChange={e => setSelectedTestId(e.target.value)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
-                      <option value="">Independent</option>
-                      {tests.map(t => <option key={t.id} value={t.id}>{t.title} {t.is_olympiad ? '(Olympiad)' : ''}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Type & Skill</label>
-                    <div className="flex gap-2">
-                      <select value={questionType} onChange={e => setQuestionType(e.target.value as any)} className="flex-1 h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
-                        <option value="multiple-choice">MCQ</option>
-                        <option value="numeric">SPR</option>
-                      </select>
-                      <Input value={testedSkill} onChange={e => setTestedSkill(e.target.value)} placeholder="Skill..." className="flex-1 bg-white/5 border-white/10 h-12" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Passage & Question</label>
-                  <Textarea value={passage} onChange={e => setPassage(e.target.value)} placeholder="Passage..." className="bg-white/5 border-white/10 min-h-24 text-white mb-2" />
-
-                  <div className="flex gap-4 items-center mb-2">
-                    <div className="flex-1">
-                      <label className="text-[10px] uppercase text-muted-foreground block mb-1">Graph/Figure (Passage Image)</label>
-                      <Input type="file" onChange={handleImageChange} className="bg-white/5 border-white/10 h-10 file:bg-primary/20 file:text-primary file:border-0 cursor-pointer text-xs" />
-                    </div>
-                    {questionImagePreview && <img src={questionImagePreview} className="w-12 h-12 rounded border border-white/10 object-cover" />}
-                  </div>
-
-                  <Textarea value={questionText} onChange={e => setQuestionText(e.target.value)} placeholder="Question..." className="bg-white/5 border-white/10 min-h-20 text-white" />
-                </div>
-
-                {questionType === 'multiple-choice' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { state: optionA, setState: setOptionA, key: 'A', idx: 0 },
-                      { state: optionB, setState: setOptionB, key: 'B', idx: 1 },
-                      { state: optionC, setState: setOptionC, key: 'C', idx: 2 },
-                      { state: optionD, setState: setOptionD, key: 'D', idx: 3 },
-                    ].map(opt => (
-                      <div key={opt.key} className="space-y-2">
-                        <label className="text-xs text-muted-foreground">Choice {opt.key}</label>
-                        <div className="flex gap-2">
-                          <Input value={opt.state} onChange={e => opt.setState(e.target.value)} className="bg-white/5 border-white/10 h-11 text-sm text-white" />
-                          {questionSubject === 'math' && (
-                            <div className="relative">
-                              <Input type="file" id={`opt-${opt.idx}`} className="hidden" onChange={e => handleOptionImageChange(opt.idx, e)} />
-                              <label htmlFor={`opt-${opt.idx}`} className="flex items-center justify-center w-11 h-11 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-primary/50 text-muted-foreground hover:text-white transition-colors">
-                                <Plus className="w-4 h-4" />
-                              </label>
-                              {optionImagePreviews[opt.idx] && (
-                                <img src={optionImagePreviews[opt.idx]!} className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-white/40 object-cover" />
-                              )}
-                            </div>
-                          )}
-                        </div>
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 transition-colors group">
+                      <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1 flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Total Questions
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <div className="text-3xl font-black text-white">{stats.total}</div>
+                      <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: '100%' }} />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Correct Answer</label>
-                    {questionType === 'multiple-choice' ? (
-                      <select value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white font-bold">
-                        <option value="">-</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                      </select>
-                    ) : (
-                      <Input value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} placeholder="0.5, 3/4..." className="bg-white/5 border-white/10 h-12 text-white font-mono" />
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Explanation</label>
-                    <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} className="bg-white/5 border-white/10 min-h-12 h-12 text-white text-sm" />
-                  </div>
-                </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500/50 transition-colors">
+                      <div className="text-[10px] uppercase font-bold text-amber-500/60 mb-1">Math Questions</div>
+                      <div className="text-3xl font-black text-white">{stats.math}</div>
+                      <div className="mt-2 text-[10px] text-muted-foreground">
+                        M1: <span className="text-white">{filtered.filter(q => q.subject === 'math' && q.module === 'm1').length}</span> |
+                        M2: <span className="text-white">{filtered.filter(q => q.subject === 'math' && q.module?.startsWith('m2')).length}</span>
+                      </div>
+                    </div>
 
-                <div className="flex gap-4 pt-4">
-                  <Button onClick={handleAddQuestion} className="bg-primary text-primary-foreground min-w-[140px]">
-                    {editingQuestionId ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                    {editingQuestionId ? 'Update' : 'Add'}
-                  </Button>
-                  <Button variant="outline" onClick={resetQuestionForm} className="border-white/10 hover:bg-white/5">Clear</Button>
-                </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-500/50 transition-colors">
+                      <div className="text-[10px] uppercase font-bold text-blue-500/60 mb-1">RW Questions</div>
+                      <div className="text-3xl font-black text-white">{stats.rw}</div>
+                      <div className="mt-2 text-[10px] text-muted-foreground">
+                        M1: <span className="text-white">{filtered.filter(q => (q.subject === 'rw' || q.subject === 'reading' || q.subject === 'writing') && q.module === 'm1').length}</span> |
+                        M2: <span className="text-white">{filtered.filter(q => (q.subject === 'rw' || q.subject === 'reading' || q.subject === 'writing') && q.module?.startsWith('m2')).length}</span>
+                      </div>
+                    </div>
 
-                <div className="mt-12 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg text-white">Question Bank ({questions.length})</h3>
-                    <div className="flex gap-2">
-                      <select value={questionFilterSubject} onChange={e => setQuestionFilterSubject(e.target.value)} className="h-9 bg-white/5 border border-white/10 rounded-md px-2 text-xs text-white">
-                        <option value="">All Subjects</option>
-                        <option value="rw">RW only</option>
-                        <option value="math">Math only</option>
-                      </select>
-                      <select value={questionFilterTestId} onChange={e => setQuestionFilterTestId(e.target.value)} className="h-9 bg-white/5 border border-white/10 rounded-md px-2 text-xs text-white">
-                        <option value="">All Tests</option>
-                        {tests.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                      </select>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-colors">
+                      <div className="text-[10px] uppercase font-bold text-indigo-500/60 mb-1">Module Balance</div>
+                      <div className="text-3xl font-black text-white">{stats.m1}<span className="text-sm font-normal text-muted-foreground mx-1">/</span>{stats.m2}</div>
+                      <div className="mt-2 text-[10px] text-muted-foreground">
+                        M1 Total vs M2 (Hard+Easy)
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    {questions
-                      .filter(q => !questionFilterTestId || q.testId === questionFilterTestId)
-                      .filter(q => !questionFilterSubject || q.subject === questionFilterSubject)
-                      .map(q => (
+                );
+              })()}
+
+              {!editingQuestionId && (
+                <div className="mb-12">
+                  <h3 className="text-lg font-bold text-white mb-6">Create New Question</h3>
+                  {renderQuestionForm()}
+                </div>
+              )}
+
+              <div className="mt-12 space-y-4 max-w-3xl">
+                <div className="space-y-6 mb-8">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h3 className="text-xl text-white font-bold flex items-center gap-2">
+                      Question Bank
+                      <span className="text-xs font-normal text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">
+                        {questions.filter(q =>
+                          (!questionFilterTestId || q.testId === questionFilterTestId) &&
+                          (!questionFilterSubject || q.subject === questionFilterSubject) &&
+                          (!questionFilterModule || q.module === questionFilterModule)
+                        ).length} Questions
+                      </span>
+                    </h3>
+                    <select value={questionFilterTestId} onChange={e => setQuestionFilterTestId(e.target.value)} className="h-10 bg-white/5 border border-white/10 rounded-lg px-4 text-sm text-white min-w-[200px]">
+                      <option value="">All Tests</option>
+                      {tests.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">1. Select Subject</label>
+                      <div className="flex gap-2">
+                        {[
+                          { id: '', label: 'All' },
+                          { id: 'math', label: 'Math', color: 'amber' },
+                          { id: 'rw', label: 'English (RW)', color: 'blue' }
+                        ].map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => { setQuestionFilterSubject(s.id); setQuestionFilterModule(''); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${questionFilterSubject === s.id
+                                ? (s.color === 'amber' ? 'bg-amber-500/20 border-amber-500/50 text-amber-500' : s.color === 'blue' ? 'bg-blue-500/20 border-blue-500/50 text-blue-500' : 'bg-primary/20 border-primary/50 text-primary')
+                                : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:border-white/20'
+                              }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">2. Select Module</label>
+                      <div className="flex gap-2">
+                        {[
+                          { id: '', label: 'All' },
+                          { id: 'm1', label: 'M1' },
+                          { id: 'm2-hard', label: 'M2-H' },
+                          { id: 'm2-easy', label: 'M2-E' }
+                        ].map(m => (
+                          <button
+                            key={m.id}
+                            onClick={() => setQuestionFilterModule(m.id)}
+                            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${questionFilterModule === m.id
+                                ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400'
+                                : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:border-white/20'
+                              }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {questions
+                    .filter(q => !questionFilterTestId || q.testId === questionFilterTestId)
+                    .filter(q => !questionFilterSubject || q.subject === questionFilterSubject)
+                    .filter(q => !questionFilterModule || q.module === questionFilterModule)
+                    .map((q, index) => {
+                      const isEditingThis = editingQuestionId === q.id;
+
+                      if (isEditingThis) {
+                        return (
+                          <div key={q.id} className="p-6 rounded-2xl border-2 border-primary/50 bg-primary/5 relative">
+                            <h4 className="text-white font-bold mb-6 flex items-center gap-2">
+                              <Edit className="w-5 h-5 text-primary" />
+                              Editing Question Inline
+                            </h4>
+                            {renderQuestionForm()}
+                          </div>
+                        )
+                      }
+
+                      return (
                         <div key={q.id} className="p-4 rounded-xl border border-white/10 bg-white/5 relative group">
+                          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-muted-foreground group-hover:text-primary group-hover:border-primary/50 transition-all z-10 shadow-xl">
+                            {index + 1}
+                          </div>
                           <div className="flex gap-4">
                             {q.imageUrl && <img src={`${apiBase}${q.imageUrl}`} className="w-16 h-16 rounded object-cover bg-white/5" />}
                             <div className="flex-1">
-                              <div className="text-white text-sm line-clamp-2 mb-2">{q.text}</div>
+                              <div className="text-white text-sm line-clamp-2 mb-2">
+                                <MathText text={q.text} />
+                              </div>
                               <div className="flex gap-2">
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 uppercase">{q.module}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 uppercase">{q.subject}</span>
@@ -828,8 +999,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                             <button onClick={() => handleDeleteQuestion(q.id)} className="p-1.5 rounded-md hover:bg-white/10 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </div>
-                      ))}
-                  </div>
+                      );
+                    })}
                 </div>
               </div>
             </div>
@@ -1202,7 +1373,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
               </div>
             </div>
           </TabsContent>
-        </Tabs>
+        </Tabs >
 
         <div className="mt-12 bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
           <div className="flex items-start gap-4">
@@ -1213,7 +1384,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             </div>
           </div>
         </div>
-      </div>
+      </div >
     </div >
   );
 }

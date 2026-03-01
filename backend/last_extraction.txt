@@ -1,0 +1,173 @@
+---QUESTION_START---
+A total of 215 toothpicks of equal length were used to construct two types of figures: triangles and squares. The triangles and squares were constructed so that no two figures had a common side. The equation 3x + 4y = 215 represents this situation, where x is the number of triangles constructed and y is the number of squares constructed. What is the best interpretation of (x, y) = (25, 35) in this context?
+A If 25 triangles were constructed, then 35 squares were constructed.
+B If 25 triangles were constructed, then 35 toothpicks were used.
+C If 35 triangles were constructed, then 25 squares were constructed.
+D If 35 triangles were constructed, than 25 toothpicks were used.
+
+---QUESTION_START---
+The function f is defined by f(x) = 2x + b, where b is a constant and f(4) = 1. What is the value of b?
+
+---QUESTION_START---
+Moving from left to right, the curve passes from quadrant 2 to quadrant 3 to quadrant 4 to quadrant 1 to quadrant 4.
+The curve has 1 relative minimum and 1 relative maximum.
+The curve crosses the axes at the following points:
+(negative 2 comma 0)
+approximately (0 comma negative 4.8)
+(1 comma 0)
+(2 comma 0)
+The graph of y = f(x) is shown, where the function f is defined by f(x) = ax³ + bx² + cx + d and a, b, c, and d are constants. For how many values of x does f(x) = 0?
+A One
+B Two
+C Three
+D Four
+
+---QUESTION_START---
+If 3(x-4)² = 243, what is the value of x² - 8x?
+A 49
+B 65
+C 81
+D 97
+
+---QUESTION_START---
+The scatterplot has 8 data points.
+The data points are in a quadratic pattern opening downward.
+Which of the following equations is the most appropriate quadratic model for the data shown?
+A y = -0.005(x-50)² + 34
+B y = -0.005(x-34)² + 50
+C y = -0.005(x+50)² + 34
+D y = -0.005(x+34)² + 50
+
+---QUESTION_START---
+A right circular cylinder has a volume of 36,501 cubic inches. The height of the cylinder is 3 times its radius. What is the radius, in inches, of the cylinder?
+A 23
+B 69
+C 529
+D 1587
+
+---QUESTION_START---
+The function g is defined by g(x) = 16x + 39. For what value of x does g(x) = 43?
+
+---QUESTION_START---
+In the xy-plane, an equation of circle R is (x + 7)² + (y + 19)² = 100. Circle S is obtained by shifting circle R to the right 2 units. An equation defining circle S is (x + h)² + (y + k)² = 100, where h and k are constants. What is the value of h?
+A -5
+B -7
+C -9
+D -11
+
+---QUESTION_START---
+For a linear relationship between x and y, the table gives three values of x and their corresponding values of y, where t is a constant. Which equation represents this relationship?
+x | y
+-26 | 0
+0 | 29
+t | 58
+A y = -2x + t + 29
+B y = 2x + t + 29
+C y = -x + t + 58
+D y = x + t + 58
+
+---QUESTION_START---
+5(7x) + 8(6y) = 266
+5(7x) - 8(6y) = -406
+The solution to the given system of equations is (x, y). What is the value of 7x + 6y?
+A -56
+B -14
+C 28
+D 42
+
+---QUESTION_START---
+y < (1/3)x + 12
+For which of the following tables are all the values of x and their corresponding values of y solutions to the given inequality?
+A
+x | y
+2 | 21
+4 | 81
+6 | 73
+B
+x | y
+2 | 21
+4 | 47
+6 | 73
+C
+x | y
+2 | 38
+4 | 64
+6 | 90
+D
+x | y
+2 | 38
+4 | 47
+6 | 90
+
+---QUESTION_START---
+The function f is defined by the equation f(x) = 9x² + b, where b is a constant. In the xy-plane, the graph of y = f(x) contains the points (0, 72) and (3, p + 16), where p is a constant. What is the value of p?
+A 49
+B 65
+C 81
+D 97
+
+---QUESTION_START---
+2x - 20x - 37 = kx + m(x+4)
+In the given equation, k and m are constants. The equation has infinitely many solutions. What is the value of m?
+A -10
+B -23
+C -37
+D -83
+
+---QUESTION_START---
+f(x) = 5,000(1.003)^(2x)
+The given function f models the balance of a bank account, in dollars, x years after it is opened. Which statement is the best interpretation of (1.003)^(2x)?
+A Every 6 months, the balance increases by about $3.
+B Every 2 years, the balance increases by about $3.
+C At the end of every 6-month interval, the balance increases by about 0.3% of the balance at the beginning of the 6-month interval.
+D At the end of every 2-year interval, the balance increases by about 0.3% of the balance at the beginning of the 2-year interval.
+
+---QUESTION_START---
+At a hotel, guests used the pool for a total of t hours in March. At the same hotel, guests used the pool for 3.78t hours in April. What is the percent increase in the number of hours guests used the pool from March to April?
+A 2.78%
+B 3.78%
+C 278%
+D 378%
+
+---QUESTION_START---
+7xy + xyz = 9yz
+In the given equation, x, y, and z are positive numbers. Which expression is equivalent to y?
+A 7x - 9z
+B (1)/(7x - 9z)
+C (1)/(9xz - 7x)
+D (1)/(9xz² - 7x²z)
+
+---QUESTION_START---
+A researcher selected 23 guinea pigs from one habitat and 19 wild cavies from another habitat at random in Venezuela. A field of a specific size within each habitat was divided into equally-sized virtual squares, and the animals were allowed to wander in the field for a fixed amount of time. To observe their behavior, the researcher counted the number of times the guinea pigs and wild cavies crossed the virtual squares in their field during early adolescence and again during late adolescence. The researcher found that in early adolescence, the number of virtual squares the wild cavies crossed was significantly more than the number of virtual squares the guinea pigs crossed. The researcher also found that the number of virtual squares crossed by both the wild cavies and the guinea pigs decreased from early adolescence to late adolescence. Based on the researcher's findings, which of the following statements is an appropriate conclusion that can be drawn from this study?
+A The statistically significant difference in behavior between the two age groups was caused by the differences in habitat.
+B The statistically significant difference in behavior between the two age groups was caused by aging.
+C The statistically significant difference in behavior during early adolescence between the two groups of animals can be generalized to all guinea pigs and wild cavies.
+D The statistically significant difference in behavior during early adolescence between the two groups of animals can only be generalized to the habitats in the study.
+
+---QUESTION_START---
+The quadratic function g models the depth, in meters, below the surface of the water of a Weddell seal t minutes after the seal entered the water during a dive. The function estimates that the seal reached its maximum depth of 409.6 meters 8 minutes after it entered the water and then reached the surface of the water 16 minutes after it entered the water. Based on the function, what was the estimated depth, to the nearest meter, of the seal 11 minutes after it entered the water?
+
+---QUESTION_START---
+The measure of angle G is (10/9)π radians. If the measure of angle G is 9n degrees, where n is a constant, what is the value of n?
+A 2
+B 9
+C 10
+D 18
+
+---QUESTION_START---
+In triangle XYZ, the measure of angle X is 90. Point W lies on segment YZ, and segment WX is perpendicular to segment YZ. The length of segment WY is 684, and the length of segment WX is 513. What is the value of tan Z?
+A 3/4
+B 4/3
+C 3/5
+D 4/5
+
+---QUESTION_START---
+2 + qr = 4r + 5
+In the given equation, q is an integer constant. The given equation has no real solutions. What is the largest possible value of q?
+
+---QUESTION_START---
+In triangle ABC, the measure of angle B is 90 and BD is an altitude of the triangle. The length of AB is 15 and the length of AC is 17 greater than the length of AB. What is the value of BD?
+A 15/17
+B 17/15
+C (15 * 17) / 32
+D (15 * 32) / 17

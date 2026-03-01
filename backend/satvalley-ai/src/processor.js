@@ -53,6 +53,27 @@ function logAiActivity(type, action, status) {
     }
 }
 
+// ---- Rate limiting + SINGLE-FLIGHT (no parallel Vertex calls) ----
+let lastRequestTime = 0;
+
+// Make this configurable (PDF calls are heavy)
+const RATE_LIMIT_DELAY =
+    Number(process.env.AI_RATE_LIMIT_DELAY_MS) || 5000; // default 5s (reduced from 20s)
+
+let inFlight = Promise.resolve();
+
+async function runExclusive(fn) {
+    const prev = inFlight;
+    let release;
+    inFlight = new Promise((r) => (release = r));
+    await prev;
+    try {
+        return await fn();
+    } finally {
+        release();
+    }
+}
+
 async function generateContentWithRateLimit(request, onProgress) {
     const aiModel = getModel();
     const result = await aiModel.generateContent(request);
@@ -176,11 +197,21 @@ RULES:
 1. Output ONLY the JSON object.
 2. If raw text contains multiple questions, only process the first one.
 3. Ensure "subject" is lowercase.
-4. For math without options, "type": "spr" and "options": null.
-5. If text contains [IMAGE], set "has_image": true and leave placeholder in text/passage.
-6. EXTRACT [bbox: ...] tag into "bbox" field as array of ints.
-7. DETERMINE SUBJECT: math (calc, algebra, geometry) or rw (reading, grammar).
-8. Programmatic cleanup will follow, but try to avoid UI noise in the JSON.
+4. If it is a math question without options, set "type" to "spr" and "options" to null.
+5. If options are not clearly labeled, infer them from the text and set "type" to "multiple-choice".
+6. STOP WORDS: You MUST strip the following from the output:
+   - "X Mark for Review" (where X is any number)
+   - "[Page: X]" or "Page X of Y"
+   - Any "Directions" headings
+   - Any random OCR artifacts or page footer/header text
+7. TABLES & FIGURES: Do not transcribe tables in full. Simply note "Table with [summary]" and focus on the question.
+8. EXTRACT the [bbox: ...] tag from raw text and put it in the "bbox" field as an array of integers.
+9. DETERMINE SUBJECT:
+   - If the question involves calculation, algebra, geometry, or data analysis -> "math"
+   - If the question involves reading a passage, grammar, vocabulary, or rhetoric -> "rw"
+10. OPTION PREFIX STRIPPING: You MUST strip the alphabetical letters like "A)", "A.", "(A)", "B)", etc. from the actual string choice in the "options" array. The strings in the "options" array should contain ONLY the text of the option itself. For example, if the text says "A) 5", the option array should just contain "5".
+11. ANSWER KEY MAPPING: Look for an answer key provided by the extraction phase. If "CORRECT ANSWER: [Letter/Value]" is included in the raw text, use that to accurately determine the "correct_answer".
+12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^2$ instead of x^2. Output $x$ instead of just x when referencing a variable in text.
 `;
 
     try {
@@ -195,6 +226,13 @@ RULES:
 
         if (data.text) data.text = sanitizeAiText(data.text);
         if (data.passage) data.passage = sanitizeAiText(data.passage);
+        if (Array.isArray(data.options)) {
+            data.options = data.options.map(opt => {
+                if (typeof opt !== 'string') return opt;
+                // Strip "A)", "B.", "(C)", etc. case-insensitively at the start of the string
+                return opt.replace(/^[\s(]*[a-eA-E][).\]]\s*/i, '').trim();
+            });
+        }
 
         logAiActivity("SUCCESS", "NORMALIZE", `Parsed: ${String(data.text || "").slice(0, 30)}...`);
         return data;
@@ -214,18 +252,15 @@ export async function splitTextToCandidates(fileBuffer, mimeType = "application/
     Your task is to extract ALL questions from this document.
 
     CRITICAL RULES - READ CAREFULLY:
-    1. Extract ONLY real SAT question content.
-    2. DO NOT copy any UI elements, interface text, or navigation text such as: "Mark for Review", "Back", "Next", "Question X of Y", "Go to question", "Bookmark", page numbers, section headers/footers, or any other non-question text.
-    3. For GRAPHS, TABLES, CHARTS, DIAGRAMS, or any IMAGE: DO NOT describe them. Simply write [IMAGE] as a placeholder.
-    4. You MUST provide the BOUNDING BOX coordinates of any diagram/graph/table/image on the page.
+    1. Extract ONLY real SAT question content. EXCLUDE all UI-related text such as "Mark for Review", "Question X of Y", "Directions", or page footer/header metadata.
+    2. DO NOT transcribe detailed tables or complex diagrams in full. For GRAPHS, TABLES, CHARTS, DIAGRAMS, or any IMAGE: DO NOT describe them. Simply write [IMAGE] as a placeholder.
+    3. You MUST provide the BOUNDING BOX coordinates of any diagram/graph/table/image on the page.
     - Format: [bbox: ymin, xmin, ymax, xmax] (on a scale of 0-1000)
     - Example: "[IMAGE] [bbox: 150, 100, 450, 900]"
-    5. You MUST indicate which Page Number (1-based) the question is on.
+    4. You MUST indicate which Page Number (1-based) the question is on.
     - Format: [Page: X]
-
-    OUTPUT FORMAT:
-    Return each question separated by the delimiter "---QUESTION_START---".
-    Include the full question text, any reading passage text (not images), the [IMAGE] placeholder with [bbox:] if applicable, the [Page: X] tag, and all answer options.
+    5. ANSWER KEYS: If you find an Answer Key at the end of the document, you MUST map the correct answer to its corresponding question. For EACH question that you extract, append the matched answer from the Answer Key at the very end of the question's text chunk in this exact format: "CORRECT ANSWER: [A/B/C/D or numeric value]".
+    6. Return each question separated by the delimiter "---QUESTION_START---".
     Do not output JSON yet, just raw separated content blocks.
     `;
 
@@ -242,7 +277,11 @@ export async function splitTextToCandidates(fileBuffer, mimeType = "application/
         try {
             const debugFilePath = path.join(__dirname, "../../last_extraction.txt");
             fs.writeFileSync(debugFilePath, text);
-        } catch (e) { }
+        } catch (e) {
+            console.error("Failed to save debug extraction:", e);
+        }
+
+        console.log(`DEBUG: Extracted text length: ${text.length} `);
 
         const questions = text
             .split("---QUESTION_START---")
@@ -254,6 +293,110 @@ export async function splitTextToCandidates(fileBuffer, mimeType = "application/
     } catch (error) {
         logAiActivity("ERROR", "PDF_SPLIT", error?.message || String(error));
         console.error("AI Processing Error:", error);
+        throw error;
+    }
+}
+
+/**
+ * Generates high-quality vocabulary details (Cambridge-style definition, example) using Gemini.
+ */
+export async function generateVocabularyAI(word, theme = "Standard") {
+    const prompt = `
+Generate vocabulary details for the following word:
+        WORD: "${word}"
+    THEME: "${theme}"(Standard, GenZ, or Oxford)
+
+OUTPUT FORMAT(Strict JSON):
+    {
+        "definition": "A high-quality, Cambridge-style definition that is clear and pedagogical",
+            "example": "A high-quality example sentence illustrating the usage."
+    }
+
+    RULES:
+    1. Output ONLY the JSON object.
+2. The definition MUST follow the Cambridge Dictionary style(pedagogical and clear).
+3. The example should match the theme(e.g., GenZ should use slang like 'vibe', 'no cap', etc.).
+`;
+
+    try {
+        const request = buildTextRequestOrThrow(prompt);
+        const result = await generateWithRetry(request);
+        const text = extractTextFromVertexResponse(result.response);
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No valid JSON found in response");
+
+        const data = JSON.parse(jsonMatch[0]);
+        logAiActivity("SUCCESS", "VOCAB_GEN", `Generated for: ${word} `);
+        return data;
+    } catch (error) {
+        logAiActivity("ERROR", "VOCAB_GEN", error?.message || String(error));
+        throw error;
+    }
+}
+
+/**
+ * Analyzes student performance and gives comprehensive, skill-based pedagogical suggestions.
+ */
+export async function analyzePerformanceAI(responses) {
+    const prompt = `
+Analyze the following student SAT practice test performance data. 
+Provide a deep pedagogical synthesis including a skill - by - skill breakdown, a roadmap for improvement, and an overall readiness score.
+
+        RESPONSES:
+${JSON.stringify(responses, null, 2)}
+
+OUTPUT FORMAT(Strict JSON):
+    {
+        "mastery_score": 85, // Scale 0-100 indicating overall readiness
+            "encouragement": "A high-energy, motivational one-liner.",
+                "overall_critique": "A professional, pedagogical summary of the performance.",
+                    "skill_breakdown": [
+                        {
+                            "skill": "Heart of Algebra", // e.g., "Heart of Algebra", "Rhetoric", "Standard English Conventions"
+                            "mastery": 70, // 0-100 score for this specific skill
+                            "insight": "Briefly explain why this score was given based on their answers."
+                        }
+                    ],
+                        "roadmap": [
+                            {
+                                "step": 1,
+                                "title": "Master Linear Equations",
+                                "action": "Focus on isolating variables in complex word problems. Spend 30 mins each day on multi-step equations."
+                            }
+                        ]
+    }
+
+CATEGORIES TO ANALYZE(If applicable):
+    - Information and Ideas
+        - Craft and Structure
+            - Expression of Ideas
+                - Standard English Conventions
+                    - Heart of Algebra
+                        - Problem Solving and Data Analysis
+                            - Passport to Advanced Math
+                                - Geometry and Trigonometry
+
+    RULES:
+    1. Output ONLY the JSON object.
+2. Be encouraging but direct and technical.
+3. If specific question data is missing for a category, omit that category from the breakdown.
+4. Ensure the roadmap steps are sequential and highly specific.
+`;
+
+    try {
+        const request = buildTextRequestOrThrow(prompt);
+        const result = await generateWithRetry(request);
+        const text = extractTextFromVertexResponse(result.response);
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No valid JSON found in response");
+
+        const data = JSON.parse(jsonMatch[0]);
+        logAiActivity("SUCCESS", "PERF_ANALYZE", `Analyzed ${responses.length} responses.`);
+        return data;
+    } catch (error) {
+        logAiActivity("ERROR", "PERF_ANALYZE", error?.message || String(error));
         throw error;
     }
 }
