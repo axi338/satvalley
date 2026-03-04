@@ -31,14 +31,15 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
         });
         if (error) throw error;
         console.log("DEBUG: Sign up successful", data);
-        setSuccess('Registration successful! Please check your email for a confirmation link.');
-      } else {
+        onSuccess();
+      } else if (mode === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         console.log("DEBUG: Sign in successful", data);
+        onSuccess();
       }
     } catch (err) {
       console.error("DEBUG: handleEmailAuth error:", err);

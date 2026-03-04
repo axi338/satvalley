@@ -25,12 +25,15 @@ import { LiquidBackground } from './components/LiquidBackground';
 import { ImportDashboard } from './components/pages/ImportDashboard';
 import { NewImport } from './components/pages/NewImport';
 import { ImportReview } from './components/pages/ImportReview';
+import { OnboardingPage } from './components/pages/OnboardingPage';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [currentParams, setCurrentParams] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
   const [adminUnlocked, setAdminUnlocked] = useState(() => sessionStorage.getItem('adminUnlocked') === 'true');
   const [olympiadVerified, setOlympiadVerified] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
@@ -82,6 +85,42 @@ export default function App() {
     }
   }, [user, olympiadVerified]);
 
+  // Check if profile is complete
+  useEffect(() => {
+    async function checkProfile() {
+      if (!user) {
+        setIsProfileComplete(null);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error("Error fetching profile for completion check:", error);
+        }
+
+        if (data) {
+          setProfile(data);
+        }
+
+        if (data && data.full_name && data.phone && data.graduation_year && data.sat_deadline) {
+          setIsProfileComplete(true);
+        } else {
+          setIsProfileComplete(false);
+        }
+      } catch (err) {
+        console.error("Profile check error:", err);
+        setIsProfileComplete(false);
+      }
+    }
+
+    checkProfile();
+  }, [user]);
+
   const handleLogout = async () => {
     console.log("DEBUG: handleLogout called");
     try {
@@ -114,6 +153,10 @@ export default function App() {
   };
 
   const renderPage = () => {
+    if (user && isProfileComplete === false) {
+      return <OnboardingPage user={user} onComplete={() => setIsProfileComplete(true)} />;
+    }
+
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={setCurrentPage} />;
@@ -130,7 +173,7 @@ export default function App() {
 
       case 'dashboard':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('dashboard')} />;
-        return <DashboardPage user={user} onNavigate={handleNavigate} />;
+        return <DashboardPage user={user} profile={profile} onNavigate={handleNavigate} />;
       case 'history':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('history')} />;
         return <ScoreHistoryPage user={user} onNavigate={handleNavigate} />;
@@ -139,14 +182,14 @@ export default function App() {
         return <VocabularyPage user={user} />;
       case 'practice':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('practice')} />;
-        return <PracticeTestsPage onNavigate={handleNavigate} user={user} />;
+        return <PracticeTestsPage onNavigate={handleNavigate} user={user} profile={profile} />;
       case 'olympiad':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('olympiad')} />;
         if (!olympiadVerified && !adminUnlocked) return <OlympiadAuthPage onSuccess={() => setOlympiadVerified(true)} />;
         return <OlympiadPage onNavigate={handleNavigate} user={user} isAdmin={adminUnlocked} />;
       case 'test-session':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('test-session')} />;
-        return <TestSessionPage testId={currentParams?.testId} onNavigate={handleNavigate} user={user} />;
+        return <TestSessionPage testId={currentParams?.testId} onNavigate={handleNavigate} user={user} profile={profile} />;
       case 'review':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('review')} />;
         return <ReviewPage user={user} onNavigate={handleNavigate} params={currentParams} />;
@@ -165,7 +208,9 @@ export default function App() {
     }
   };
 
-  if (!authReady) {
+  const fullyReady = authReady && (user === null || isProfileComplete !== null);
+
+  if (!fullyReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6">
@@ -203,6 +248,7 @@ export default function App() {
             currentPage={currentPage}
             onNavigate={handleNavigate}
             user={user}
+            profile={profile}
             onLogout={handleLogout}
             isVisible={isSidebarVisible}
             isCollapsed={isSidebarCollapsed}

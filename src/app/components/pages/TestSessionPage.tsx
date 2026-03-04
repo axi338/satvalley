@@ -47,6 +47,7 @@ interface TestSessionPageProps {
     testId?: string;
     onNavigate: (page: string, params?: any) => void;
     user: any;
+    profile?: any;
 }
 
 interface Question {
@@ -577,7 +578,7 @@ const PassageViewer = memo(({
         sorted.forEach((h, idx) => {
             if (h.start < lastIndex) return;
 
-            result.push(<span key={`text-${idx}`}>{text.substring(lastIndex, h.start)}</span>);
+            result.push(<MathText key={`text-${idx}`} text={text.substring(lastIndex, h.start)} className="inline" />);
 
             result.push(
                 <mark
@@ -590,14 +591,14 @@ const PassageViewer = memo(({
                         }
                     }}
                 >
-                    {text.substring(h.start, h.end)}
+                    <MathText text={text.substring(h.start, h.end)} className="inline" />
                 </mark>
             );
 
             lastIndex = h.end;
         });
 
-        result.push(<span key="text-end">{text.substring(lastIndex)}</span>);
+        result.push(<MathText key="text-end" text={text.substring(lastIndex)} className="inline" />);
         return result;
     }, [text, highlights, isHighlighterActive, onRemoveHighlight]);
 
@@ -840,7 +841,7 @@ const ReviewScreen = ({
     );
 };
 
-export function TestSessionPage({ testId, onNavigate, user }: TestSessionPageProps) {
+export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessionPageProps) {
     const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
     const [violationCount, setViolationCount] = useState(0);
 
@@ -1479,7 +1480,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 <div className="h-[48px] bg-slate-100/50 flex flex-col justify-end px-8 shrink-0 relative z-10 pt-2 pb-0">
                     <div className="flex items-center justify-between w-full h-full pb-1">
                         <div className="flex items-center gap-4 h-full">
-                            <div className="bg-[#111111] text-white font-bold text-[18px] w-8 h-8 flex items-center justify-center font-serif leading-none shrink-0 self-end mb-0.5">
+                            <div className="bg-[#111111] font-bold text-[18px] w-8 h-8 flex items-center justify-center font-serif leading-none shrink-0 self-end mb-0.5" style={{ color: '#ffffff' }}>
                                 {currentIndex + 1}
                             </div>
                             <button
@@ -1537,7 +1538,19 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                     }}
                                 >
                                     {currentQ?.imageUrl && <div className="mt-8 mb-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question Image" className="w-full h-auto" /></div>}
-                                    {currentQ?.passage ? (
+                                    {(currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? (
+                                        <div className="font-serif text-[#111827] whitespace-pre-wrap pr-4">
+                                            <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
+                                            <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
+                                                <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
+                                                <li>You can enter up to 5 characters for a <strong>positive</strong> answer and up to 6 characters (including the negative sign) for a <strong>negative</strong> answer.</li>
+                                                <li>If your answer is a <strong>fraction</strong> that doesn't fit in the provided space, enter the decimal equivalent.</li>
+                                                <li>If your answer is a <strong>decimal</strong> that doesn't fit in the provided space, enter it by truncating or rounding at the fourth digit.</li>
+                                                <li>If your answer is a <strong>mixed number</strong> (such as <MathText text="3\frac{1}{2}" className="inline font-serif font-medium" />), enter it as an improper fraction (<MathText text="7/2" className="inline font-serif font-medium" />) or its decimal equivalent (3.5).</li>
+                                                <li>Don't enter <strong>symbols</strong> such as a percent sign, comma, or dollar sign.</li>
+                                            </ul>
+                                        </div>
+                                    ) : currentQ?.passage ? (
                                         <PassageViewer
                                             text={currentQ.passage}
                                             highlights={currentQ?.id ? (highlights[currentQ.id] || []) : []}
@@ -1546,19 +1559,8 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                             onRemoveHighlight={(idx) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))}
                                             onSelectionChange={(sel) => setCurrentSelection(sel)}
                                         />
-                                    ) : (
-                                        <div className="font-serif text-[#111827] whitespace-pre-wrap pr-4">
-                                            <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
-                                            <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
-                                                <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
-                                                <li>You can enter up to 5 characters for a <strong>positive</strong> answer and up to 6 characters (including the negative sign) for a <strong>negative</strong> answer.</li>
-                                                <li>If your answer is a <strong>fraction</strong> that doesn't fit in the provided space, enter the decimal equivalent.</li>
-                                                <li>If your answer is a <strong>decimal</strong> that doesn't fit in the provided space, enter it by truncating or rounding at the fourth digit.</li>
-                                                <li>If your answer is a <strong>mixed number</strong> (such as 3 1/2), enter it as an improper fraction (7/2) or its decimal equivalent (3.5).</li>
-                                                <li>Don't enter <strong>symbols</strong> such as a percent sign, comma, or dollar sign.</li>
-                                            </ul>
-                                        </div>
-                                    )}
+                                    ) : null}
+                                    {/* end of left panel logic */}
 
                                 </div>
                                 {showLineReader && <LineReader onClose={() => setShowLineReader(false)} />}
@@ -1610,6 +1612,12 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         <div className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll ${!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <div className="mb-10 space-y-6">
                                 {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
+
+                                {((currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.passage) && (
+                                    <div className="text-[18px] leading-[1.6] text-[#111827] font-medium mb-6">
+                                        <MathText text={currentQ.passage} className="block" />
+                                    </div>
+                                )}
                                 <p className="text-[18px] leading-[1.6] text-[#111827] font-medium"><MathText text={currentQ?.text} className="block" /></p>
                             </div>
 
@@ -1658,17 +1666,18 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                         animate={{ opacity: 1, y: 0 }}
                                         className="mt-8 space-y-8"
                                     >
-                                        <div className="w-[120px]">
+                                        <div className="w-[124px]">
                                             <Input
                                                 value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
                                                 onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
-                                                className="h-[52px] text-[20px] bg-white text-[#111827] font-medium border border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-4 tracking-wider"
+                                                maxLength={6}
+                                                className="h-[44px] text-[18px] bg-white text-[#111827] font-medium border border-slate-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-3 tracking-widest text-center"
                                             />
                                         </div>
-                                        <div>
-                                            <div className="font-bold text-[18px] text-[#111827] mb-2">Answer Preview:</div>
-                                            <div className="text-[20px] text-[#111827] tracking-wider min-h-[30px]">
-                                                {currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''}
+                                        <div className="flex items-center gap-3">
+                                            <div className="font-bold text-[18px] text-[#111827]">Answer Preview:</div>
+                                            <div className="text-[20px] text-[#111827] tracking-wider min-h-[30px] font-serif pt-1">
+                                                <MathText text={currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''} />
                                             </div>
                                         </div>
                                     </motion.div>
@@ -1711,12 +1720,12 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
                         <span className="text-slate-500 font-bold text-sm">
-                            {(olympiadProfile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+                            {(olympiadProfile?.full_name || profile?.full_name || user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
                         </span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-[14px] font-black text-slate-900 tracking-tight leading-none">
-                            {olympiadProfile?.full_name || user?.email?.split('@')[0] || 'User'}
+                            {olympiadProfile?.full_name || profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
                         </span>
                     </div>
                 </div>

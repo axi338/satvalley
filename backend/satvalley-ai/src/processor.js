@@ -211,7 +211,7 @@ RULES:
    - If the question involves reading a passage, grammar, vocabulary, or rhetoric -> "rw"
 10. OPTION PREFIX STRIPPING: You MUST strip the alphabetical letters like "A)", "A.", "(A)", "B)", etc. from the actual string choice in the "options" array. The strings in the "options" array should contain ONLY the text of the option itself. For example, if the text says "A) 5", the option array should just contain "5".
 11. ANSWER KEY MAPPING: Look for an answer key provided by the extraction phase. If "CORRECT ANSWER: [Letter/Value]" is included in the raw text, use that to accurately determine the "correct_answer".
-12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^2$ instead of x^2. Output $x$ instead of just x when referencing a variable in text.
+12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, coordinates (e.g., $(0, 7)$), and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^2$ instead of x^2. Output $x$ instead of just x when referencing a variable in text. ALL coordinate pairs like (0, 7) MUST be wrapped in dollar signs like $(0, 7)$. ALL fractions like -3/2 MUST be wrapped in dollar signs like $-3/2$ or $-\\frac{3}{2}$.
 `;
 
     try {
@@ -226,11 +226,42 @@ RULES:
 
         if (data.text) data.text = sanitizeAiText(data.text);
         if (data.passage) data.passage = sanitizeAiText(data.passage);
+
+        // Post-process the text to ensure un-formatted math coordinate structures and fractions are captured
+        const numPattern = `-?\\d+(?:\\s*/\\s*\\d+)?(?:\\.\\d+)?`;
+        const autoMathRegex = new RegExp(`(\\(\\s*${numPattern}\\s*,\\s*${numPattern}\\s*\\)|(?:\\b|-)\\d+\\s*/\\s*\\d+\\b)`, 'g');
+
+        const fracRegex = /(-?\d+)\s*\/\s*(\d+)/g;
+
+        const autoWrapMath = (str) => {
+            if (typeof str !== 'string') return str;
+            // Prevent wrapping things that are already inside a $ or \(
+            return str.replace(autoMathRegex, (match, offset, fullStr) => {
+                // Heuristic: check if this match is already inside $...$
+                const before = fullStr.substring(0, offset);
+                const dollarCount = (before.match(/\$/g) || []).length;
+
+                let transformedMatch = match;
+                if (!transformedMatch.includes('(')) {
+                    transformedMatch = transformedMatch.replace(fracRegex, '\\frac{$1}{$2}');
+                }
+
+                if (dollarCount % 2 !== 0) return transformedMatch; // inside $...$
+
+                // Return wrapped
+                return `$${transformedMatch}$`;
+            });
+        };
+
+        if (data.text) data.text = autoWrapMath(data.text);
+        if (data.passage) data.passage = autoWrapMath(data.passage);
+
         if (Array.isArray(data.options)) {
             data.options = data.options.map(opt => {
                 if (typeof opt !== 'string') return opt;
                 // Strip "A)", "B.", "(C)", etc. case-insensitively at the start of the string
-                return opt.replace(/^[\s(]*[a-eA-E][).\]]\s*/i, '').trim();
+                const cleaned = opt.replace(/^[\s(]*[a-eA-E][).\]]\s*/i, '').trim();
+                return autoWrapMath(cleaned);
             });
         }
 

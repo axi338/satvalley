@@ -12,7 +12,7 @@
   --bluebook-bg-light: #ffffff;
   --bluebook-bar-gray: #ffffff;
   --bluebook-text-slate: #1e293b;
-  --bluebook-text-muted: #64748b;
+  --bluebook-text-muted: #4b5563;
   --bluebook-border: #e2e8f0;
   --bb-yellow: #FFF5A1;
   --bb-blue: #D1E9FF;
@@ -242,14 +242,14 @@
 .bluebook-eliminate-circle {
   width: 32px;
   height: 32px;
-  border: 1px solid #94a3b8;
+  border: 1px solid #1e293b;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
-  color: #94a3b8;
+  color: #1e293b;
   position: relative;
   background: white;
   transition: all 0.2s;
@@ -316,7 +316,7 @@ mark.bb-highlight-pink:hover {
 
 .bb-nav-modal-content {
   background: white;
-  width: 520px;
+  width: min(520px, calc(100% - 40px));
   border-radius: 12px;
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.3);
   position: relative;
@@ -414,6 +414,37 @@ mark.bb-highlight-pink:hover {
   background: #f0f4ff;
 }
 
+/* Typography Refinements for 'Gentle' Look */
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--bluebook-text-slate);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif,
+.passage-text {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  color: var(--bluebook-text-slate);
+  line-height: 1.8;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.katex {
+  color: inherit !important;
+}
+
+.bluebook-scroll {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.bluebook-scroll blockquote,
+.bluebook-scroll .font-serif {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
 /* Custom Scrollbar */
 .bluebook-scroll::-webkit-scrollbar {
   width: 10px;
@@ -431,4 +462,43 @@ mark.bb-highlight-pink:hover {
 
 .bluebook-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Tablet & iPad Responsiveness */
+@media (max-width: 1024px) {
+  .bluebook-split-dragger {
+    width: 20px;
+    height: 64px;
+  }
+
+  .bluebook-nav-button {
+    padding: 0 16px;
+    font-size: 13px;
+  }
+
+  .bluebook-option-button {
+    padding: 10px 16px;
+  }
+
+  .bluebook-option-letter {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bluebook-practice-bar {
+    font-size: 10px;
+  }
+
+  .bluebook-dashed-separator {
+    background-size: 12px 4px;
+  }
+
+  .bb-nav-box {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
 }

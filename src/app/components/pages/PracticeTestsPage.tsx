@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 interface PracticeTestsPageProps {
   onNavigate: (page: string, params?: any) => void;
   user: any;
+  profile?: any;
 }
 
 type ApiTestsResponse = { tests?: any[] };
@@ -50,7 +51,7 @@ async function fetchJson<T>(
   return data as T;
 }
 
-export function PracticeTestsPage({ onNavigate, user }: PracticeTestsPageProps) {
+export function PracticeTestsPage({ onNavigate, user, profile }: PracticeTestsPageProps) {
   const [tests, setTests] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,7 +158,7 @@ export function PracticeTestsPage({ onNavigate, user }: PracticeTestsPageProps) 
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white mb-4">
-            Take a full-length test like test day
+            {profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Scholar'}, take a full-length test like test day
           </h1>
           <p className="text-white/70 max-w-2xl mx-auto text-base sm:text-lg">
             Fast load, stable navigation, and clean timing behavior. No random

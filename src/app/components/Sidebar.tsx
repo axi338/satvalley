@@ -5,6 +5,7 @@ interface SidebarProps {
     onNavigate: (page: string) => void;
     currentPage: string;
     user: any;
+    profile?: any;
     onLogout: () => void;
     isVisible: boolean;
     isCollapsed: boolean;
@@ -17,6 +18,7 @@ export function Sidebar({
     onNavigate,
     currentPage,
     user,
+    profile,
     onLogout,
     isVisible,
     isCollapsed,
@@ -57,7 +59,7 @@ export function Sidebar({
                         </div>
                         <div className="flex flex-col">
                             <span className="text-white font-black text-sm tracking-tight truncate max-w-[120px]">
-                                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Scholar'}
+                                {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Scholar'}
                             </span>
                             <span className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.2em] opacity-60">SatValley</span>
                         </div>

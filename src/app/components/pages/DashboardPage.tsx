@@ -4,10 +4,11 @@ import { supabase } from '../../lib/supabase';
 
 interface DashboardPageProps {
     user: any;
+    profile?: any;
     onNavigate: (page: string) => void;
 }
 
-export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
+export function DashboardPage({ user, profile, onNavigate }: DashboardPageProps) {
     const [stats, setStats] = useState({
         testsTaken: 0,
         vocabMastered: 0,
@@ -57,7 +58,7 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
             {/* Header */}
             <div className="max-w-6xl mx-auto mb-12">
                 <h1 className="text-4xl font-black text-white mb-2">
-                    Good Afternoon, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Scholar'} 👋
+                    Good Afternoon, {profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Scholar'} 👋
                 </h1>
                 <p className="text-slate-400 font-medium">Ready to continue your SAT preparation journey?</p>
             </div>

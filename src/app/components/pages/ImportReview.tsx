@@ -769,7 +769,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                             </div>
                                                         )}
                                                     </button>
-                                                    {/* Inline ABC eliminate button (hover) */}
+                                                    {/* Inline ABC eliminate button (always visible) */}
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -779,7 +779,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                                                                 return { ...prev, [currentCandidate.id]: cur };
                                                             });
                                                         }}
-                                                        className={`absolute top-1/2 -translate-y-1/2 -right-8 p-1 text-xs font-bold uppercase tracking-wider transition-colors opacity-0 group-hover:opacity-100 ${struck ? 'text-rose-500 opacity-100' : 'text-slate-300 hover:text-rose-500'}`}
+                                                        className={`absolute top-1/2 -translate-y-1/2 -right-8 p-1 text-xs font-bold uppercase tracking-wider transition-colors ${struck ? 'text-rose-500' : 'text-slate-300 hover:text-rose-500'}`}
                                                         title="Eliminate"
                                                     >
                                                         abc
