@@ -1202,9 +1202,23 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 })
             });
 
+            const contentType = res.headers.get("content-type");
             if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.message || "Failed to transmit results to Node.");
+                let errMessage = "Failed to transmit results to Node.";
+                if (contentType && contentType.includes("application/json")) {
+                    const errData = await res.json();
+                    errMessage = errData.message || errMessage;
+                } else {
+                    const text = await res.text();
+                    errMessage = "Server returned an error (non-JSON).";
+                    console.error("Non-JSON error response:", text.substring(0, 200));
+                }
+                throw new Error(errMessage);
+            }
+
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                throw new Error(`Expected JSON response but got ${contentType}.`);
             }
 
             const data = await res.json();
