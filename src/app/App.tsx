@@ -20,6 +20,7 @@ import { OlympiadAuthPage } from './components/pages/OlympiadAuthPage';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { ScoreHistoryPage } from './components/pages/ScoreHistoryPage';
 import { VocabularyPage } from './components/pages/VocabularyPage';
+import { ProfilePage } from './components/pages/ProfilePage';
 import { supabase } from './lib/supabase';
 import { LiquidBackground } from './components/LiquidBackground';
 import { ImportDashboard } from './components/pages/ImportDashboard';
@@ -180,6 +181,9 @@ export default function App() {
       case 'vocabulary':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('vocabulary')} />;
         return <VocabularyPage user={user} />;
+      case 'profile':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('profile')} />;
+        return <ProfilePage user={user} profile={profile} />;
       case 'practice':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('practice')} />;
         return <PracticeTestsPage onNavigate={handleNavigate} user={user} profile={profile} />;

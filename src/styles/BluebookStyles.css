@@ -424,7 +424,7 @@ body {
 .font-serif,
 .passage-text {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
-  color: var(--bluebook-text-slate);
+  color: inherit;
   line-height: 1.8;
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -451,13 +451,13 @@ body {
 }
 
 .bluebook-scroll::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 .bluebook-scroll::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 5px;
-  border: 2px solid #f1f5f9;
+  border: 2px solid transparent;
 }
 
 .bluebook-scroll::-webkit-scrollbar-thumb:hover {

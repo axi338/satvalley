@@ -42,7 +42,7 @@ export function Navigation({ currentPage, onNavigate, userEmail, onLogout, isAdm
             className="flex items-center gap-3 group"
           >
             <div className="relative w-12 h-12 flex items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300 border border-white/10">
-              <img src="/logo.jpg" alt="SAT Valley Logo" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="SAT Valley Logo" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <span className="text-xl font-bold tracking-tight text-white flex flex-col leading-none">

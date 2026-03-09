@@ -79,6 +79,147 @@ const ActionCard = ({ title, score, total, label, colorClass, icon: Icon }: any)
   </div>
 );
 
+// --- Overlay Component for Question Review ---
+const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, onNext, showAnswer, setShowAnswer, latestResult, apiBase }: any) => {
+  if (currentIndex === null || !responses[currentIndex]) return null;
+  const r = responses[currentIndex];
+
+  return (
+    <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col animate-in fade-in duration-200">
+      <header className="h-[72px] bg-white/5 border-b border-white/10 flex items-center justify-between px-8 text-white shrink-0">
+        <div className="flex items-center gap-6">
+          <h2 className="text-xl font-bold tracking-tight">SAT Practice - {latestResult?.test_id || 'Test'}</h2>
+          <div className="h-6 w-px bg-white/20" />
+          <span className="text-sm font-medium text-slate-400">Knowledge and Skills: {r.skill || r.tags?.[0] || 'General'}</span>
+        </div>
+        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+          <X size={24} className="text-slate-400" />
+        </button>
+      </header>
+
+      <main className="flex-1 overflow-hidden flex">
+        <div className="flex-1 overflow-y-auto p-12 border-r border-white/10 bluebook-scroll">
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-black text-white uppercase tracking-widest">
+                {r.section === 'rw' ? 'Reading and Writing' : 'Math'}: Question {currentIndex + 1}
+              </span>
+            </div>
+
+            {r.passage && (
+              <div className="bg-[#0A0F1E] p-8 rounded-2xl border border-white/5 font-serif text-[18px] leading-relaxed text-slate-300">
+                <MathText text={r.passage} className="block" />
+              </div>
+            )}
+
+            {r.imageUrl && (
+              <div className="rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto object-contain" />
+              </div>
+            )}
+
+            <p className="text-[20px] font-bold text-slate-200 leading-relaxed">
+              <MathText text={r.text} className="block" />
+            </p>
+          </div>
+        </div>
+
+        <div className="w-[450px] overflow-y-auto p-12 bg-white/5 bluebook-scroll">
+          <div className="space-y-6">
+            <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-8">Answer Choices</h3>
+            {r.type === 'numeric' ? (
+              <div className="space-y-4">
+                <div className={`p-6 bg-white/5 rounded-2xl border ${r.userAnswer === r.answer ? 'border-emerald-500/30' : 'border-white/10'}`}>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Your Answer</span>
+                  <p className={`text-2xl font-black ${r.userAnswer === r.answer ? 'text-emerald-400' : 'text-rose-400'}`}>{r.userAnswer || 'Omitted'}</p>
+                </div>
+                {showAnswer && r.userAnswer !== r.answer && (
+                  <div className="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                    <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest block mb-1">Correct Answer</span>
+                    <p className="text-2xl font-black text-emerald-400">{r.answer}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              ['A', 'B', 'C', 'D'].map((letter, i) => {
+                const isCorrect = r.answer === letter;
+                const isSelected = r.userAnswer === letter;
+
+                return (
+                  <div key={letter} className={`p-5 rounded-2xl border flex items-center gap-4 transition-all relative ${showAnswer && isCorrect ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/50' :
+                    showAnswer && isSelected && !isCorrect ? 'bg-rose-500/10 border-rose-500/50' :
+                      isSelected ? 'bg-white/10 border-white shadow-sm' : 'bg-white/5 border-white/10'
+                    }`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${showAnswer && isCorrect ? 'bg-emerald-500 text-black' :
+                      showAnswer && isSelected && !isCorrect ? 'bg-rose-500 text-white' :
+                        isSelected ? 'bg-white text-black' : 'bg-white/10 text-white/50'
+                      }`}>
+                      {letter}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-[15px] font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                        <MathText text={r.options?.[i] || `Choice ${letter}`} />
+                      </p>
+                      {r.optionImages?.[i] && (
+                        <div className="mt-2 rounded-lg border border-white/10 overflow-hidden bg-white/5 max-w-xs p-2">
+                          <img src={r.optionImages[i].startsWith('http') ? r.optionImages[i] : `${apiBase}${r.optionImages[i]}`} alt={`Option ${letter}`} className="w-full h-auto object-contain" />
+                        </div>
+                      )}
+                    </div>
+                    {showAnswer && isCorrect && <Check className="text-emerald-400" size={20} />}
+                    {showAnswer && isSelected && !isCorrect && <X className="text-rose-400" size={20} />}
+                  </div>
+                );
+              })
+            )}
+
+            {showAnswer && r.explanation && (
+              <div className="mt-12 p-8 bg-indigo-500/10 rounded-3xl border border-indigo-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-indigo-400 fill-current" />
+                  <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
+                </div>
+                <p className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  <MathText text={r.explanation} className="block" />
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      <footer className="h-24 bg-white/5 border-t border-white/10 px-8 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${showAnswer ? 'bg-indigo-600 border-indigo-600' : 'border-white/20 group-hover:border-indigo-400'}`}>
+              {showAnswer && <Check size={14} className="text-white" />}
+            </div>
+            <input type="checkbox" className="hidden" checked={showAnswer} onChange={() => setShowAnswer(!showAnswer)} />
+            <span className="text-sm font-bold text-slate-300">Show correct answer and explanation</span>
+          </label>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            disabled={currentIndex === 0}
+            onClick={onPrev}
+            className="px-8 py-3 rounded-2xl border border-white/20 text-white font-black text-sm hover:bg-white/10 transition-all disabled:opacity-20 disabled:hover:bg-transparent"
+          >
+            Previous
+          </button>
+          <button
+            disabled={currentIndex === responses.length - 1}
+            onClick={onNext}
+            className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-20 disabled:shadow-none"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
 export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate: (page: string, params?: any) => void; params?: any }) {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,147 +259,6 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
   }, [apiBase, user, params?.resultId]);
 
   const latestResult = results.length > 0 ? results[selectedResultIndex] : null;
-
-  // --- Overlay Component for Question Review ---
-  const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, onNext, showAnswer, setShowAnswer }: any) => {
-    if (currentIndex === null || !responses[currentIndex]) return null;
-    const r = responses[currentIndex];
-
-    return (
-      <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col animate-in fade-in duration-200">
-        <header className="h-[72px] bg-white/5 border-b border-white/10 flex items-center justify-between px-8 text-white shrink-0">
-          <div className="flex items-center gap-6">
-            <h2 className="text-xl font-bold tracking-tight">SAT Practice - {latestResult?.test_id || 'Test'}</h2>
-            <div className="h-6 w-px bg-white/20" />
-            <span className="text-sm font-medium text-slate-400">Knowledge and Skills: {r.skill || r.tags?.[0] || 'General'}</span>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
-            <X size={24} className="text-slate-400" />
-          </button>
-        </header>
-
-        <main className="flex-1 overflow-hidden flex">
-          <div className="flex-1 overflow-y-auto p-12 border-r border-white/10 bluebook-scroll">
-            <div className="max-w-3xl mx-auto space-y-8">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-black text-white uppercase tracking-widest">
-                  {r.section === 'rw' ? 'Reading and Writing' : 'Math'}: Question {currentIndex + 1}
-                </span>
-              </div>
-
-              {r.passage && (
-                <div className="bg-[#0A0F1E] p-8 rounded-2xl border border-white/5 font-serif text-[18px] leading-relaxed text-slate-300">
-                  <MathText text={r.passage} className="block" />
-                </div>
-              )}
-
-              {r.imageUrl && (
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-white/5">
-                  <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto object-contain" />
-                </div>
-              )}
-
-              <p className="text-[20px] font-bold text-slate-200 leading-relaxed">
-                <MathText text={r.text} className="block" />
-              </p>
-            </div>
-          </div>
-
-          <div className="w-[450px] overflow-y-auto p-12 bg-white/5 bluebook-scroll">
-            <div className="space-y-6">
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-8">Answer Choices</h3>
-              {r.type === 'numeric' ? (
-                <div className="space-y-4">
-                  <div className={`p-6 bg-white/5 rounded-2xl border ${r.userAnswer === r.answer ? 'border-emerald-500/30' : 'border-white/10'}`}>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Your Answer</span>
-                    <p className={`text-2xl font-black ${r.userAnswer === r.answer ? 'text-emerald-400' : 'text-rose-400'}`}>{r.userAnswer || 'Omitted'}</p>
-                  </div>
-                  {showAnswer && r.userAnswer !== r.answer && (
-                    <div className="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                      <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest block mb-1">Correct Answer</span>
-                      <p className="text-2xl font-black text-emerald-400">{r.answer}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                ['A', 'B', 'C', 'D'].map((letter, i) => {
-                  const isCorrect = r.answer === letter;
-                  const isSelected = r.userAnswer === letter;
-
-                  return (
-                    <div key={letter} className={`p-5 rounded-2xl border flex items-center gap-4 transition-all relative ${showAnswer && isCorrect ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/50' :
-                      showAnswer && isSelected && !isCorrect ? 'bg-rose-500/10 border-rose-500/50' :
-                        isSelected ? 'bg-white/10 border-white shadow-sm' : 'bg-white/5 border-white/10'
-                      }`}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${showAnswer && isCorrect ? 'bg-emerald-500 text-black' :
-                        showAnswer && isSelected && !isCorrect ? 'bg-rose-500 text-white' :
-                          isSelected ? 'bg-white text-black' : 'bg-white/10 text-white/50'
-                        }`}>
-                        {letter}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`text-[15px] font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
-                          <MathText text={r.options?.[i] || `Choice ${letter}`} />
-                        </p>
-                        {r.optionImages?.[i] && (
-                          <div className="mt-2 rounded-lg border border-white/10 overflow-hidden bg-white/5 max-w-xs p-2">
-                            <img src={r.optionImages[i].startsWith('http') ? r.optionImages[i] : `${apiBase}${r.optionImages[i]}`} alt={`Option ${letter}`} className="w-full h-auto object-contain" />
-                          </div>
-                        )}
-                      </div>
-                      {showAnswer && isCorrect && <Check className="text-emerald-400" size={20} />}
-                      {showAnswer && isSelected && !isCorrect && <X className="text-rose-400" size={20} />}
-                    </div>
-                  );
-                })
-              )}
-
-              {showAnswer && r.explanation && (
-                <div className="mt-12 p-8 bg-indigo-500/10 rounded-3xl border border-indigo-500/20">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Zap className="w-4 h-4 text-indigo-400 fill-current" />
-                    <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
-                  </div>
-                  <p className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    <MathText text={r.explanation} className="block" />
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
-
-        <footer className="h-24 bg-white/5 border-t border-white/10 px-8 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${showAnswer ? 'bg-indigo-600 border-indigo-600' : 'border-white/20 group-hover:border-indigo-400'}`}>
-                {showAnswer && <Check size={14} className="text-white" />}
-              </div>
-              <input type="checkbox" className="hidden" checked={showAnswer} onChange={() => setShowAnswer(!showAnswer)} />
-              <span className="text-sm font-bold text-slate-300">Show correct answer and explanation</span>
-            </label>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              disabled={currentIndex === 0}
-              onClick={onPrev}
-              className="px-8 py-3 rounded-2xl border border-white/20 text-white font-black text-sm hover:bg-white/10 transition-all disabled:opacity-20 disabled:hover:bg-transparent"
-            >
-              Previous
-            </button>
-            <button
-              disabled={currentIndex === responses.length - 1}
-              onClick={onNext}
-              className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-20 disabled:shadow-none"
-            >
-              Next
-            </button>
-          </div>
-        </footer>
-      </div>
-    );
-  };
 
   // Process data for the new sections
   const processPerformanceData = (responses: any[]) => {
@@ -659,6 +659,8 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
             onNext={() => setReviewingQuestionIndex(prev => prev! + 1)}
             showAnswer={showAnswer}
             setShowAnswer={setShowAnswer}
+            latestResult={latestResult}
+            apiBase={apiBase}
           />
         )}
       </AnimatePresence>
@@ -808,7 +810,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
         </section>
 
         {/* Analysis Section */}
-        {latestResult.ai_suggestions && (
+        {latestResult.ai_suggestions ? (
           <section className="space-y-8 pt-12 border-t border-white/10">
             <div className="flex items-center gap-3">
               <Brain className="text-indigo-400" />
@@ -839,6 +841,29 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                 </div>
               ))}
             </div>
+          </section>
+        ) : (
+          <section className="space-y-8 pt-12 border-t border-white/10 flex flex-col items-center justify-center py-12">
+            <Brain className="w-16 h-16 text-indigo-500/50 mb-4" />
+            <h2 className="text-2xl font-black text-white tracking-tight mb-2">AI Performance Analysis</h2>
+            <p className="text-slate-400 mb-8 text-center max-w-md">Get personalized insights and a study roadmap generated by our advanced AI model based on your test performance.</p>
+            <button
+              onClick={handleAnalyzePerformance}
+              disabled={isAnalyzing}
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 transition-colors text-white font-bold rounded-2xl flex items-center gap-3 disabled:opacity-50"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Generate AI Review
+                </>
+              )}
+            </button>
           </section>
         )}
       </div>

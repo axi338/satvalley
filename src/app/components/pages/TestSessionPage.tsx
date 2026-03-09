@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FullscreenInterstitial } from '../FullscreenInterstitial';
+import { PracticeIntroScreen } from './PracticeIntroScreen';
 import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -551,14 +552,16 @@ const PassageViewer = memo(({
     isHighlighterActive,
     onAddHighlight,
     onRemoveHighlight,
-    onSelectionChange
+    onSelectionChange,
+    theme
 }: {
     text: string,
     highlights: HighlightRange[],
     isHighlighterActive: boolean,
     onAddHighlight: (range: HighlightRange) => void,
     onRemoveHighlight: (index: number) => void,
-    onSelectionChange: (selection: { start: number, end: number, text: string } | null) => void
+    onSelectionChange: (selection: { start: number, end: number, text: string } | null) => void,
+    theme: string
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -583,7 +586,7 @@ const PassageViewer = memo(({
             result.push(
                 <mark
                     key={`mark-${idx}`}
-                    className={`${colorClasses[h.color || 'yellow']} text-inherit rounded-sm py-0.5 cursor-pointer transition-colors px-0.5`}
+                    className={`${colorClasses[h.color || 'yellow']} ${theme === 'dark' ? 'text-slate-900' : 'text-inherit'} rounded-sm py-0.5 cursor-pointer transition-colors px-0.5`}
                     onClick={(e) => {
                         if (isHighlighterActive) {
                             e.stopPropagation();
@@ -632,7 +635,7 @@ const PassageViewer = memo(({
         <div
             ref={containerRef}
             onMouseUp={handleMouseUp}
-            className="font-serif text-[18px] leading-8 text-slate-900 whitespace-pre-wrap selection:bg-indigo-100 selection:text-indigo-900"
+            className={`font-serif text-[18px] leading-8 whitespace-pre-wrap selection:bg-indigo-500/30 ${theme === 'dark' ? 'text-white' : 'text-[#1e293b]'}`}
         >
             {renderedContent}
         </div>
@@ -758,43 +761,45 @@ const ReviewScreen = ({
     flags,
     onNavigateToQuestion,
     onSubmit,
-    stageTitle
+    stageTitle,
+    theme
 }: {
     questions: Question[],
     answers: Record<string, string>,
     flags: Set<string | number>,
     onNavigateToQuestion: (idx: number) => void,
     onSubmit: () => void,
-    stageTitle: string
+    stageTitle: string,
+    theme: string
 }) => {
     return (
-        <div className="flex flex-col min-h-screen bg-[#F0F2F5] pb-24 relative overflow-y-auto items-center justify-center">
+        <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-[#F0F2F5]'} pb-24 relative overflow-y-auto items-center justify-center`}>
             <div className="flex flex-col items-center max-w-[500px] w-full my-auto">
-                <div className="bg-white rounded-[10px] shadow-sm border border-slate-200 w-full overflow-hidden animate-in zoom-in-95 duration-500">
+                <div className={`${theme === 'dark' ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-200'} rounded-[10px] shadow-sm border w-full overflow-hidden animate-in zoom-in-95 duration-500`}>
                     <div className="p-5 flex items-start justify-center">
-                        <h3 className="text-[17px] font-bold text-[#141A29] text-center flex-1 leading-[1.3] px-4">
+                        <h3 className={`text-[17px] font-bold ${theme === 'dark' ? 'text-white' : 'text-[#141A29]'} text-center flex-1 leading-[1.3] px-4`}>
                             {stageTitle}: {stageTitle.includes('Section 1') ? 'Reading and Writing' : 'Math'}<br />Questions
                         </h3>
                     </div>
 
-                    <div className="h-px bg-slate-200 w-full" />
+                    <div className={`h-px ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'} w-full`} />
 
                     <div className="flex items-center justify-center gap-6 py-5">
                         <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-slate-800" strokeWidth={2} />
-                            <span className="text-[14px] font-medium text-slate-600">Current</span>
+                            <MapPin className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-800'}`} strokeWidth={2} />
+                            <span className={`text-[14px] font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Current</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-[18px] h-[18px] border-[1.5px] border-dashed border-[#A0A5B1] rounded-full" />
-                            <span className="text-[14px] font-medium text-slate-600">Unanswered</span>
+                            <div className={`w-[18px] h-[18px] border-[1.5px] border-dashed ${theme === 'dark' ? 'border-slate-500' : 'border-[#A0A5B1]'} rounded-full`} />
+                            <span className={`text-[14px] font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Unanswered</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Bookmark className="w-[14px] h-[14px] text-[#DC2626] fill-[#DC2626]" />
-                            <span className="text-[14px] font-medium text-slate-600">For Review</span>
+                            <span className={`text-[14px] font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>For Review</span>
                         </div>
                     </div>
 
-                    <div className="h-px bg-slate-200 w-full" />
+                    <div className={`h-px ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'} w-full`} />
 
                     <div className="p-6 pb-2">
                         <div className="grid grid-cols-10 gap-x-2 gap-y-6">
@@ -810,13 +815,13 @@ const ReviewScreen = ({
                                                 w-[32px] h-[32px] rounded-[4px] flex items-center justify-center font-bold text-[14px] 
                                                 transition-all hover:scale-105 active:scale-95
                                                 ${isAnswered
-                                                    ? 'bg-[#E1E5F2] text-[#3B5998] border border-transparent'
-                                                    : 'bg-white text-slate-800 border-[1.5px] border-dashed border-slate-700'}
+                                                    ? (theme === 'dark' ? 'bg-blue-900/40 text-blue-300 border border-blue-500/50' : 'bg-[#E1E5F2] text-[#3B5998]')
+                                                    : (theme === 'dark' ? 'bg-transparent text-slate-300 border-[1.5px] border-dashed border-slate-600' : 'bg-white text-slate-800 border-[1.5px] border-dashed border-slate-700')}
                                             `}
                                         >
                                             {idx + 1}
                                             {isFlagged && (
-                                                <div className="absolute -top-1 -right-1 bg-white rounded-full p-[1px]">
+                                                <div className={`absolute -top-1 -right-1 ${theme === 'dark' ? 'bg-[#1E293B]' : 'bg-white'} rounded-full p-[1px]`}>
                                                     <Bookmark className="w-2.5 h-2.5 text-[#DC2626] fill-[#DC2626]" />
                                                 </div>
                                             )}
@@ -830,7 +835,7 @@ const ReviewScreen = ({
                     <div className="p-8 pb-10 flex justify-center mt-2">
                         <button
                             onClick={onSubmit}
-                            className="h-[44px] px-8 rounded-full border border-[#345BAE] text-[#345BAE] font-bold text-[15px] hover:bg-blue-50 transition-colors flex items-center gap-2"
+                            className={`h-[44px] px-8 rounded-full border ${theme === 'dark' ? 'border-blue-500 text-blue-400 hover:bg-blue-500/10' : 'border-[#345BAE] text-[#345BAE] hover:bg-blue-50'} font-bold text-[15px] transition-colors flex items-center gap-2`}
                         >
                             Next <ChevronRight className="w-4 h-4" />
                         </button>
@@ -933,6 +938,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     const [isDraggingSplit, setIsDraggingSplit] = useState(false);
     const [selectionRect, setSelectionRect] = useState<{ x: number, y: number } | null>(null);
     const [currentSelection, setCurrentSelection] = useState<{ start: number, end: number, text: string } | null>(null);
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
     // Desmos calculator ref
     const calculatorRef = useRef<DesmosPanelRef>(null);
@@ -1282,29 +1288,41 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     );
 
     if (screen === 'intro') {
-        return (
-            <FullscreenInterstitial
-                onStart={() => {
-                    setHasEnteredFullscreen(true);
-                    setScreen('test');
-                }}
-            />
-        );
+        if (isOlympiadMode) {
+            return (
+                <FullscreenInterstitial
+                    onStart={() => {
+                        setHasEnteredFullscreen(true);
+                        setScreen('test');
+                    }}
+                />
+            );
+        } else {
+            return (
+                <PracticeIntroScreen
+                    onBack={() => onNavigate('dashboard')}
+                    onNext={() => {
+                        setHasEnteredFullscreen(true);
+                        setScreen('test');
+                    }}
+                />
+            );
+        }
     }
 
     if (stage === 'break') return <BreakScreen timeLeft={timeLeft} formatTime={formatTime} onSkip={() => setStage('math-m1')} />;
 
     if (screen === 'review') return (
-        <div className="fixed inset-0 bg-[#F2F4F7] flex flex-col z-50 overflow-hidden">
-            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 relative z-30 shadow-sm">
+        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-[#F2F4F7]'} flex flex-col z-50 overflow-hidden`}>
+            <header className={`h-20 ${theme === 'dark' ? 'bg-[#0F172A] border-white/10' : 'bg-white border-slate-200'} border-b flex items-center justify-between px-8 shrink-0 relative z-30 shadow-sm`}>
                 <div className="flex items-center gap-6">
-                    <span className="text-sm font-black text-slate-900 tracking-tight italic">SATVALLEY NODE</span>
-                    <div className="h-6 w-px bg-slate-200" />
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Retrospective Phase</span>
+                    <span className={`text-sm font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tight italic`}>SATVALLEY NODE</span>
+                    <div className={`h-6 w-px ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`} />
+                    <span className={`text-xs font-black ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'} uppercase tracking-widest`}>Retrospective Phase</span>
                 </div>
 
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <span className="font-mono text-xl font-black text-slate-900 tracking-tighter">
+                    <span className={`font-mono text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tighter`}>
                         {formatTime(timeLeft)}
                     </span>
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time Remaining</span>
@@ -1312,7 +1330,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
 
                 <button
                     onClick={() => setScreen('test')}
-                    className="h-11 px-8 border-2 border-slate-900 text-slate-900 font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
+                    className={`h-11 px-8 border-2 ${theme === 'dark' ? 'border-white text-white hover:bg-white/5' : 'border-slate-900 text-slate-900 hover:bg-slate-50'} font-black rounded-xl transition-all flex items-center gap-2`}
                 >
                     <ChevronLeft className="w-5 h-5" />
                     Back to Section
@@ -1328,6 +1346,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 stageTitle={stage === 'rw-m1' ? 'Reading and Writing Module 1' :
                     stage === 'rw-m2' ? 'Reading and Writing Module 2' :
                         stage === 'math-m1' ? 'Math Module 1' : 'Math Module 2'}
+                theme={theme}
             />
         </div>
     );
@@ -1352,7 +1371,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     const currentQ = questions[currentIndex];
 
     return (
-        <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none">
+        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#0F172A] text-white' : 'bg-white text-slate-900'} flex flex-col z-50 overflow-hidden font-sans select-none`}>
             {/* Soft Warning Toast */}
             {lastWarning && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-300">
@@ -1362,9 +1381,9 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     </div>
                 </div>
             )}
-            <header className="h-[64px] bg-white flex items-center justify-between px-6 shrink-0 relative z-40">
+            <header className={`h-[64px] ${theme === 'dark' ? 'bg-[#0F172A] border-b border-white/10' : 'bg-white'} flex items-center justify-between px-6 shrink-0 relative z-40`}>
                 <div className="flex flex-col">
-                    <h1 className="text-[17px] font-bold text-[#1e293b] leading-tight">
+                    <h1 className={`text-[17px] font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1e293b]'} leading-tight`}>
                         {stage === 'rw-m1' ? 'Section 1, Module 1: Reading and Writing' :
                             stage === 'rw-m2' ? 'Section 1, Module 2: Reading and Writing' :
                                 stage === 'math-m1' ? 'Section 2, Module 1: Math' : 'Section 2, Module 2: Math'}
@@ -1378,12 +1397,12 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 </div>
 
                 <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
-                    <span className={`font-bold text-[24px] tracking-tight ${timeLeft < 300 ? 'text-rose-600' : 'text-[#1e293b]'}`}>
+                    <span className={`font-bold text-[24px] tracking-tight ${timeLeft < 300 ? 'text-rose-600' : theme === 'dark' ? 'text-white' : 'text-[#1e293b]'}`}>
                         {showTimer ? formatTime(timeLeft) : ''}
                     </span>
                     <button
                         onClick={() => setShowTimer(!showTimer)}
-                        className="px-4 py-1 border border-slate-300 rounded font-bold text-[13px] text-slate-700 hover:bg-slate-50 transition-colors"
+                        className={`px-4 py-1 border rounded font-bold text-[13px] transition-colors ${theme === 'dark' ? 'border-slate-600 text-slate-300 hover:bg-white/5' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         {showTimer ? 'Hide' : 'Show'}
                     </button>
@@ -1392,25 +1411,25 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 <div className="flex items-center gap-6">
                     {stage.startsWith('math') ? (
                         <>
-                            <button onClick={() => calculatorRef.current?.open()} className="flex flex-col items-center gap-1 group text-slate-800">
-                                <Calculator className="w-5 h-5 group-hover:text-blue-600 transition-colors" />
+                            <button onClick={() => calculatorRef.current?.open()} className={`flex flex-col items-center gap-1 group ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-800 hover:text-blue-600'}`}>
+                                <Calculator className="w-5 h-5 transition-colors" />
                                 <span className="text-[11px] font-bold uppercase tracking-wider">Calculator</span>
                             </button>
-                            <button onClick={() => setShowReference(true)} className="flex flex-col items-center gap-1 group text-slate-800">
-                                <Book className="w-5 h-5 group-hover:text-blue-600 transition-colors" />
+                            <button onClick={() => setShowReference(true)} className={`flex flex-col items-center gap-1 group ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-800 hover:text-blue-600'}`}>
+                                <Book className="w-5 h-5 transition-colors" />
                                 <span className="text-[11px] font-bold uppercase tracking-wider">Reference</span>
                             </button>
                         </>
                     ) : (
-                        <button onClick={() => setIsHighlighterActive(!isHighlighterActive)} className={`flex flex-col items-center gap-1 group transition-colors ${isHighlighterActive ? 'text-blue-600' : 'text-slate-800 hover:text-blue-600'}`}>
+                        <button onClick={() => setIsHighlighterActive(!isHighlighterActive)} className={`flex flex-col items-center gap-1 group transition-colors ${isHighlighterActive ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600') : (theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-800 hover:text-blue-600')}`}>
                             <PenLine className="w-5 h-5" />
                             <span className="text-[11px] font-bold uppercase tracking-wider">Annotate</span>
                         </button>
                     )}
 
-                    <div className="w-px h-8 bg-slate-200" />
+                    <div className={`w-px h-8 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'}`} />
 
-                    <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="flex flex-col items-center gap-1 group text-slate-800 hover:text-blue-600 transition-colors">
+                    <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`flex flex-col items-center gap-1 group transition-colors ${theme === 'dark' ? 'text-white hover:text-white' : 'text-slate-800 hover:text-blue-600'}`}>
                         <MoreVertical className="w-5 h-5 transition-colors" />
                         <span className="text-[11px] font-bold uppercase tracking-wider">More</span>
                     </button>
@@ -1423,54 +1442,18 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
 
 
 
-            {showMoreMenu && (
-                <div className="fixed top-[60px] right-6 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                    <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            alert("Settings functionality would open here.");
-                        }}
-                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-slate-700 transition-colors"
-                    >
-                        <Settings className="w-4 h-4" />
-                        <span className="text-[14px] font-medium">Settings</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            alert("Help dialog would open here.");
-                        }}
-                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-slate-700 transition-colors"
-                    >
-                        <HelpIcon className="w-4 h-4" />
-                        <span className="text-[14px] font-medium">Help</span>
-                    </button>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            onNavigate('dashboard');
-                        }}
-                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-rose-600 transition-colors"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-[14px] font-medium">Save and Exit</span>
-                    </button>
-                </div>
-            )}
+
 
             {showDirections && (
-                <div className="fixed inset-x-0 top-[64px] bg-[#F6F8FA] border-b border-slate-200 p-8 text-[15px] text-slate-700 animate-in slide-in-from-top-2 z-50 shadow-lg">
+                <div className={`fixed inset-x-0 top-[64px] border-b p-8 text-[15px] animate-in slide-in-from-top-2 z-50 shadow-lg ${theme === 'dark' ? 'bg-[#0F172A] border-white/10 text-white' : 'bg-[#F6F8FA] border-slate-200 text-slate-700'}`}>
                     <div className="max-w-4xl mx-auto">
-                        <h3 className="font-bold text-slate-900 mb-4 text-lg">Directions</h3>
+                        <h2 className={`text-[20px] font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Directions</h2>
                         <p className="leading-relaxed">
-                            {stage.startsWith('rw')
-                                ? "The questions in this section address a number of important reading and writing skills. Each question includes one or more passages, which may include a table or graph. Read each passage and question carefully, and then choose the best answer to the question based on the passage(s). All questions in this section are multiple-choice with four answer choices. Each question has a single best answer."
-                                : "The questions in this section address a number of important math skills. All questions in this section are multiple-choice with four answer choices. Each question has a single best answer."}
+                            The following passage corresponds to the question on the right. Read the passage carefully and choose the best answer to the question based on what is stated or implied in the passage.
                         </p>
                         <button
                             onClick={() => setShowDirections(false)}
-                            className="mt-6 px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors"
+                            className={`mt-6 px-6 py-2 font-bold rounded-lg transition-colors ${theme === 'dark' ? 'bg-white text-slate-900 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
                         >
                             Close
                         </button>
@@ -1487,11 +1470,11 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 <DraggableReference onClose={() => setShowReference(false)} />
             )}
 
-            <main className="flex-1 flex flex-col overflow-hidden bg-white relative">
+            <main className={`flex-1 flex flex-col overflow-hidden relative ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'}`}>
 
 
                 {/* Question Bar */}
-                <div className="h-[48px] bg-slate-100/50 flex flex-col justify-end px-8 shrink-0 relative z-10 pt-2 pb-0">
+                <div className={`h-[48px] flex flex-col justify-end px-8 shrink-0 relative z-10 pt-2 pb-0 ${theme === 'dark' ? 'bg-[#0F172A] border-b border-t border-slate-800' : 'bg-slate-100/50'}`}>
                     <div className="flex items-center justify-between w-full h-full pb-1">
                         <div className="flex items-center gap-4 h-full">
                             <div className="bg-[#111111] font-bold text-[18px] w-8 h-8 flex items-center justify-center font-serif leading-none shrink-0 self-end mb-0.5" style={{ color: '#ffffff' }}>
@@ -1499,9 +1482,9 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                             </div>
                             <button
                                 onClick={toggleFlag}
-                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-[#333333] hover:text-black'}`}
+                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : (theme === 'dark' ? 'text-white hover:text-white' : 'text-[#333333] hover:text-black')}`}
                             >
-                                <Bookmark className={`w-4 h-5 ${flags.has(currentQ?.id || 0) ? 'fill-[#0077c8] text-[#0077c8]' : 'text-[#666666]'}`} strokeWidth={1.5} />
+                                <Bookmark className={`w-4 h-5 ${flags.has(currentQ?.id || 0) ? 'fill-[#0077c8] text-[#0077c8]' : (theme === 'dark' ? 'text-slate-400' : 'text-[#666666]')}`} strokeWidth={1.5} />
                                 <span className={flags.has(currentQ?.id || 0) ? 'font-bold' : ''}>Mark for Review</span>
                             </button>
                         </div>
@@ -1509,7 +1492,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                         <div className="flex items-center gap-4 self-end mb-1">
                             <button
                                 onClick={() => setIsStrikethroughActive(!isStrikethroughActive)}
-                                className={`flex items-center justify-center w-[42px] h-[28px] rounded border transition-all ${isStrikethroughActive ? 'bg-slate-200 border-slate-400 text-slate-900' : 'bg-white border-slate-400 text-slate-800 hover:border-slate-500'}`}
+                                className={`flex items-center justify-center w-[42px] h-[28px] rounded border transition-all ${isStrikethroughActive ? (theme === 'dark' ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-200 border-slate-400 text-slate-900') : (theme === 'dark' ? 'bg-[#1E293B] border-slate-600 text-white hover:border-slate-400' : 'bg-white border-slate-400 text-slate-800 hover:border-slate-500')}`}
                                 title="Cross-out"
                             >
                                 <div className="relative flex items-center justify-center">
@@ -1522,7 +1505,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     {/* Dashed line */}
                     <div className="flex h-[2px] w-full gap-[4px] mt-auto">
                         {Array.from({ length: 40 }).map((_, i) => (
-                            <div key={i} className={`h-full flex-1 ${i % 7 === 0 ? 'bg-[#FFD700]' : i % 5 === 0 ? 'bg-[#0077c8]' : 'bg-[#666666]'}`} />
+                            <div key={i} className={`h-full flex-1 ${i % 7 === 0 ? 'bg-[#FFD700]' : i % 5 === 0 ? 'bg-[#0077c8]' : (theme === 'dark' ? 'bg-slate-700' : 'bg-[#666666]')}`} />
                         ))}
                     </div>
                 </div>
@@ -1535,11 +1518,11 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     {(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && (
                         <>
                             <div
-                                className="border-r border-slate-300 bg-white flex flex-col relative group/pane overflow-hidden"
+                                className={`flex flex-col relative group/pane overflow-hidden ${theme === 'dark' ? 'bg-[#0F172A] border-r border-slate-800' : 'bg-white border-r border-slate-300'}`}
                                 style={{ width: `${splitWidth}%` }}
                             >
                                 <div
-                                    className="flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll select-text cursor-text relative"
+                                    className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll select-text cursor-text relative ${theme === 'dark' ? 'text-white' : ''}`}
                                     onMouseUp={(e) => {
                                         const selection = window.getSelection();
                                         if (selection && !selection.isCollapsed) {
@@ -1551,9 +1534,9 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                         }
                                     }}
                                 >
-                                    {currentQ?.imageUrl && <div className="mt-8 mb-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question Image" className="w-full h-auto" /></div>}
+                                    {currentQ?.imageUrl && <div className={`mt-8 mb-8 rounded-lg overflow-hidden border ${theme === 'dark' ? 'border-slate-800 bg-[#1E293B]' : 'border-slate-200 bg-slate-50'}`}><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question Image" className="w-full h-auto" /></div>}
                                     {(currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? (
-                                        <div className="font-serif text-[#111827] whitespace-pre-wrap pr-4">
+                                        <div className={`font-serif whitespace-pre-wrap pr-4 ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>
                                             <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
                                             <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
                                                 <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
@@ -1572,6 +1555,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                             onAddHighlight={(range) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))}
                                             onRemoveHighlight={(idx) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))}
                                             onSelectionChange={(sel) => setCurrentSelection(sel)}
+                                            theme={theme}
                                         />
                                     ) : null}
                                     {/* end of left panel logic */}
@@ -1620,19 +1604,19 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     )}
 
                     <div
-                        className="bg-white flex flex-col relative group/pane-right overflow-hidden"
+                        className={`flex flex-col relative group/pane-right overflow-hidden ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'}`}
                         style={{ width: (currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? `${100 - splitWidth}%` : '100%' }}
                     >
                         <div className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll ${!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <div className="mb-10 space-y-6">
-                                {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
+                                {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className={`mb-6 rounded-lg overflow-hidden border max-w-2xl mx-auto ${theme === 'dark' ? 'border-slate-800 bg-[#1E293B]' : 'border-slate-200 bg-slate-50'}`}><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
 
                                 {((currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.passage) && (
-                                    <div className="text-[18px] leading-[1.6] text-[#111827] font-medium mb-6">
+                                    <div className={`text-[18px] leading-[1.6] font-medium mb-6 ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>
                                         <MathText text={currentQ.passage} className="block" />
                                     </div>
                                 )}
-                                <p className="text-[18px] leading-[1.6] text-[#111827] font-medium"><MathText text={currentQ?.text} className="block" /></p>
+                                <p className={`text-[18px] leading-[1.6] font-medium ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}><MathText text={currentQ?.text || ''} className="block" /></p>
                             </div>
 
                             <div className="space-y-4">
@@ -1648,16 +1632,16 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                                 onClick={() => {
                                                     setAnswers(p => ({ ...p, [currentQ.id]: letter }));
                                                 }}
-                                                className={`bluebook-option-button flex-1 ${isSelected ? 'selected text-blue-900' : ''} ${isStruck ? 'struck' : ''}`}
+                                                className={`bluebook-option-button flex-1 ${isSelected ? (theme === 'dark' ? 'selected !text-white !border-blue-600 !bg-blue-900/40' : 'selected text-blue-900') : (theme === 'dark' ? '!border-slate-700 !bg-slate-800/50 hover:!bg-slate-800 !text-white' : '')} ${isStruck ? 'struck hover:border-slate-300' : ''}`}
                                             >
-                                                <div className="bluebook-option-letter">{letter}</div>
+                                                <div className={`bluebook-option-letter ${theme === 'dark' ? (!isSelected ? '!border-slate-600 !bg-slate-900 !text-white font-bold' : '!border-blue-500 !text-white font-black !bg-blue-600') : ''}`}>{letter}</div>
                                                 <div className="flex-1 flex flex-col gap-2">
-                                                    <span className={`text-[16px] leading-relaxed text-slate-800 font-medium ${isStruck ? 'line-through text-slate-400' : ''}`}>
+                                                    <span className={`text-[16px] leading-relaxed font-bold ${isStruck ? 'line-through text-slate-500' : (theme === 'dark' ? 'text-white' : 'text-slate-800')}`}>
                                                         <MathText text={opt} />
                                                     </span>
                                                     {currentQ.optionImages?.[idx] && (
-                                                        <div className="mt-2 rounded border border-slate-200 overflow-hidden bg-white max-w-sm">
-                                                            <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" />
+                                                        <div className={`mt-2 rounded border overflow-hidden max-w-sm ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
+                                                            <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className={`w-full h-auto ${theme === 'dark' ? 'invert opacity-90' : ''}`} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -1665,7 +1649,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
 
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleStrike(letter); }}
-                                                className={`bluebook-eliminate-circle ${isStruck ? 'active' : 'opacity-0 group-hover/opt-row:opacity-100'}`}
+                                                className={`bluebook-eliminate-circle ${theme === 'dark' ? '!text-slate-400 !bg-slate-900 !border-slate-600 hover:!border-slate-400 hover:!text-slate-200' : ''} ${isStruck ? (theme === 'dark' ? 'active !bg-slate-800 !border-slate-700 !text-slate-500' : 'active') : 'opacity-0 group-hover/opt-row:opacity-100'}`}
                                                 title="Eliminate"
                                             >
                                                 <span>{letter}</span>
@@ -1685,12 +1669,12 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                                 value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
                                                 onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
                                                 maxLength={6}
-                                                className="h-[44px] text-[18px] bg-white text-[#111827] font-medium border border-slate-900 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-3 tracking-widest text-center"
+                                                className={`h-[44px] text-[18px] font-bold border focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-3 tracking-widest text-center ${theme === 'dark' ? 'bg-[#1E293B] text-white border-slate-600' : 'bg-white text-[#111827] border-slate-900'}`}
                                             />
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="font-bold text-[18px] text-[#111827]">Answer Preview:</div>
-                                            <div className="text-[20px] text-[#111827] tracking-wider min-h-[30px] font-serif pt-1">
+                                            <div className={`font-black text-[18px] ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>Answer Preview:</div>
+                                            <div className={`text-[20px] tracking-wider min-h-[30px] font-serif pt-1 ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>
                                                 <MathText text={currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''} />
                                             </div>
                                         </div>
@@ -1703,26 +1687,45 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
             </main>
 
             {showMoreMenu && (
-                <div className="fixed top-[60px] right-6 bg-white border border-slate-200 shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200">
+                <div className={`fixed top-[60px] right-6 border shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 ${theme === 'dark' ? 'bg-[#1E293B] border-slate-700 text-slate-200' : 'bg-white border-slate-200'}`}>
                     <button
                         onClick={() => { setShowLineReader(true); setShowMoreMenu(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
                     >
-                        <Accessibility className="w-4 h-4 text-slate-500" />
+                        <Accessibility className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
                         <span>Line Reader</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors">
-                        <Settings className="w-4 h-4 text-slate-500" />
+                    <button
+                        onClick={() => { setShowMoreMenu(false); alert("Settings functionality would open here."); }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
+                    >
+                        <Settings className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
                         <span>Settings</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors">
-                        <HelpIcon className="w-4 h-4 text-slate-500" />
+                    <button
+                        onClick={() => {
+                            setTheme(theme === 'light' ? 'dark' : 'light');
+                            setShowMoreMenu(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
+                    >
+                        {theme === 'light' ? <EyeOff className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} /> : <Eye className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />}
+                        <span>{theme === 'light' ? 'Dark Theme' : 'Light Mode'}</span>
+                    </button>
+                    <button
+                        onClick={() => { setShowMoreMenu(false); alert("Help dialog would open here."); }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
+                    >
+                        <HelpIcon className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
                         <span>Help</span>
                     </button>
-                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                    <div className={`h-px my-1 mx-2 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-100'}`} />
                     <button
-                        onClick={() => onNavigate('dashboard')}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-rose-600 transition-colors"
+                        onClick={() => {
+                            setShowMoreMenu(false);
+                            onNavigate('dashboard');
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-rose-400' : 'hover:bg-slate-50 text-rose-600'}`}
                     >
                         <LogOut className="w-4 h-4" />
                         <span>Save and Exit</span>
@@ -1730,15 +1733,15 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 </div>
             )}
 
-            <footer className="h-[72px] bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 z-40">
+            <footer className={`h-[72px] flex items-center justify-between px-6 shrink-0 z-40 ${theme === 'dark' ? 'bg-[#0F172A] border-t border-white/10' : 'bg-white border-t border-slate-200'}`}>
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
-                        <span className="text-slate-500 font-bold text-sm">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${theme === 'dark' ? 'bg-[#1E293B] border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                        <span className={`font-black text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-500'}`}>
                             {(olympiadProfile?.full_name || profile?.full_name || user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
                         </span>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[14px] font-black text-slate-900 tracking-tight leading-none">
+                        <span className={`text-[14px] font-black tracking-tight leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                             {olympiadProfile?.full_name || profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
                         </span>
                     </div>
@@ -1748,7 +1751,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 <div className="absolute left-1/2 -translate-x-1/2">
                     <button
                         onClick={() => setShowNavModal(true)}
-                        className="bluebook-nav-button"
+                        className={`bluebook-nav-button ${theme === 'dark' ? '!bg-slate-800 !text-slate-200 !border-slate-700 hover:!bg-slate-700' : ''}`}
                     >
                         <span>Question {currentIndex + 1} of {questions.length}</span>
                         <ChevronDown className="w-4 h-4 ml-2 rotate-180" />
@@ -1759,13 +1762,13 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     <button
                         disabled={currentIndex === 0}
                         onClick={handleBack}
-                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all focus:outline-none focus:ring-0 ${currentIndex === 0 ? "bg-[#111827] text-white" : "bg-transparent text-black"}`}
+                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all focus:outline-none focus:ring-0 ${currentIndex === 0 ? "bg-[#111827] text-white" : (theme === 'dark' ? 'bg-transparent text-slate-200 hover:bg-white/5 border-slate-600' : 'bg-transparent text-black')}`}
                     >
                         Back
                     </button>
                     <button
                         onClick={handleNext}
-                        className="h-10 px-8 rounded-lg bg-[#111827] text-white font-bold text-[14px] hover:bg-slate-800 transition-all"
+                        className={`h-10 px-8 rounded-lg text-white font-bold text-[14px] transition-all ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-[#111827] hover:bg-slate-800'}`}
                     >
                         {currentIndex === questions.length - 1 ? 'Review' : 'Next'}
                     </button>

@@ -13,7 +13,7 @@ export function Footer({ onNavigate }: FooterProps) {
           <div className="md:col-span-2 space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 shadow-lg shadow-indigo-600/30">
-                <img src="/logo.jpg" alt="SAT Valley Logo" className="w-full h-full object-cover" />
+                <img src="/logo.png" alt="SAT Valley Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <div className="text-xl font-bold text-white tracking-tight">SAT Valley</div>
