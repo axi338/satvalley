@@ -69,6 +69,7 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
                     graduation_year: gradYear,
                     sat_deadline: satDeadline,
                     email: user.email,
+                    onboarding_complete: true,
                     updated_at: new Date().toISOString()
                 });
 

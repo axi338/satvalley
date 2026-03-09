@@ -94,6 +94,14 @@ export default function App() {
         return;
       }
       try {
+        // First validate the session is still active to avoid spurious CORS/401 errors
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          // Session gone — don't show onboarding, just wait for auth state change
+          setIsProfileComplete(null);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -101,21 +109,32 @@ export default function App() {
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error("Error fetching profile for completion check:", error);
+          // PGRST116 = no row found (new user). Any other error is likely a network/auth issue.
+          // Don't block the user with onboarding on a transient error.
+          console.warn("Profile fetch error (non-fatal):", error.message || error);
+          // If it looks like an auth/network error, assume complete to avoid blocking them
+          if (!error.code || error.code === 'CORS' || error.status === 401 || error.status === 0) {
+            setIsProfileComplete(true); // Optimistically allow through on auth errors
+            return;
+          }
         }
 
         if (data) {
           setProfile(data);
         }
 
-        if (data && data.full_name && data.phone && data.graduation_year && data.sat_deadline) {
+        // Profile is considered complete if they've already done onboarding.
+        // We check the `onboarding_complete` flag first, then fall back to
+        // checking if `full_name` exists (for backward compatibility).
+        if (data && (data.onboarding_complete === true || data.full_name)) {
           setIsProfileComplete(true);
         } else {
           setIsProfileComplete(false);
         }
       } catch (err) {
         console.error("Profile check error:", err);
-        setIsProfileComplete(false);
+        // On network errors, don't block the user — let them through
+        setIsProfileComplete(true);
       }
     }
 

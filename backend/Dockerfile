@@ -28,4 +28,4 @@ ENV PORT=10000
 EXPOSE 10000
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["node", "--max-http-header-size=32768", "server.js"]

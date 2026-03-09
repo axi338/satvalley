@@ -288,45 +288,45 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
                         <div className="flex flex-col items-center">
                             <div className="w-24 h-24 relative mb-4">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <circle cx="50" cy="50" r="40" fill="none" stroke="black" strokeWidth="1.5" />
-                                    <circle cx="50" cy="50" r="1.5" fill="black" />
-                                    <line x1="50" y1="50" x2="90" y2="50" stroke="black" strokeWidth="1" />
-                                    <text x="70" y="45" fontSize="12" className="italic" fill="black">r</text>
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                                    <circle cx="50" cy="50" r="1.5" fill="currentColor" />
+                                    <line x1="50" y1="50" x2="90" y2="50" stroke="currentColor" strokeWidth="1" />
                                 </svg>
+                                <div className="absolute top-[35%] left-[62%]"><MathText text={"$r$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center space-y-1">
-                                <p className="text-[13px] italic">A = πr²</p>
-                                <p className="text-[13px] italic">C = 2πr</p>
+                                <p className="text-[13px] italic"><MathText text={"$A = \\pi r^2$"} /></p>
+                                <p className="text-[13px] italic"><MathText text={"$C = 2\\pi r$"} /></p>
                             </div>
                         </div>
 
                         {/* Rectangle */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 60" className="w-full max-h-full text-black">
-                                    <rect x="10" y="5" width="80" height="50" fill="none" stroke="black" strokeWidth="1.5" />
-                                    <text x="50" y="0" fontSize="12" className="italic" textAnchor="middle" alignmentBaseline="hanging" fill="black">ℓ</text>
-                                    <text x="95" y="30" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">w</text>
+                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 60" className="w-full h-full text-black">
+                                    <rect x="10" y="5" width="80" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" />
                                 </svg>
+                                <div className="absolute -top-3 left-[45%]"><MathText text={"$\\ell$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute top-[40%] -right-2"><MathText text={"$w$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
-                                <p className="text-[13px] italic">A = ℓw</p>
+                                <p className="text-[13px] italic"><MathText text={"$A = \\ell w$"} /></p>
                             </div>
                         </div>
 
                         {/* Triangle */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
-                                    <path d="M10 70 L90 70 L50 10 Z" fill="none" stroke="black" strokeWidth="1.5" />
-                                    <line x1="50" y1="10" x2="50" y2="70" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
-                                    <rect x="50" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
-                                    <text x="50" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">b</text>
-                                    <text x="56" y="40" fontSize="12" className="italic" fill="black">h</text>
+                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full h-full text-black">
+                                    <path d="M10 70 L90 70 L50 10 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                                    <line x1="50" y1="10" x2="50" y2="70" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
+                                    <rect x="50" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
                                 </svg>
+                                <div className="absolute -bottom-3 left-[48%]"><MathText text={"$b$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute top-[38%] left-[55%]"><MathText text={"$h$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
-                                <p className="text-[13px] italic">A = ½bh</p>
+                                <p className="text-[13px] italic"><MathText text={"$A = \\frac{1}{2}bh$"} /></p>
                             </div>
                         </div>
                     </div>
@@ -335,32 +335,32 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
                     <div className="grid grid-cols-3 gap-8">
                         {/* Pythagorean */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
-                                    <path d="M20 10 L20 70 L80 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
-                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
-                                    <text x="10" y="40" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">b</text>
-                                    <text x="50" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">a</text>
-                                    <text x="55" y="35" fontSize="12" className="italic" fill="black">c</text>
+                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full h-full text-black">
+                                    <path d="M20 10 L20 70 L80 70 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
                                 </svg>
+                                <div className="absolute top-[35%] -left-1"><MathText text={"$a$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute -bottom-3 left-[45%]"><MathText text={"$b$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute top-[30%] right-[15%]"><MathText text={"$c$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
-                                <p className="text-[13px] italic">c² = a² + b²</p>
+                                <p className="text-[13px] italic"><MathText text={"$c^2 = a^2 + b^2$"} /></p>
                             </div>
                         </div>
 
                         {/* 30-60-90 */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 120 80" className="w-full max-h-full text-black">
-                                    <path d="M20 10 L20 70 L90 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
-                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
-                                    <text x="75" y="65" fontSize="10" fill="black">30°</text>
-                                    <text x="25" y="25" fontSize="10" fill="black">60°</text>
-                                    <text x="5" y="40" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">x√3</text>
-                                    <text x="55" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">x</text>
-                                    <text x="60" y="35" fontSize="12" className="italic" fill="black">2x</text>
+                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 120 80" className="w-full h-full text-black">
+                                    <path d="M20 10 L20 70 L90 70 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
                                 </svg>
+                                <div className="absolute top-[65%] right-[20%]"><MathText text={"$30^\\circ$"} className="text-[10px] text-black" /></div>
+                                <div className="absolute top-[20%] left-[25%]"><MathText text={"$60^\\circ$"} className="text-[10px] text-black" /></div>
+                                <div className="absolute top-[35%] -left-8"><MathText text={"$x\\sqrt{3}$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute -bottom-3 left-[45%]"><MathText text={"$x$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute top-[30%] right-[10%]"><MathText text={"$2x$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
                                 <p className="text-[11px] font-bold uppercase tracking-tight font-sans">Special Right Triangles</p>
@@ -369,16 +369,16 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
 
                         {/* 45-45-90 */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
-                                    <path d="M20 20 L20 70 L70 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
-                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
-                                    <text x="55" y="65" fontSize="10" fill="black">45°</text>
-                                    <text x="25" y="35" fontSize="10" fill="black">45°</text>
-                                    <text x="10" y="45" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">s</text>
-                                    <text x="45" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">s</text>
-                                    <text x="48" y="40" fontSize="12" className="italic" fill="black">s√2</text>
+                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full h-full text-black">
+                                    <path d="M20 20 L20 70 L70 70 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
                                 </svg>
+                                <div className="absolute top-[65%] right-[25%]"><MathText text={"$45^\\circ$"} className="text-[10px] text-black" /></div>
+                                <div className="absolute top-[30%] left-[25%]"><MathText text={"$45^\\circ$"} className="text-[10px] text-black" /></div>
+                                <div className="absolute top-[45%] -left-2"><MathText text={"$s$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute -bottom-3 left-[45%]"><MathText text={"$s$"} className="text-sm font-serif italic text-black" /></div>
+                                <div className="absolute top-[35%] right-[2%]"><MathText text={"$s\\sqrt{2}$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                         </div>
                     </div>
@@ -387,74 +387,74 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
                     <div className="grid grid-cols-5 gap-4">
                         {/* Rectangular Prism */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 mb-2">
+                            <div className="w-20 h-20 relative mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <rect x="5" y="25" width="60" height="40" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <path d="M5 25 L25 5 L85 5 L85 45 L65 65" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <path d="M65 25 L85 5" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <text x="35" y="75" fontSize="10" className="italic" textAnchor="middle" fill="black">ℓ</text>
-                                    <text x="75" y="60" fontSize="10" className="italic" fill="black">w</text>
-                                    <text x="0" y="45" fontSize="10" className="italic" fill="black">h</text>
+                                    <rect x="5" y="25" width="60" height="40" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <path d="M5 25 L25 5 L85 5 L85 45 L65 65" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <path d="M65 25 L85 5" fill="none" stroke="currentColor" strokeWidth="1.2" />
                                 </svg>
+                                <div className="absolute -bottom-3 left-[30%]"><MathText text={"$\\ell$"} className="text-[11px] font-serif italic text-black" /></div>
+                                <div className="absolute top-[52%] right-[-5px]"><MathText text={"$w$"} className="text-[11px] font-serif italic text-black" /></div>
+                                <div className="absolute top-[38%] left-[-10px]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic">V = ℓwh</p>
+                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\ell wh$"} /></p>
                         </div>
 
                         {/* Cylinder */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 mb-2">
+                            <div className="w-20 h-20 relative mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <ellipse cx="50" cy="20" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <path d="M20 20 L20 80 A30 10 0 0 0 80 80 L80 20" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" strokeDasharray="3 2" />
-                                    <line x1="50" y1="20" x2="80" y2="20" stroke="black" strokeWidth="1" strokeDasharray="2 1" />
-                                    <text x="65" y="17" fontSize="10" className="italic" fill="black">r</text>
-                                    <text x="10" y="55" fontSize="10" className="italic" fill="black">h</text>
+                                    <ellipse cx="50" cy="20" rx="30" ry="10" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <path d="M20 20 L20 80 A30 10 0 0 0 80 80 L80 20" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 2" />
+                                    <line x1="50" y1="20" x2="80" y2="20" stroke="currentColor" strokeWidth="1" strokeDasharray="2 1" />
                                 </svg>
+                                <div className="absolute top-[5px] left-[65%]"><MathText text={"$r$"} className="text-[11px] font-serif italic text-black" /></div>
+                                <div className="absolute top-[45%] left-[-5px]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic">V = πr²h</p>
+                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\pi r^2 h$"} /></p>
                         </div>
 
                         {/* Sphere */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 mb-2">
+                            <div className="w-20 h-20 relative mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <circle cx="50" cy="50" r="40" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <ellipse cx="50" cy="50" rx="40" ry="12" fill="none" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
-                                    <line x1="50" y1="50" x2="90" y2="50" stroke="black" strokeWidth="1" strokeDasharray="2 1" />
-                                    <text x="70" y="47" fontSize="10" className="italic" fill="black">r</text>
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <ellipse cx="50" cy="50" rx="40" ry="12" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
+                                    <line x1="50" y1="50" x2="90" y2="50" stroke="currentColor" strokeWidth="1" strokeDasharray="2 1" />
                                 </svg>
+                                <div className="absolute top-[42%] left-[62%]"><MathText text={"$r$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic">V = ⁴/₃πr³</p>
+                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\frac{4}{3}\\pi r^3$"} /></p>
                         </div>
 
                         {/* Cone */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 mb-2">
+                            <div className="w-20 h-20 relative mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <path d="M20 80 L50 10 L80 80" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <line x1="50" y1="10" x2="50" y2="80" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
-                                    <text x="54" y="45" fontSize="10" className="italic" fill="black">h</text>
-                                    <text x="65" y="88" fontSize="10" className="italic" fill="black">r</text>
+                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <path d="M20 80 L50 10 L80 80" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <line x1="50" y1="10" x2="50" y2="80" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
                                 </svg>
+                                <div className="absolute top-[40%] left-[58%]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
+                                <div className="absolute bottom-[2px] right-[28%]"><MathText text={"$r$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic">V = ¹/₃πr²h</p>
+                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\frac{1}{3}\\pi r^2 h$"} /></p>
                         </div>
 
                         {/* Pyramid */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 mb-2">
+                            <div className="w-20 h-20 relative mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <path d="M10 80 L50 90 L90 80 L50 10 Z" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <path d="M50 10 L50 90" fill="none" stroke="black" strokeWidth="1.2" />
-                                    <path d="M10 80 L90 80" fill="none" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
-                                    <text x="30" y="92" fontSize="10" className="italic" fill="black">ℓ</text>
-                                    <text x="75" y="92" fontSize="10" className="italic" fill="black">w</text>
-                                    <text x="54" y="50" fontSize="10" className="italic" fill="black">h</text>
+                                    <path d="M10 80 L50 90 L90 80 L50 10 Z" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <path d="M50 10 L50 90" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <path d="M10 80 L90 80" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
                                 </svg>
+                                <div className="absolute bottom-[-10px] left-[25%]"><MathText text={"$\\ell$"} className="text-[11px] font-serif italic text-black" /></div>
+                                <div className="absolute bottom-[-5px] right-[15%]"><MathText text={"$w$"} className="text-[11px] font-serif italic text-black" /></div>
+                                <div className="absolute top-[42%] left-[58%]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic">V = ¹/₃ℓwh</p>
+                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\frac{1}{3}\\ell wh$"} /></p>
                         </div>
                     </div>
 
@@ -960,16 +960,23 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
             try {
                 // Access Control Check for All Tests (Practice & Olympiad) - Only one attempt allowed
                 if (user?.email) {
-                    const { data: { session } = {} } = await supabase.auth.getSession();
-                    const statusRes = await fetch(`${apiBase}/api/olympiad/status?testId=${testId}&userEmail=${encodeURIComponent(user.email)}`, {
-                        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
-                    });
-                    const statusData = await statusRes.json();
+                    try {
+                        const { data: { session } = {} } = await supabase.auth.getSession();
+                        const statusRes = await fetch(`${apiBase}/api/olympiad/status?testId=${testId}&userEmail=${encodeURIComponent(user.email)}`, {
+                            headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
+                        });
 
-                    if (statusData.completed && !statusData.isAdmin) {
-                        // For Olympiad tests, we might want to keep the restriction.
-                        // But the user asked for "without limits", so we'll bypass this for practice tests.
-                        console.log("Student has already completed this test, allowing retake (Unlimited mode).");
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            if (statusData.completed && !statusData.isAdmin) {
+                                console.log("Student has already completed this test, allowing retake (Unlimited mode).");
+                            }
+                        } else {
+                            console.warn(`Status check failed with status ${statusRes.status}. Continuing with test load.`);
+                        }
+                    } catch (statusError) {
+                        console.error("Status check fetch failed:", statusError);
+                        // Continue loading questions anyway
                     }
                 }
 
@@ -1543,7 +1550,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                                 <li>You can enter up to 5 characters for a <strong>positive</strong> answer and up to 6 characters (including the negative sign) for a <strong>negative</strong> answer.</li>
                                                 <li>If your answer is a <strong>fraction</strong> that doesn't fit in the provided space, enter the decimal equivalent.</li>
                                                 <li>If your answer is a <strong>decimal</strong> that doesn't fit in the provided space, enter it by truncating or rounding at the fourth digit.</li>
-                                                <li>If your answer is a <strong>mixed number</strong> (such as <MathText text="3\frac{1}{2}" className="inline font-serif font-medium" />), enter it as an improper fraction (<MathText text="7/2" className="inline font-serif font-medium" />) or its decimal equivalent (3.5).</li>
+                                                <li>If your answer is a <strong>mixed number</strong> (such as <MathText text={"$3\\frac{1}{2}$"} className="inline font-serif font-medium" />), enter it as an improper fraction (<MathText text={"$7/2$"} className="inline font-serif font-medium" />) or its decimal equivalent (3.5).</li>
                                                 <li>Don't enter <strong>symbols</strong> such as a percent sign, comma, or dollar sign.</li>
                                             </ul>
                                         </div>

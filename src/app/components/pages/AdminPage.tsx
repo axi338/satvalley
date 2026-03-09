@@ -12,6 +12,43 @@ interface AdminPageProps {
   onNavigate: (page: string) => void;
 }
 
+const MathSymbolBar = ({ onInsert }: { onInsert: (symbol: string) => void }) => {
+  const symbols = [
+    { label: '√', value: '\\sqrt{}' },
+    { label: 'x²', value: '^2' },
+    { label: 'xⁿ', value: '^{}' },
+    { label: 'π', value: '\\pi' },
+    { label: '±', value: '\\pm' },
+    { label: 'θ', value: '\\theta' },
+    { label: 'Δ', value: '\\Delta' },
+    { label: '≈', value: '\\approx' },
+    { label: '≠', value: '\\neq' },
+    { label: '≤', value: '\\leq' },
+    { label: '≥', value: '\\geq' },
+    { label: 'fraction', value: '\\frac{}{}' },
+    { label: '$...$', value: '$ $' },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-1.5 p-2 bg-indigo-500/5 border border-indigo-500/10 rounded-xl mb-3 shadow-inner group">
+      <div className="text-[9px] uppercase font-black text-indigo-400/60 w-full mb-1 ml-1 flex items-center gap-1.5">
+        <Sparkles className="w-2.5 h-2.5" /> Math Quick-Insert
+      </div>
+      {symbols.map((s) => (
+        <button
+          key={s.label}
+          type="button"
+          onClick={() => onInsert(s.value)}
+          className="px-2.5 py-1.5 text-xs font-mono bg-white/5 hover:bg-amber-500/20 hover:text-amber-500 hover:border-amber-500/30 border border-white/10 rounded-lg text-muted-foreground transition-all duration-200"
+          title={s.value}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 export function AdminPage({ onNavigate }: AdminPageProps) {
   const [testTitle, setTestTitle] = useState('');
   const [testDifficulty, setTestDifficulty] = useState('Medium');
@@ -534,8 +571,15 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm text-muted-foreground">Passage & Question</label>
+      <div className="space-y-4">
+        <label className="text-sm text-muted-foreground flex items-center justify-between">
+          Passage & Question
+          {questionSubject === 'math' && <span className="text-[10px] text-amber-500 uppercase font-bold">LaTeX Enabled</span>}
+        </label>
+
+        {questionSubject === 'math' && (
+          <MathSymbolBar onInsert={(s) => setPassage(prev => prev + s)} />
+        )}
         <Textarea value={passage} onChange={e => setPassage(e.target.value)} placeholder="Passage..." className="bg-white/5 border-white/10 min-h-24 text-white mb-2" />
 
         <div className="flex gap-4 items-center mb-2">
@@ -556,6 +600,9 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           )}
         </div>
 
+        {questionSubject === 'math' && (
+          <MathSymbolBar onInsert={(s) => setQuestionText(prev => prev + s)} />
+        )}
         <Textarea value={questionText} onChange={e => setQuestionText(e.target.value)} placeholder="Question..." className="bg-white/5 border-white/10 min-h-20 text-white" />
       </div>
 
@@ -568,28 +615,36 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             { state: optionD, setState: setOptionD, key: 'D', idx: 3 },
           ].map(opt => (
             <div key={opt.key} className="space-y-2">
-              <label className="text-xs text-muted-foreground">Choice {opt.key}</label>
-              <div className="flex gap-2">
-                <Input value={opt.state} onChange={e => opt.setState(e.target.value)} className="bg-white/5 border-white/10 h-11 text-sm text-white" />
+              <label className="text-xs text-muted-foreground flex items-center justify-between">
+                Choice {opt.key}
+                {questionSubject === 'math' && <button type="button" onClick={() => opt.setState(opt.state + '$ $')} className="text-[10px] text-amber-500 hover:underline">Add $ $</button>}
+              </label>
+              <div className="flex flex-col gap-2">
                 {questionSubject === 'math' && (
-                  <div className="relative">
-                    <Input type="file" id={`opt-${opt.idx}`} className="hidden" onChange={e => handleOptionImageChange(opt.idx, e)} />
-                    <label htmlFor={`opt-${opt.idx}`} className="flex items-center justify-center w-11 h-11 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-primary/50 text-muted-foreground hover:text-white transition-colors">
-                      <Plus className="w-4 h-4" />
-                    </label>
-                    {optionImagePreviews[opt.idx] && (
-                      <>
-                        <img src={optionImagePreviews[opt.idx]!} className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-white/40 object-cover" />
-                        <button
-                          onClick={() => handleRemoveOptionImage(opt.idx)}
-                          className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 border border-background z-10 shadow-sm"
-                        >
-                          <CloseIcon className="w-2.5 h-2.5" />
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  <MathSymbolBar onInsert={(s) => opt.setState(opt.state + s)} />
                 )}
+                <div className="flex gap-2">
+                  <Input value={opt.state} onChange={e => opt.setState(e.target.value)} className="bg-white/5 border-white/10 h-11 text-sm text-white" />
+                  {questionSubject === 'math' && (
+                    <div className="relative">
+                      <Input type="file" id={`opt-${opt.idx}`} className="hidden" onChange={e => handleOptionImageChange(opt.idx, e)} />
+                      <label htmlFor={`opt-${opt.idx}`} className="flex items-center justify-center w-11 h-11 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-primary/50 text-muted-foreground hover:text-white transition-colors">
+                        <Plus className="w-4 h-4" />
+                      </label>
+                      {optionImagePreviews[opt.idx] && (
+                        <>
+                          <img src={optionImagePreviews[opt.idx]!} className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-white/40 object-cover" />
+                          <button
+                            onClick={() => handleRemoveOptionImage(opt.idx)}
+                            className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 border border-background z-10 shadow-sm"
+                          >
+                            <CloseIcon className="w-2.5 h-2.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -613,6 +668,9 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         </div>
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground">Explanation</label>
+          {questionSubject === 'math' && (
+            <MathSymbolBar onInsert={(s) => setExplanation(prev => prev + s)} />
+          )}
           <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} className="bg-white/5 border-white/10 min-h-12 h-12 text-white text-sm" />
         </div>
       </div>
@@ -922,8 +980,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                             key={s.id}
                             onClick={() => { setQuestionFilterSubject(s.id); setQuestionFilterModule(''); }}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${questionFilterSubject === s.id
-                                ? (s.color === 'amber' ? 'bg-amber-500/20 border-amber-500/50 text-amber-500' : s.color === 'blue' ? 'bg-blue-500/20 border-blue-500/50 text-blue-500' : 'bg-primary/20 border-primary/50 text-primary')
-                                : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:border-white/20'
+                              ? (s.color === 'amber' ? 'bg-amber-500/20 border-amber-500/50 text-amber-500' : s.color === 'blue' ? 'bg-blue-500/20 border-blue-500/50 text-blue-500' : 'bg-primary/20 border-primary/50 text-primary')
+                              : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:border-white/20'
                               }`}
                           >
                             {s.label}
@@ -945,8 +1003,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                             key={m.id}
                             onClick={() => setQuestionFilterModule(m.id)}
                             className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${questionFilterModule === m.id
-                                ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400'
-                                : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:border-white/20'
+                              ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400'
+                              : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:border-white/20'
                               }`}
                           >
                             {m.label}

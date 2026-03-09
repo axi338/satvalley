@@ -293,16 +293,28 @@ export function VocabularyPage({ user }: { user: any }) {
     };
 
     const triggerSuccess = (isManualKnow: boolean = false) => {
-        const randomMeme = MEMES[Math.floor(Math.random() * MEMES.length)];
-        setShowMeme({ visible: true, url: randomMeme });
+        const isEnd = currentWordIndex === words.length - 1;
+        const reachedThreshold = (currentWordIndex + 1) / words.length > 0.5;
+        const shouldShowMeme = reachedThreshold || isEnd;
+
+        if (shouldShowMeme) {
+            const randomMeme = MEMES[Math.floor(Math.random() * MEMES.length)];
+            setShowMeme({ visible: true, url: randomMeme });
+        }
+
         playSuccess();
 
         if (isManualKnow) {
             setStats(prev => ({ ...prev, correct: prev.correct + 1 }));
         }
 
+        // Use a shorter delay if no meme is shown for a snappier feel
+        const delay = shouldShowMeme ? 2500 : 600;
+
         setTimeout(() => {
-            setShowMeme({ visible: false, url: '' });
+            if (shouldShowMeme) {
+                setShowMeme({ visible: false, url: '' });
+            }
             if (currentWordIndex < words.length - 1) {
                 setCurrentWordIndex(prev => prev + 1);
                 setIsFlipped(false);
@@ -310,7 +322,7 @@ export function VocabularyPage({ user }: { user: any }) {
             } else {
                 setView('results');
             }
-        }, 2500);
+        }, delay);
     };
 
     const handleAnalyzePerformance = async () => {
@@ -762,11 +774,11 @@ export function VocabularyPage({ user }: { user: any }) {
                                         key={words[currentWordIndex].id}
                                         drag="x"
                                         dragConstraints={{ left: 0, right: 0 }}
-                                        style={{ x, rotate, opacity }}
+                                        style={{ x, rotate, opacity, perspective: '1000px' }}
                                         onDragEnd={(_, info) => {
                                             if (info.offset.x > 150) triggerSuccess(true);
                                             else if (info.offset.x < -150) {
-                                                triggerWrong(); // Play sound for wrong answer
+                                                triggerWrong();
                                                 if (currentWordIndex < words.length - 1) {
                                                     setCurrentWordIndex(c => c + 1);
                                                     setIsFlipped(false);
@@ -777,8 +789,7 @@ export function VocabularyPage({ user }: { user: any }) {
                                         }}
                                         animate={{ scale: 1 }}
                                         initial={{ scale: 0.8 }}
-                                        className="absolute inset-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-fuchsia-600 border border-white/20 rounded-[4rem] p-6 cursor-grab active:cursor-grabbing select-none shadow-[0_0_50px_rgba(124,58,237,0.3)]"
-                                        style={{ perspective: '1000px' }}
+                                        className="absolute inset-0 bg-[#0f172a] border border-white/5 rounded-[3rem] p-1 cursor-grab active:cursor-grabbing select-none shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden"
                                     >
                                         <div className="w-full h-full relative" style={{ transformStyle: 'preserve-3d' }}>
                                             <motion.div
@@ -789,41 +800,53 @@ export function VocabularyPage({ user }: { user: any }) {
                                             >
                                                 {/* Front */}
                                                 <div
-                                                    className="absolute inset-0 bg-white/5 rounded-[3rem] p-16 flex flex-col items-center justify-center select-none"
+                                                    className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent rounded-[2.8rem] p-16 flex flex-col items-center justify-center select-none border border-white/10"
                                                     style={{ backfaceVisibility: 'hidden' }}
                                                     onClick={() => setIsFlipped(true)}
                                                 >
-                                                    <span className="text-xs font-black text-indigo-400 uppercase tracking-[0.5em] mb-16 pointer-events-none">Focus Word</span>
-                                                    <h2 className={`font-black text-white tracking-tighter uppercase mb-12 pointer-events-none ${words[currentWordIndex].word.length > 12 ? 'text-6xl' : 'text-8xl'}`}>
+                                                    <div className="absolute top-8 left-8 flex gap-4">
+                                                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-indigo-400 hover:bg-white/10 transition-colors cursor-pointer">
+                                                            <RotateCcw size={18} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="absolute top-8 right-8 flex gap-4">
+                                                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-yellow-500 hover:bg-white/10 transition-colors cursor-pointer">
+                                                            <Trophy size={18} />
+                                                        </div>
+                                                    </div>
+
+                                                    <span className="text-xs font-black text-indigo-500/60 uppercase tracking-[0.5em] mb-12 pointer-events-none">Vocab Node</span>
+                                                    <h2 className={`font-black text-white tracking-tighter uppercase mb-12 pointer-events-none text-center ${words[currentWordIndex].word.length > 12 ? 'text-5xl' : 'text-7xl'}`}>
                                                         {words[currentWordIndex].word}
                                                     </h2>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setIsFlipped(true); }}
-                                                        className="px-10 py-4 bg-white/5 border border-white/10 rounded-full text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-indigo-600 transition-all mt-auto"
-                                                    >
-                                                        Tap to Reveal Definition
-                                                    </button>
+
+                                                    <div className="mt-auto px-8 py-3 bg-white/5 rounded-full border border-white/10 pointer-events-none">
+                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tap to reveal insight</span>
+                                                    </div>
                                                 </div>
 
                                                 {/* Back */}
                                                 <div
-                                                    className="absolute inset-0 bg-white/5 rounded-[3rem] p-16 flex flex-col items-center justify-center select-none"
+                                                    className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent rounded-[2.8rem] p-16 flex flex-col items-center justify-center select-none border border-emerald-500/20"
                                                     style={{
                                                         backfaceVisibility: 'hidden',
                                                         transform: 'rotateY(180deg)'
                                                     }}
                                                     onClick={() => setIsFlipped(false)}
                                                 >
-                                                    <span className="text-xs font-black text-emerald-400 uppercase tracking-[0.5em] mb-16 pointer-events-none">Scientific Insight</span>
-                                                    <p className="text-3xl text-slate-200 font-bold leading-relaxed mb-12 pointer-events-none text-center">{words[currentWordIndex].definition}</p>
-                                                    <p className="text-slate-500 italic text-lg mb-16 pointer-events-none text-center">"{words[currentWordIndex].example}"</p>
-                                                    <div className="flex gap-4 mt-auto">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); setIsFlipped(false); }}
-                                                            className="px-8 py-3 bg-white/5 border border-white/10 rounded-full text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all"
-                                                        >
-                                                            Back to Word
-                                                        </button>
+                                                    <div className="absolute top-8 left-8">
+                                                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                                                            <Book size={18} />
+                                                        </div>
+                                                    </div>
+
+                                                    <span className="text-xs font-black text-emerald-500/60 uppercase tracking-[0.5em] mb-12 pointer-events-none">Definition</span>
+                                                    <p className="text-2xl text-slate-200 font-bold leading-relaxed mb-8 pointer-events-none text-center">{words[currentWordIndex].definition}</p>
+                                                    <div className="w-12 h-1 bg-emerald-500/20 rounded-full mb-8" />
+                                                    <p className="text-slate-500 italic text-lg pointer-events-none text-center max-w-md">"{words[currentWordIndex].example}"</p>
+
+                                                    <div className="mt-auto px-8 py-3 bg-white/5 rounded-full border border-white/10 pointer-events-none">
+                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tap to return to node</span>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -851,10 +874,13 @@ export function VocabularyPage({ user }: { user: any }) {
                                         exit={{ opacity: 0, scale: 0.5 }}
                                         className="absolute inset-0 flex flex-col items-center justify-center z-[100]"
                                     >
-                                        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-[3rem]" />
-                                        <div className="relative z-[110] w-full h-full p-4 flex flex-col items-center justify-center">
-                                            <img src={showMeme.url} className="w-full h-full object-cover rounded-[3rem] shadow-[0_0_80px_rgba(16,185,129,0.4)] border-4 border-emerald-500" alt="Success Meme" />
-                                            <h2 className="text-6xl font-black text-white italic tracking-tighter animate-bounce uppercase absolute inset-0 flex items-center justify-center z-[120] drop-shadow-2xl text-center">BOSS MODE!</h2>
+                                        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-[3rem] border border-indigo-500/20" />
+                                        <div className="relative z-[110] w-full h-full p-8 flex flex-col items-center justify-center">
+                                            <div className="relative w-full h-full max-h-[400px]">
+                                                <img src={showMeme.url} className="w-full h-full object-cover rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.3)] border-2 border-indigo-500/50" alt="Success Meme" />
+                                                <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                                            </div>
+                                            <h2 className="text-5xl font-black text-white italic tracking-tighter animate-bounce uppercase absolute bottom-12 flex items-center justify-center z-[120] drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] text-center">ELITE CALIBER!</h2>
                                         </div>
                                     </motion.div>
                                 )}
@@ -875,16 +901,18 @@ export function VocabularyPage({ user }: { user: any }) {
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: i * 0.1 }}
                                         onClick={() => handleTestAnswer(option)}
-                                        className={`p-6 rounded-2xl text-left font-black transition-all flex items-center justify-between group ${selectedOption === option
-                                            ? (isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white')
-                                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
+                                        className={`p-6 rounded-2xl text-left font-black transition-all flex items-center justify-between group relative overflow-hidden ${selectedOption === option
+                                            ? (isCorrect ? 'bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.3)]' : 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.3)]')
+                                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white hover:border-indigo-500/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]'
                                             }`}
                                     >
-                                        <div className="flex items-center gap-6">
-                                            <span className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center text-xs">{i + 1}</span>
+                                        <div className="flex items-center gap-6 relative z-10">
+                                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono transition-colors ${selectedOption === option ? 'bg-white/20' : 'bg-white/5 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'}`}>
+                                                {String.fromCharCode(65 + i)}
+                                            </span>
                                             <span className="text-xl uppercase tracking-tight">{option}</span>
                                         </div>
-                                        <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                                        <ChevronRight className={`transition-all relative z-10 ${selectedOption === option ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'}`} />
                                     </motion.button>
                                 ))}
                             </div>
@@ -994,13 +1022,15 @@ export function VocabularyPage({ user }: { user: any }) {
                             <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-12">Knowledge Nodes Synchronized</p>
 
                             <div className="grid grid-cols-2 gap-6 mb-12">
-                                <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
-                                    <div className="text-4xl font-black text-white mb-2">{Math.round((stats.correct / (stats.total || 1)) * 100)}%</div>
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Accuracy</div>
+                                <div className="p-8 rounded-3xl bg-slate-900/50 border border-white/5 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-emerald-500/10 transition-all" />
+                                    <div className="text-4xl font-black text-emerald-400 mb-2">{Math.round((stats.correct / (stats.total || 1)) * 100)}%</div>
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Diagnostic Match</div>
                                 </div>
-                                <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
+                                <div className="p-8 rounded-3xl bg-slate-900/50 border border-white/5 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-indigo-500/10 transition-all" />
                                     <div className="text-4xl font-black text-indigo-400 mb-2">{stats.correct}</div>
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Words Mastered</div>
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Synapses Built</div>
                                 </div>
                             </div>
 
