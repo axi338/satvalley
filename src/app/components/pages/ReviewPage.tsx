@@ -487,16 +487,18 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
     ? calculateSectionScores(latestResult.responses || [])
     : { rw: 200, math: 200, total: 400, rwCorrect: 0, rwTotal: 0, mathCorrect: 0, mathTotal: 0 };
 
-  // Enrich results with explanations using backend proxy (bypasses CORS)
+  // Enrich results with explanations & answers using backend proxy (bypasses CORS)
   useEffect(() => {
     if (latestResult && latestResult.responses) {
-      const missingExplaRefs = latestResult.responses.filter((r: any) => !r.explanation && r.id);
-      if (missingExplaRefs.length > 0) {
-        const ids = missingExplaRefs.map((r: any) => r.id).join(',');
+      const missingRefs = latestResult.responses.filter((r: any) =>
+        (!r.explanation || r.explanation.length < 50 || !r.answer || r.answer === 'TBD') && r.id
+      );
+      if (missingRefs.length > 0) {
+        const ids = missingRefs.map((r: any) => r.id).join(',');
         fetch(`${apiBase}/api/explanations?ids=${ids}`)
           .then(res => res.json())
           .then(data => {
-            if (data.explanations) {
+            if (data.enrichment) {
               setResults(prevResults => {
                 const updatedResults = [...prevResults];
                 const targetId = latestResult.id;
@@ -504,10 +506,15 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
 
                 if (idx !== -1) {
                   const resultToUpdate = { ...updatedResults[idx] };
-                  resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
-                    ...r,
-                    explanation: r.explanation || data.explanations[r.id]
-                  }));
+                  resultToUpdate.responses = resultToUpdate.responses.map((r: any) => {
+                    const extra = data.enrichment[r.id];
+                    if (!extra) return r;
+                    return {
+                      ...r,
+                      explanation: (!r.explanation || r.explanation.length < 50) ? extra.explanation : r.explanation,
+                      answer: (!r.answer || r.answer === 'TBD') ? extra.answer : r.answer
+                    };
+                  });
                   updatedResults[idx] = resultToUpdate;
                 }
                 return updatedResults;
@@ -635,23 +642,30 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
             </div>
             <button
               onClick={() => {
-                const missingExplaRefs = latestResult.responses.filter((r: any) => !r.explanation && r.id);
-                if (missingExplaRefs.length > 0) {
-                  const ids = missingExplaRefs.map((r: any) => r.id).join(',');
+                const missingRefs = latestResult.responses.filter((r: any) =>
+                  (!r.explanation || r.explanation.length < 50 || !r.answer || r.answer === 'TBD') && r.id
+                );
+                if (missingRefs.length > 0) {
+                  const ids = missingRefs.map((r: any) => r.id).join(',');
                   fetch(`${apiBase}/api/explanations?ids=${ids}`)
                     .then(res => res.json())
                     .then(data => {
-                      if (data.explanations) {
+                      if (data.enrichment) {
                         setResults(prevResults => {
                           const updatedResults = [...prevResults];
                           const targetId = latestResult.id;
                           const idx = updatedResults.findIndex(res => res.id === targetId);
                           if (idx !== -1) {
                             const resultToUpdate = { ...updatedResults[idx] };
-                            resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
-                              ...r,
-                              explanation: r.explanation || data.explanations[r.id]
-                            }));
+                            resultToUpdate.responses = resultToUpdate.responses.map((r: any) => {
+                              const extra = data.enrichment[r.id];
+                              if (!extra) return r;
+                              return {
+                                ...r,
+                                explanation: (!r.explanation || r.explanation.length < 50) ? extra.explanation : r.explanation,
+                                answer: (!r.answer || r.answer === 'TBD') ? extra.answer : r.answer
+                              };
+                            });
                             updatedResults[idx] = resultToUpdate;
                           }
                           return updatedResults;

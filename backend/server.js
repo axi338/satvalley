@@ -372,24 +372,27 @@ app.get("/api/questions", async (req, res) => {
 app.get("/api/explanations", async (req, res) => {
   try {
     const { ids } = req.query;
-    if (!ids) return res.json({ explanations: {} });
+    if (!ids) return res.json({ enrichment: {} });
 
     const idList = ids.split(",");
     const { data, error } = await supabase
       .from("questions")
-      .select("id, explanation")
+      .select("id, explanation, answer")
       .in("id", idList);
 
     if (error) throw error;
 
-    const explanationMap = {};
+    const enrichmentMap = {};
     (data || []).forEach(q => {
-      explanationMap[q.id] = q.explanation;
+      enrichmentMap[q.id] = {
+        explanation: q.explanation,
+        answer: q.answer
+      };
     });
 
-    res.json({ explanations: explanationMap });
+    res.json({ enrichment: enrichmentMap });
   } catch (err) {
-    res.status(500).json({ error: "failed_to_fetch_explanations", message: err.message });
+    res.status(500).json({ error: "failed_to_fetch_enrichment", message: err.message });
   }
 });
 
