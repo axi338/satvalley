@@ -236,6 +236,18 @@ const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, o
             <p className="text-[20px] font-bold text-slate-200 leading-relaxed">
               <MathText text={r.text} className="block" />
             </p>
+
+            {showAnswer && displayExplanation && (
+              <div className="mt-8 p-8 bg-indigo-500/10 rounded-3xl border border-indigo-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-indigo-400 fill-current" />
+                  <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
+                </div>
+                <div className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  <MathText text={displayExplanation} className="block" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -288,17 +300,6 @@ const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, o
               })
             )}
 
-            {showAnswer && displayExplanation && (
-              <div className="mt-12 p-8 bg-indigo-500/10 rounded-3xl border border-indigo-500/20">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-indigo-400 fill-current" />
-                  <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
-                </div>
-                <p className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  <MathText text={displayExplanation} className="block" />
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </main>
@@ -727,6 +728,18 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                           <p className="text-xl text-white font-bold tracking-tight leading-relaxed">
                             <MathText text={r.text} className="block" />
                           </p>
+
+                          {r.explanation && (
+                            <div className="mt-8 border border-indigo-500/20 bg-indigo-500/5 p-8 rounded-[2rem]">
+                              <h4 className="flex items-center gap-3 text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-4">
+                                <Zap className="w-4 h-4 fill-current" />
+                                Neural Synthesis
+                              </h4>
+                              <div className="text-indigo-100/70 text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                                <MathText text={r.explanation} className="block" />
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-6">
@@ -786,15 +799,6 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                         </div>
                       </div>
 
-                      <div className="mt-8 border border-indigo-500/20 bg-indigo-500/5 p-10 rounded-[2rem]">
-                        <h4 className="flex items-center gap-4 text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-6">
-                          <Zap className="w-4 h-4 fill-current" />
-                          Neural Synthesis
-                        </h4>
-                        <p className="text-indigo-100/70 text-sm font-medium leading-relaxed whitespace-pre-wrap">
-                          <MathText text={r.explanation || "No synthesis available for this iteration."} className="block" />
-                        </p>
-                      </div>
                     </div>
                   ))}
                 </div>
