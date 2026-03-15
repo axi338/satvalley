@@ -369,6 +369,30 @@ app.get("/api/questions", async (req, res) => {
   }
 });
 
+app.get("/api/explanations", async (req, res) => {
+  try {
+    const { ids } = req.query;
+    if (!ids) return res.json({ explanations: {} });
+
+    const idList = ids.split(",");
+    const { data, error } = await supabase
+      .from("questions")
+      .select("id, explanation")
+      .in("id", idList);
+
+    if (error) throw error;
+
+    const explanationMap = {};
+    (data || []).forEach(q => {
+      explanationMap[q.id] = q.explanation;
+    });
+
+    res.json({ explanations: explanationMap });
+  } catch (err) {
+    res.status(500).json({ error: "failed_to_fetch_explanations", message: err.message });
+  }
+});
+
 app.post("/api/upload", upload.single('image'), async (req, res) => {
   try {
     await verifyAdmin(req);

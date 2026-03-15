@@ -179,25 +179,7 @@ const ActionCard = ({ title, score, total, label, colorClass, icon: Icon }: any)
 const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, onNext, showAnswer, setShowAnswer, latestResult, apiBase }: any) => {
   if (currentIndex === null || !responses[currentIndex]) return null;
   const r = responses[currentIndex];
-  const [fetchedExplanation, setFetchedExplanation] = useState<string | null>(null);
-
-  useEffect(() => {
-    setFetchedExplanation(null);
-    if (!r.explanation && r.id) {
-      supabase
-        .from('questions')
-        .select('explanation')
-        .eq('id', r.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.explanation) {
-            setFetchedExplanation(data.explanation);
-          }
-        });
-    }
-  }, [r.id, r.explanation]);
-
-  const displayExplanation = r.explanation || fetchedExplanation;
+  const displayExplanation = r.explanation;
 
   return (
     <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col animate-in fade-in duration-200">
@@ -504,22 +486,16 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
     ? calculateSectionScores(latestResult.responses || [])
     : { rw: 200, math: 200, total: 400, rwCorrect: 0, rwTotal: 0, mathCorrect: 0, mathTotal: 0 };
 
-  // Enrich results with explanations if missing from stored responses
+  // Enrich results with explanations using backend proxy (bypasses CORS)
   useEffect(() => {
     if (latestResult && latestResult.responses) {
       const missingExplaRefs = latestResult.responses.filter((r: any) => !r.explanation && r.id);
       if (missingExplaRefs.length > 0) {
-        supabase
-          .from('questions')
-          .select('id, explanation')
-          .in('id', missingExplaRefs.map((r: any) => r.id))
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("Enrichment fetch error:", error);
-              return;
-            }
-            if (data && data.length > 0) {
-              const explanationMap = new Map(data.map(q => [q.id, q.explanation]));
+        const ids = missingExplaRefs.map((r: any) => r.id).join(',');
+        fetch(`${apiBase}/api/explanations?ids=${ids}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.explanations) {
               setResults(prevResults => {
                 const updatedResults = [...prevResults];
                 const targetId = latestResult.id;
@@ -529,17 +505,18 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                   const resultToUpdate = { ...updatedResults[idx] };
                   resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
                     ...r,
-                    explanation: r.explanation || explanationMap.get(r.id)
+                    explanation: r.explanation || data.explanations[r.id]
                   }));
                   updatedResults[idx] = resultToUpdate;
                 }
                 return updatedResults;
               });
             }
-          });
+          })
+          .catch(err => console.error("Enrichment fetch error:", err));
       }
     }
-  }, [latestResult?.id]); // Only run when the selected result changes
+  }, [latestResult?.id, apiBase]);
 
   // Auto-refresh for background analysis
   useEffect(() => {
@@ -659,13 +636,11 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
               onClick={() => {
                 const missingExplaRefs = latestResult.responses.filter((r: any) => !r.explanation && r.id);
                 if (missingExplaRefs.length > 0) {
-                  supabase
-                    .from('questions')
-                    .select('id, explanation')
-                    .in('id', missingExplaRefs.map((r: any) => r.id))
-                    .then(({ data }) => {
-                      if (data && data.length > 0) {
-                        const explanationMap = new Map(data.map(q => [q.id, q.explanation]));
+                  const ids = missingExplaRefs.map((r: any) => r.id).join(',');
+                  fetch(`${apiBase}/api/explanations?ids=${ids}`)
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.explanations) {
                         setResults(prevResults => {
                           const updatedResults = [...prevResults];
                           const targetId = latestResult.id;
@@ -674,14 +649,15 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                             const resultToUpdate = { ...updatedResults[idx] };
                             resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
                               ...r,
-                              explanation: r.explanation || explanationMap.get(r.id)
+                              explanation: r.explanation || data.explanations[r.id]
                             }));
                             updatedResults[idx] = resultToUpdate;
                           }
                           return updatedResults;
                         });
                       }
-                    });
+                    })
+                    .catch(err => console.error("Manual sync fetch error:", err));
                 }
               }}
               className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 flex items-center gap-2 group"
