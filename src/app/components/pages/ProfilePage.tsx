@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
-import { User, Mail, Phone, Edit2, Copy, Send, CheckCircle2, MoreVertical, Gift, Users, Loader2, X, Save } from 'lucide-react';
+import { User, Mail, Phone, Edit2, Copy, Send, CheckCircle2, Gift, Users, Loader2, X, Save, Camera } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
 interface ProfilePageProps {
     user: SupabaseUser;
@@ -12,11 +13,17 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
     const [editName, setEditName] = useState(profile?.full_name || user?.user_metadata?.full_name || '');
     const [editPhone, setEditPhone] = useState(profile?.phone || '');
-    const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url || profile?.avatar_url || '');
-    const [bannerUrl, setBannerUrl] = useState(user?.user_metadata?.banner_url || "https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2676&auto=format&fit=crop");
+    const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || user?.user_metadata?.avatar_url || '');
+    const [bannerUrl, setBannerUrl] = useState("https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2676&auto=format&fit=crop");
+
+    const getToken = async (): Promise<string | null> => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.access_token ?? null;
+    };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -40,43 +47,30 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Simple client-side resize/compress to base64
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400;
-                const MAX_HEIGHT = 400;
-                let width = img.width;
-                let height = img.height;
+        try {
+            setIsUploadingAvatar(true);
+            const token = await getToken();
+            if (!token) { toast.error('You must be logged in'); return; }
 
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                setAvatarUrl(dataUrl);
+            const formData = new FormData();
+            formData.append('avatar', file);
 
-                // If not currently editing, auto-save the avatar
-                if (!isEditing) {
-                    saveProfile(dataUrl, undefined);
-                }
-            };
-            img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
+            const res = await fetch('/api/profile/upload-avatar', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!res.ok) throw new Error('Upload failed');
+            const data = await res.json();
+            setAvatarUrl(data.url);
+            toast.success('Profile picture updated!');
+        } catch (err: any) {
+            console.error('Avatar upload error:', err);
+            toast.error('Failed to upload picture');
+        } finally {
+            setIsUploadingAvatar(false);
+        }
     };
 
     const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,35 +111,31 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
         reader.readAsDataURL(file);
     };
 
-    const saveProfile = async (newAvatarStr?: string, newBannerStr?: string) => {
+    const saveProfile = async () => {
         setIsSaving(true);
         try {
-            // Save avatar, banner, and name to Auth Metadata (no SQL needed!)
-            const { error: authError } = await supabase.auth.updateUser({
-                data: {
-                    avatar_url: newAvatarStr || avatarUrl,
-                    banner_url: newBannerStr || bannerUrl,
-                    full_name: editName
-                }
+            const token = await getToken();
+            if (!token) { toast.error('You must be logged in'); return; }
+
+            const res = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    full_name: editName,
+                    phone: editPhone,
+                    avatar_url: avatarUrl
+                })
             });
-            if (authError) throw authError;
 
-            // Save other details to Profiles table
-            const updates = {
-                full_name: editName,
-                phone: editPhone,
-                updated_at: new Date().toISOString()
-            };
-
-            const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
-            if (error) {
-                console.error("Supabase Error Details:", error);
-                throw error;
-            }
+            if (!res.ok) throw new Error('Failed to save profile');
+            toast.success('Profile saved!');
             setIsEditing(false);
         } catch (err: any) {
             console.error('Error saving profile:', err);
-            alert('Failed to save profile updates: ' + (err.message || 'Check console'));
+            toast.error('Failed to save profile: ' + (err.message || 'Check console'));
         } finally {
             setIsSaving(false);
         }
@@ -284,17 +274,26 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
                                     onChange={handleFileChange}
                                 />
                                 <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#4f46e5] flex items-center justify-center text-white font-black text-4xl sm:text-5xl shadow-[0_0_30px_rgba(79,70,229,0.3)] border-4 border-[#0f172a] cursor-pointer relative overflow-hidden group-hover:bg-[#6366f1] transition-colors"
+                                    onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
+                                    className={`w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#4f46e5] flex items-center justify-center text-white font-black text-4xl sm:text-5xl shadow-[0_0_30px_rgba(79,70,229,0.3)] border-4 border-[#0f172a] cursor-pointer relative overflow-hidden group transition-all ${isUploadingAvatar ? 'opacity-70 grayscale-[0.5]' : 'group-hover:bg-[#6366f1]'}`}
                                 >
                                     {avatarUrl ? (
-                                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                        <img src={avatarUrl} alt="Avatar" className={`w-full h-full object-cover transition-opacity ${isUploadingAvatar ? 'opacity-30' : 'opacity-100'}`} />
                                     ) : (
-                                        fullName[0]?.toUpperCase() || 'S'
+                                        (editName || profile?.full_name || user?.user_metadata?.full_name || user?.email || 'S')[0]?.toUpperCase()
                                     )}
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Edit2 className="text-white w-6 h-6" />
+
+                                    {/* Edit Hover Overlay */}
+                                    <div className={`absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${isUploadingAvatar ? 'hidden' : ''}`}>
+                                        <Camera className="text-white w-6 h-6" />
                                     </div>
+
+                                    {/* Uploading Loader overlay */}
+                                    {isUploadingAvatar && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                            <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

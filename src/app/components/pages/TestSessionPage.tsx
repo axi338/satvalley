@@ -20,7 +20,6 @@ import {
     Grid3X3,
     Book,
     HelpCircle as HelpIcon,
-    Settings,
     Accessibility,
     LogOut,
     Eye as EyeIcon,
@@ -948,7 +947,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     }, [activeHighlightColor]);
 
     const { isFullscreen, requestFullscreen } = useAntiCheat({
-        enabled: isOlympiadMode && screen === 'test',
+        enabled: screen === 'test',
         onViolation: handleViolation
     });
 
@@ -1206,6 +1205,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userEmail: user?.email,
+                    userId: user?.id,
                     testId,
                     score: finalScore,
                     responses: finalData,
@@ -1236,6 +1236,10 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
 
             const data = await res.json();
             const resultId = data.result?.id;
+
+            if (document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen();
+            }
 
             onNavigate('review', { resultId });
         } catch (e: any) {
@@ -1301,6 +1305,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     onStart={() => {
                         setHasEnteredFullscreen(true);
                         setScreen('test');
+                        requestFullscreen();
                     }}
                 />
             );
@@ -1311,6 +1316,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     onNext={() => {
                         setHasEnteredFullscreen(true);
                         setScreen('test');
+                        requestFullscreen();
                     }}
                 />
             );
@@ -1702,13 +1708,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                         <Accessibility className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
                         <span>Line Reader</span>
                     </button>
-                    <button
-                        onClick={() => { setShowMoreMenu(false); alert("Settings functionality would open here."); }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
-                    >
-                        <Settings className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
-                        <span>Settings</span>
-                    </button>
+
                     <button
                         onClick={() => {
                             setTheme(theme === 'light' ? 'dark' : 'light');

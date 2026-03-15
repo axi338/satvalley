@@ -27,6 +27,7 @@ import { ImportDashboard } from './components/pages/ImportDashboard';
 import { NewImport } from './components/pages/NewImport';
 import { ImportReview } from './components/pages/ImportReview';
 import { OnboardingPage } from './components/pages/OnboardingPage';
+import { Toaster } from './components/ui/sonner';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -307,6 +308,7 @@ export default function App() {
         <main className="relative z-10">{renderPage()}</main>
       )}
 
+      <Toaster />
       {!isAppMode && !isTestSession && <Footer onNavigate={handleNavigate} />}
     </div>
   );

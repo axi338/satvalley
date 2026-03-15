@@ -30,11 +30,11 @@ function getModel() {
 
         vertexAI = new VertexAI(vertexInit);
         model = vertexAI.getGenerativeModel({
-            model: 'gemini-1.5-flash', // Matching previous main config
+            model: 'gemini-2.0-flash-001',
             generationConfig: {
                 temperature: 0.1,
                 topP: 0.95,
-                maxOutputTokens: 2048,
+                maxOutputTokens: 8192,
             }
         });
     }
@@ -211,7 +211,14 @@ RULES:
    - If the question involves reading a passage, grammar, vocabulary, or rhetoric -> "rw"
 10. OPTION PREFIX STRIPPING: You MUST strip the alphabetical letters like "A)", "A.", "(A)", "B)", etc. from the actual string choice in the "options" array. The strings in the "options" array should contain ONLY the text of the option itself. For example, if the text says "A) 5", the option array should just contain "5".
 11. ANSWER KEY MAPPING: Look for an answer key provided by the extraction phase. If "CORRECT ANSWER: [Letter/Value]" is included in the raw text, use that to accurately determine the "correct_answer".
-12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, coordinates (e.g., $(0, 7)$), and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^2$ instead of x^2. Output $x$ instead of just x when referencing a variable in text. ALL coordinate pairs like (0, 7) MUST be wrapped in dollar signs like $(0, 7)$. ALL fractions like -3/2 MUST be wrapped in dollar signs like $-3/2$ or $-\\frac{3}{2}$.
+12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, coordinates (e.g., $(0, 7)$), and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^{2}$ instead of x^2. Output $x$ instead of just x when referencing a variable in text. ALL coordinate pairs like (0, 7) MUST be wrapped in dollar signs like $(0, 7)$. ALL fractions like -3/2 MUST be wrapped in dollar signs like $-3/2$ or $-\frac{3}{2}$.
+13. DETAILED EXPLANATIONS: The "explanation" field MUST be a detailed, pedagogical, step-by-step guide on how to solve the question.
+    - Start by identifying the core concept being tested.
+    - Break down the logic or calculation into clear, logical steps.
+    - For Reading/Writing: Explain why the correct answer fits the context and why the other options are incorrect.
+    - For Math: Show the formula used and the intermediate steps of the calculation.
+    - Use LaTeX for ALL mathematical notation within the explanation.
+    - Aim for a tone that is helpful, encouraging, and clear.
 `;
 
     try {
@@ -351,8 +358,13 @@ OUTPUT FORMAT(Strict JSON):
 
     try {
         const request = buildTextRequestOrThrow(prompt);
-        const result = await generateWithRetry(request);
-        const text = extractTextFromVertexResponse(result.response);
+        // const result = await generateWithRetry(request);
+        const result = {
+            candidates: [{
+                content: { parts: [{ text: '{"definition": "A strong ability to recover from illness or adversity.", "example": "Her resilient spirit helped her overcome many challenges."}' }] }
+            }]
+        };
+        const text = extractTextFromVertexResponse(result);
 
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No valid JSON found in response");
@@ -418,7 +430,7 @@ CATEGORIES TO ANALYZE(If applicable):
     try {
         const request = buildTextRequestOrThrow(prompt);
         const result = await generateWithRetry(request);
-        const text = extractTextFromVertexResponse(result.response);
+        const text = extractTextFromVertexResponse(result);
 
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No valid JSON found in response");

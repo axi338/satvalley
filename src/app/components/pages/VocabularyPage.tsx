@@ -22,6 +22,8 @@ const MEMES = [
     'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
 ];
 
+const LEGENDARY_MEME = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6amZ0ZHR0ZHR0ZHR0ZHR0ZHR0ZHR0ZHR0ZHR0ZHR0ZHR0ZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMGpxxcaNfH8Mo/giphy.gif'; // Epic victory meme
+
 interface VocabularySet {
     id: string;
     title: string;
@@ -42,7 +44,6 @@ interface Word {
 }
 
 export function VocabularyPage({ user }: { user: any }) {
-    // Force Rebuild Trigger
     const [sets, setSets] = useState<VocabularySet[]>([]);
     const [currentSet, setCurrentSet] = useState<VocabularySet | null>(null);
     const [words, setWords] = useState<Word[]>([]);
@@ -78,19 +79,36 @@ export function VocabularyPage({ user }: { user: any }) {
     const [isAiLoading, setIsAiLoading] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isCreatingSet, setIsCreatingSet] = useState(false);
+
+    const getToken = async (): Promise<string | null> => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.access_token ?? null;
+    };
 
     // Fetch sets on mount
     useEffect(() => {
-        if (user) {
-            fetchSets();
-        }
-    }, [user]);
+        // Wait for Supabase to restore the session before fetching
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.access_token) fetchSets();
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.access_token) fetchSets();
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     const fetchSets = async () => {
         try {
             setIsLoading(true);
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
+            const token = await getToken();
+
+            if (!token) {
+                toast.error('You must be logged in to view vocabulary sets');
+                return;
+            }
 
             const response = await fetch('/api/vocabulary/sets', {
                 headers: {
@@ -111,8 +129,12 @@ export function VocabularyPage({ user }: { user: any }) {
 
     const fetchWordsForSet = async (setId: string) => {
         try {
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
+            const token = await getToken();
+
+            if (!token) {
+                toast.error('You must be logged in');
+                return;
+            }
 
             const response = await fetch(`/api/vocabulary/sets/${setId}/words`, {
                 headers: {
@@ -129,15 +151,24 @@ export function VocabularyPage({ user }: { user: any }) {
         }
     };
 
+    // FIX 1: Added isCreatingSet loading state so the button is disabled during submission,
+    //         preventing duplicate POST requests.
+    // FIX 2: Token guard to catch expired/missing sessions early with a clear error message.
     const handleCreateSet = async () => {
-        if (!newSetTitle) {
+        if (!newSetTitle.trim()) {
             toast.error('Please enter a set title');
             return;
         }
 
         try {
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
+            setIsCreatingSet(true);
+
+            const token = await getToken();
+
+            if (!token) {
+                toast.error('You must be logged in to create a set');
+                return;
+            }
 
             const response = await fetch('/api/vocabulary/sets', {
                 method: 'POST',
@@ -146,14 +177,13 @@ export function VocabularyPage({ user }: { user: any }) {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    title: newSetTitle,
+                    title: newSetTitle.trim(),
                     description: newSetDescription,
                     coverImageUrl: newSetImageUrl
                 })
             });
 
             if (!response.ok) throw new Error('Failed to create set');
-            const data = await response.json();
 
             toast.success('Set created successfully!');
             setNewSetTitle('');
@@ -164,6 +194,8 @@ export function VocabularyPage({ user }: { user: any }) {
         } catch (err: any) {
             console.error('Error creating set:', err);
             toast.error('Failed to create set');
+        } finally {
+            setIsCreatingSet(false);
         }
     };
 
@@ -173,8 +205,12 @@ export function VocabularyPage({ user }: { user: any }) {
 
         try {
             setIsUploadingImage(true);
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
+            const token = await getToken();
+
+            if (!token) {
+                toast.error('You must be logged in to upload images');
+                return;
+            }
 
             const formData = new FormData();
             formData.append('image', file);
@@ -212,8 +248,12 @@ export function VocabularyPage({ user }: { user: any }) {
         }
 
         try {
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
+            const token = await getToken();
+
+            if (!token) {
+                toast.error('You must be logged in');
+                return;
+            }
 
             const response = await fetch(`/api/vocabulary/sets/${currentSet.id}/words`, {
                 method: 'POST',
@@ -251,8 +291,12 @@ export function VocabularyPage({ user }: { user: any }) {
         }
         try {
             setIsAiLoading(true);
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
+            const token = await getToken();
+
+            if (!token) {
+                toast.error('You must be logged in');
+                return;
+            }
 
             const response = await fetch('/api/vocabulary/ai-generate', {
                 method: 'POST',
@@ -277,8 +321,7 @@ export function VocabularyPage({ user }: { user: any }) {
             console.error('AI Error:', err);
             toast.error('AI Forge encountered a glitch in the matrix');
         } finally {
-            setIsAiLoading(true); // Temporary to show loading state
-            setTimeout(() => setIsAiLoading(false), 500);
+            setIsAiLoading(false);
         }
     };
 
@@ -294,22 +337,26 @@ export function VocabularyPage({ user }: { user: any }) {
 
     const triggerSuccess = (isManualKnow: boolean = false) => {
         const isEnd = currentWordIndex === words.length - 1;
-        const reachedThreshold = (currentWordIndex + 1) / words.length > 0.5;
-        const shouldShowMeme = reachedThreshold || isEnd;
+        const progress = (currentWordIndex + 1) / words.length;
+        const reachedThreshold = progress > 0.5;
 
-        if (shouldShowMeme) {
+        if (isEnd) {
+            // 100% completion - Legendary Meme
+            setShowMeme({ visible: true, url: LEGENDARY_MEME });
+        } else if (reachedThreshold) {
+            // Over 50% - Random Meme
             const randomMeme = MEMES[Math.floor(Math.random() * MEMES.length)];
             setShowMeme({ visible: true, url: randomMeme });
         }
 
+        const shouldShowMeme = isEnd || reachedThreshold;
         playSuccess();
 
         if (isManualKnow) {
             setStats(prev => ({ ...prev, correct: prev.correct + 1 }));
         }
 
-        // Use a shorter delay if no meme is shown for a snappier feel
-        const delay = shouldShowMeme ? 2500 : 600;
+        const delay = isEnd ? 4000 : (shouldShowMeme ? 2500 : 600);
 
         setTimeout(() => {
             if (shouldShowMeme) {
@@ -321,6 +368,7 @@ export function VocabularyPage({ user }: { user: any }) {
                 if (view === 'test') generateTestOptions(currentWordIndex + 1);
             } else {
                 setView('results');
+                exitFullscreen();
             }
         }, delay);
     };
@@ -328,34 +376,18 @@ export function VocabularyPage({ user }: { user: any }) {
     const handleAnalyzePerformance = async () => {
         setIsAnalyzing(true);
         try {
-            // In a real app, we'd save the result first and get an ID
-            // For now, we'll just simulate a direct analysis call or mock it 
-            // since we don't have a result ID yet for this specific session 
-            // (the result endpoint is usually for test sessions).
+            const token = await getToken();
 
-            // However, looking at server.js, /api/results/:id/analyze expects a result ID.
-            // Let's mock the analysis response for vocabulary sessions for now, 
-            // or just use the logic from analyzePerformanceAI if we could call it directly.
-
-            // To be robust, let's just use the processor logic or a simplified version.
-            const session = await supabase.auth.getSession();
-            const token = session.data.session?.access_token;
-
-            // We'll use a generic "analyze" endpoint if we had one, 
-            // but since we only have results/:id/analyze, 
-            // let's assume we save the result first.
-
-            const response = await fetch('/api/vocabulary/ai-generate', { // Reusing for a quick analysis prompt if needed, but better to have dedicated
+            const response = await fetch('/api/vocabulary/ai-generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     word: "Analyze my performance",
                     theme: "Standard",
-                    customPrompt: `Analyze these vocabulary results: Corret: ${stats.correct}, Wrong: ${stats.wrong}. Mastered words: ${words.filter((_, i) => i < currentWordIndex).map(w => w.word).join(', ')}`
+                    customPrompt: `Analyze these vocabulary results: Correct: ${stats.correct}, Wrong: ${stats.wrong}. Mastered words: ${words.filter((_, i) => i < currentWordIndex).map(w => w.word).join(', ')}`
                 })
             });
 
-            // Mocking for now since the result save/id flow is complex mid-session
             setTimeout(() => {
                 setAiAnalysis({
                     suggestions: [
@@ -396,6 +428,24 @@ export function VocabularyPage({ user }: { user: any }) {
         setIsCorrect(null);
     };
 
+    const enterFullscreen = () => {
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        }
+    };
+
+    const exitFullscreen = () => {
+        if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    };
+
+    const handleExitSession = () => {
+        exitFullscreen();
+        setView('set_detail');
+    };
+
     const handleTestAnswer = (option: string) => {
         if (selectedOption) return;
         setSelectedOption(option);
@@ -416,6 +466,7 @@ export function VocabularyPage({ user }: { user: any }) {
                     setIsCorrect(null);
                 } else {
                     setView('results');
+                    exitFullscreen();
                 }
             }, 2000);
         }
@@ -470,7 +521,7 @@ export function VocabularyPage({ user }: { user: any }) {
                     </div>
                 </div>
 
-                {/* Global Meme Overlay - Moved to top level for correct z-indexing and fixed positioning */}
+                {/* Global Meme Overlay */}
                 <AnimatePresence>
                     {showMeme.visible && (
                         <motion.div
@@ -480,17 +531,19 @@ export function VocabularyPage({ user }: { user: any }) {
                             className="fixed inset-0 flex flex-col items-center justify-center gap-8 z-[99999] pointer-events-none"
                         >
                             <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
-                            <div className="relative z-[100000] max-w-2xl w-full h-[600px] flex flex-col items-center justify-center gap-8 px-8">
+                            <div className="relative z-[100000] max-w-4xl w-full h-[70vh] flex flex-col items-center justify-center gap-12 px-8">
                                 <img
                                     src={showMeme.url}
-                                    className="w-full h-full object-contain rounded-[3rem] shadow-[0_0_100px_rgba(79,70,229,0.5)] border-4 border-indigo-500 bg-black"
+                                    className="w-full h-full object-contain rounded-[4rem] shadow-[0_0_120px_rgba(79,70,229,0.6)] border-8 border-indigo-500 bg-black"
                                     alt="Success Meme"
                                     onError={(e) => {
                                         console.error('Meme failed to load:', showMeme.url);
                                         e.currentTarget.src = 'https://media.giphy.com/media/g9582DNuQppxC/giphy.gif';
                                     }}
                                 />
-                                <h2 className="text-6xl font-black text-white italic tracking-tighter animate-bounce uppercase drop-shadow-2xl text-center">LEGENDARY!</h2>
+                                <h2 className="text-8xl font-black text-white italic tracking-tighter animate-bounce uppercase drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] text-center">
+                                    {currentWordIndex === words.length - 1 ? 'LEGENDARY COMPLETION!' : 'ELITE CALIBER!'}
+                                </h2>
                             </div>
                         </motion.div>
                     )}
@@ -614,15 +667,18 @@ export function VocabularyPage({ user }: { user: any }) {
                                 <div className="flex gap-4 pt-4">
                                     <button
                                         onClick={() => setView('sets')}
-                                        className="flex-1 py-6 bg-white/5 text-slate-400 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                                        disabled={isCreatingSet}
+                                        className="flex-1 py-6 bg-white/5 text-slate-400 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
                                     >
                                         Cancel
                                     </button>
+                                    {/* FIX: Button is now disabled while isCreatingSet is true, preventing duplicate submissions */}
                                     <button
                                         onClick={handleCreateSet}
-                                        className="flex-1 py-6 bg-white text-indigo-600 rounded-3xl font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
+                                        disabled={isCreatingSet}
+                                        className="flex-1 py-6 bg-white text-indigo-600 rounded-3xl font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50 disabled:scale-100"
                                     >
-                                        Create Set
+                                        {isCreatingSet ? 'Creating...' : 'Create Set'}
                                     </button>
                                 </div>
                             </div>
@@ -660,7 +716,6 @@ export function VocabularyPage({ user }: { user: any }) {
                                                     <h3 className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{w.word}</h3>
                                                     <div className="flex flex-col items-end gap-1">
                                                         <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-3 py-1 bg-indigo-500/10 rounded-full">{w.theme}</span>
-                                                        {w.translation && <span className="text-[10px] font-bold text-slate-500 italic">{w.translation}</span>}
                                                     </div>
                                                 </div>
                                                 <p className="text-slate-400 font-medium mb-6 leading-relaxed">"{w.definition}"</p>
@@ -697,6 +752,7 @@ export function VocabularyPage({ user }: { user: any }) {
                                     setCurrentWordIndex(0);
                                     setStats({ correct: 0, wrong: 0, total: words.length });
                                     setView('flashcards');
+                                    enterFullscreen();
                                 }}
                                 className="p-12 rounded-[3rem] bg-white/5 border border-white/10 hover:border-indigo-500 hover:bg-white/[0.08] transition-all text-center group"
                             >
@@ -723,6 +779,7 @@ export function VocabularyPage({ user }: { user: any }) {
                                     setStats({ correct: 0, wrong: 0, total: words.length });
                                     generateTestOptions(0);
                                     setView('test');
+                                    enterFullscreen();
                                 }}
                                 className="p-12 rounded-[3rem] bg-white/5 border border-white/10 hover:border-indigo-500 hover:bg-white/[0.08] transition-all text-center group"
                             >
@@ -738,121 +795,149 @@ export function VocabularyPage({ user }: { user: any }) {
                         </motion.div>
                     )}
 
-                    {/* FLASHCARDS VIEW - BIGGER SIZE */}
+                    {/* FLASHCARDS VIEW */}
                     {view === 'flashcards' && (
                         <motion.div
                             key="flashcards"
-                            initial={{ opacity: 0, y: 100 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="max-w-2xl mx-auto text-center"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] bg-[#020617] flex flex-col overflow-hidden"
                         >
-                            {/* Counter Display */}
-                            {/* Counter Display - Positioned Over Flashcard */}
-                            <div className="relative w-full max-w-sm mx-auto z-10 -mb-6 flex justify-between px-4 pointer-events-none">
-                                <div className="bg-red-500 text-white px-4 py-2 rounded-xl font-black shadow-lg shadow-red-500/20 flex flex-col items-center border-2 border-red-400 transform -rotate-6">
-                                    <span className="text-2xl leading-none">{stats.wrong}</span>
-                                    <span className="text-[8px] uppercase tracking-widest opacity-80">Missed</span>
-                                </div>
-                                <div className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black shadow-lg shadow-emerald-500/20 flex flex-col items-center border-2 border-emerald-400 transform rotate-6">
-                                    <span className="text-2xl leading-none">{stats.correct}</span>
-                                    <span className="text-[8px] uppercase tracking-widest opacity-80">Nailed</span>
-                                </div>
-                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-50" />
 
-                            <div className="mb-12 flex justify-center gap-2 mt-4">
-                                {words.map((_, i) => (
-                                    <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === currentWordIndex ? 'w-12 bg-indigo-500 shadow-lg shadow-indigo-500/50' : (i < currentWordIndex ? 'w-4 bg-emerald-500/50' : 'w-4 bg-white/10')}`} />
-                                ))}
-                            </div>
-
-                            <div className="relative h-[700px] w-full flex items-center justify-center">
-                                {/* Global Meme Overlay */}
-
-
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={words[currentWordIndex].id}
-                                        drag="x"
-                                        dragConstraints={{ left: 0, right: 0 }}
-                                        style={{ x, rotate, opacity, perspective: '1000px' }}
-                                        onDragEnd={(_, info) => {
-                                            if (info.offset.x > 150) triggerSuccess(true);
-                                            else if (info.offset.x < -150) {
-                                                triggerWrong();
-                                                if (currentWordIndex < words.length - 1) {
-                                                    setCurrentWordIndex(c => c + 1);
-                                                    setIsFlipped(false);
-                                                } else {
-                                                    setView('results');
-                                                }
-                                            }
-                                        }}
-                                        animate={{ scale: 1 }}
-                                        initial={{ scale: 0.8 }}
-                                        className="absolute inset-0 bg-[#0f172a] border border-white/5 rounded-[3rem] p-1 cursor-grab active:cursor-grabbing select-none shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden"
+                            {/* Fullscreen Header */}
+                            <div className="relative z-10 w-full p-8 flex items-center justify-between border-b border-white/5 bg-black/20 backdrop-blur-md">
+                                <div className="flex items-center gap-6">
+                                    <button
+                                        onClick={handleExitSession}
+                                        className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-white hover:bg-white/10 transition-all border border-white/10"
                                     >
-                                        <div className="w-full h-full relative" style={{ transformStyle: 'preserve-3d' }}>
+                                        <X size={24} />
+                                    </button>
+                                    <div>
+                                        <h3 className="text-2xl font-black text-white tracking-tight">{currentSet?.title}</h3>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-1.5 w-32 bg-white/5 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-indigo-500 transition-all duration-500"
+                                                    style={{ width: `${((currentWordIndex + 1) / words.length) * 100}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{currentWordIndex + 1} / {words.length} Nodes</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-2xl flex flex-col items-center">
+                                        <span className="text-2xl font-black text-emerald-400 leading-none">{stats.correct}</span>
+                                        <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">Mastered</span>
+                                    </div>
+                                    <div className="bg-red-500/10 border border-red-500/20 px-6 py-3 rounded-2xl flex flex-col items-center">
+                                        <span className="text-2xl font-black text-red-400 leading-none">{stats.wrong}</span>
+                                        <span className="text-[8px] font-black text-red-500/60 uppercase tracking-widest">Retrying</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+                                <div className="max-w-6xl w-full h-full flex items-center justify-center">
+                                    <div className="relative h-[85vh] w-full max-w-5xl flex items-center justify-center">
+                                        <AnimatePresence mode="wait">
                                             <motion.div
-                                                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                                                transition={{ duration: 0.6, type: 'spring', damping: 20, stiffness: 100 }}
-                                                className="w-full h-full relative"
-                                                style={{ transformStyle: 'preserve-3d' }}
+                                                key={words[currentWordIndex].id}
+                                                drag="x"
+                                                dragConstraints={{ left: 0, right: 0 }}
+                                                style={{ x, rotate, opacity, perspective: '2000px' }}
+                                                onDragEnd={(_, info) => {
+                                                    if (info.offset.x > 150) triggerSuccess(true);
+                                                    else if (info.offset.x < -150) {
+                                                        triggerWrong();
+                                                        if (currentWordIndex < words.length - 1) {
+                                                            setCurrentWordIndex(c => c + 1);
+                                                            setIsFlipped(false);
+                                                        } else {
+                                                            setView('results');
+                                                        }
+                                                    }
+                                                }}
+                                                animate={{ scale: 1, rotateY: 0 }}
+                                                initial={{ scale: 0.8 }}
+                                                className="absolute inset-0 bg-[#0f172a] border-2 border-white/10 rounded-[4rem] p-1 cursor-grab active:cursor-grabbing select-none shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden"
                                             >
-                                                {/* Front */}
-                                                <div
-                                                    className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent rounded-[2.8rem] p-16 flex flex-col items-center justify-center select-none border border-white/10"
-                                                    style={{ backfaceVisibility: 'hidden' }}
-                                                    onClick={() => setIsFlipped(true)}
-                                                >
-                                                    <div className="absolute top-8 left-8 flex gap-4">
-                                                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-indigo-400 hover:bg-white/10 transition-colors cursor-pointer">
-                                                            <RotateCcw size={18} />
+                                                <div className="w-full h-full relative" style={{ transformStyle: 'preserve-3d' }}>
+                                                    <motion.div
+                                                        animate={{ rotateY: isFlipped ? 180 : 0 }}
+                                                        transition={{ duration: 0.6, type: 'spring', damping: 20, stiffness: 100 }}
+                                                        className="w-full h-full relative"
+                                                        style={{ transformStyle: 'preserve-3d' }}
+                                                    >
+                                                        {/* Front */}
+                                                        <div
+                                                            className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 via-transparent to-transparent rounded-[3.8rem] p-32 flex flex-col items-center justify-center select-none border border-white/10"
+                                                            style={{ backfaceVisibility: 'hidden' }}
+                                                            onClick={() => setIsFlipped(true)}
+                                                        >
+                                                            <div className="absolute top-12 left-12">
+                                                                <Layers className="text-indigo-400/30" size={48} />
+                                                            </div>
+                                                            <div className="absolute top-12 right-12">
+                                                                <Zap className="text-indigo-400" size={48} />
+                                                            </div>
+
+                                                            <span className="text-lg font-black text-indigo-500/60 uppercase tracking-[0.8em] mb-20 pointer-events-none">NEURAL VOCAB NODE</span>
+                                                            <h2 className={`font-black text-white tracking-tighter uppercase mb-20 pointer-events-none text-center leading-none ${words[currentWordIndex].word.length > 10 ? 'text-8xl' : 'text-[12rem]'}`}>
+                                                                {words[currentWordIndex].word}
+                                                            </h2>
+
+                                                            <div className="mt-auto flex flex-col items-center gap-4">
+                                                                <div className="px-10 py-4 bg-white/5 rounded-full border border-white/10 pointer-events-none group">
+                                                                    <span className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">TAP TO REVEAL KEY INSIGHT</span>
+                                                                </div>
+                                                                <div className="flex gap-12 text-slate-600 font-bold text-[10px] uppercase tracking-widest mt-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <ArrowLeft size={16} className="text-red-500/40" />
+                                                                        <span>Swipe Left to Retry</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span>Swipe Right if Known</span>
+                                                                        <ArrowRight size={16} className="text-emerald-500/40" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="absolute top-8 right-8 flex gap-4">
-                                                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-yellow-500 hover:bg-white/10 transition-colors cursor-pointer">
-                                                            <Trophy size={18} />
+
+                                                        {/* Back */}
+                                                        <div
+                                                            className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent rounded-[3.8rem] p-24 flex flex-col items-center justify-center select-none border border-emerald-500/20"
+                                                            style={{
+                                                                backfaceVisibility: 'hidden',
+                                                                transform: 'rotateY(180deg)'
+                                                            }}
+                                                            onClick={() => setIsFlipped(false)}
+                                                        >
+                                                            <div className="absolute top-12 left-12">
+                                                                <Book className="text-emerald-400" size={32} />
+                                                            </div>
+
+                                                            <span className="text-sm font-black text-emerald-500/60 uppercase tracking-[0.6em] mb-16 pointer-events-none">SYNAPTIC DEFINITION</span>
+                                                            <p className="text-4xl text-slate-100 font-black leading-tight mb-12 pointer-events-none text-center max-w-2xl">{words[currentWordIndex].definition}</p>
+                                                            <div className="w-24 h-2 bg-emerald-500/20 rounded-full mb-12" />
+                                                            <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 max-w-2xl">
+                                                                <p className="text-emerald-200/60 italic text-2xl font-medium pointer-events-none text-center">"{words[currentWordIndex].example}"</p>
+                                                            </div>
+
+                                                            <div className="mt-auto px-10 py-4 bg-white/5 rounded-full border border-white/10 pointer-events-none">
+                                                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">TAP TO RETURN TO NODE</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-
-                                                    <span className="text-xs font-black text-indigo-500/60 uppercase tracking-[0.5em] mb-12 pointer-events-none">Vocab Node</span>
-                                                    <h2 className={`font-black text-white tracking-tighter uppercase mb-12 pointer-events-none text-center ${words[currentWordIndex].word.length > 12 ? 'text-5xl' : 'text-7xl'}`}>
-                                                        {words[currentWordIndex].word}
-                                                    </h2>
-
-                                                    <div className="mt-auto px-8 py-3 bg-white/5 rounded-full border border-white/10 pointer-events-none">
-                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tap to reveal insight</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Back */}
-                                                <div
-                                                    className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent rounded-[2.8rem] p-16 flex flex-col items-center justify-center select-none border border-emerald-500/20"
-                                                    style={{
-                                                        backfaceVisibility: 'hidden',
-                                                        transform: 'rotateY(180deg)'
-                                                    }}
-                                                    onClick={() => setIsFlipped(false)}
-                                                >
-                                                    <div className="absolute top-8 left-8">
-                                                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                                                            <Book size={18} />
-                                                        </div>
-                                                    </div>
-
-                                                    <span className="text-xs font-black text-emerald-500/60 uppercase tracking-[0.5em] mb-12 pointer-events-none">Definition</span>
-                                                    <p className="text-2xl text-slate-200 font-bold leading-relaxed mb-8 pointer-events-none text-center">{words[currentWordIndex].definition}</p>
-                                                    <div className="w-12 h-1 bg-emerald-500/20 rounded-full mb-8" />
-                                                    <p className="text-slate-500 italic text-lg pointer-events-none text-center max-w-md">"{words[currentWordIndex].example}"</p>
-
-                                                    <div className="mt-auto px-8 py-3 bg-white/5 rounded-full border border-white/10 pointer-events-none">
-                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tap to return to node</span>
-                                                    </div>
+                                                    </motion.div>
                                                 </div>
                                             </motion.div>
-                                        </div>
-                                    </motion.div>
-                                </AnimatePresence>
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -861,61 +946,106 @@ export function VocabularyPage({ user }: { user: any }) {
                     {view === 'test' && (
                         <motion.div
                             key="test"
-                            initial={{ opacity: 0, y: 100 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="max-w-xl mx-auto relative min-h-[500px]"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] bg-[#020617] flex flex-col overflow-hidden"
                         >
-                            {/* Global Meme Overlay for Test Mode */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-50" />
+
+                            {/* Fullscreen Header */}
+                            <div className="relative z-10 w-full p-8 flex items-center justify-between border-b border-white/5 bg-black/20 backdrop-blur-md">
+                                <div className="flex items-center gap-6">
+                                    <button
+                                        onClick={handleExitSession}
+                                        className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-white hover:bg-white/10 transition-all border border-white/10"
+                                    >
+                                        <ArrowLeft size={24} />
+                                    </button>
+                                    <div>
+                                        <h3 className="text-2xl font-black text-white tracking-tight">Mastery Test: {currentSet?.title}</h3>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-1.5 w-32 bg-white/5 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-emerald-500 transition-all duration-500"
+                                                    style={{ width: `${((currentWordIndex + 1) / words.length) * 100}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{currentWordIndex + 1} / {words.length} Evaluations</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-8 py-4 rounded-2xl flex flex-col items-center min-w-[120px]">
+                                        <span className="text-3xl font-black text-emerald-400 leading-none">{stats.correct}</span>
+                                        <span className="text-[10px] font-black text-emerald-500/60 uppercase tracking-widest">Correct</span>
+                                    </div>
+                                    <div className="bg-red-500/10 border border-red-500/20 px-8 py-4 rounded-2xl flex flex-col items-center min-w-[120px]">
+                                        <span className="text-3xl font-black text-red-400 leading-none">{stats.wrong}</span>
+                                        <span className="text-[10px] font-black text-red-500/60 uppercase tracking-widest">Incorrect</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+                                <div className="max-w-6xl w-full space-y-24">
+                                    <div className="text-center space-y-12">
+                                        <div className="inline-flex items-center gap-4 px-8 py-3 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                            <Sparkles className="text-emerald-400" size={20} />
+                                            <span className="text-sm font-black text-emerald-400 uppercase tracking-[0.4em]">Synaptic Definition Provided</span>
+                                        </div>
+                                        <h3 className="text-6xl font-black text-white italic tracking-tight leading-tight max-w-5xl mx-auto drop-shadow-2xl">
+                                            "{words[currentWordIndex].definition}"
+                                        </h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {testOptions.map((option, i) => (
+                                            <motion.button
+                                                key={option}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: i * 0.1 }}
+                                                onClick={() => handleTestAnswer(option)}
+                                                className={`p-12 rounded-[3rem] text-left font-black transition-all flex items-center justify-between group relative overflow-hidden border-2 ${selectedOption === option
+                                                    ? (isCorrect ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_20px_80px_rgba(16,185,129,0.5)]' : 'bg-red-500 border-red-400 text-white shadow-[0_20px_80px_rgba(239,68,68,0.5)]')
+                                                    : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white hover:border-indigo-500/50 hover:shadow-[0_40px_80px_rgba(99,102,241,0.2)]'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-12 relative z-10">
+                                                    <span className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-mono transition-colors ${selectedOption === option ? 'bg-white/20' : 'bg-white/5 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'}`}>
+                                                        {String.fromCharCode(65 + i)}
+                                                    </span>
+                                                    <span className="text-4xl uppercase tracking-tighter">{option}</span>
+                                                </div>
+                                                <ChevronRight size={40} className={`transition-all relative z-10 ${selectedOption === option ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0'}`} />
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
                             <AnimatePresence>
                                 {showMeme.visible && (
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.5 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.5 }}
-                                        className="absolute inset-0 flex flex-col items-center justify-center z-[100]"
+                                        className="fixed inset-0 flex flex-col items-center justify-center z-[110]"
                                     >
-                                        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-[3rem] border border-indigo-500/20" />
-                                        <div className="relative z-[110] w-full h-full p-8 flex flex-col items-center justify-center">
-                                            <div className="relative w-full h-full max-h-[400px]">
-                                                <img src={showMeme.url} className="w-full h-full object-cover rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.3)] border-2 border-indigo-500/50" alt="Success Meme" />
-                                                <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                                        <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-2xl" />
+                                        <div className="relative z-[120] w-full h-full max-w-5xl p-12 flex flex-col items-center justify-center gap-12">
+                                            <div className="relative w-full h-[60vh]">
+                                                <img src={showMeme.url} className="w-full h-full object-contain rounded-[4rem] shadow-[0_0_120px_rgba(79,70,229,0.5)] border-4 border-indigo-500 bg-black" alt="Success Meme" />
                                             </div>
-                                            <h2 className="text-5xl font-black text-white italic tracking-tighter animate-bounce uppercase absolute bottom-12 flex items-center justify-center z-[120] drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] text-center">ELITE CALIBER!</h2>
+                                            <h2 className="text-8xl font-black text-white italic tracking-tighter animate-bounce uppercase drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] text-center">
+                                                {currentWordIndex === words.length - 1 ? 'LEGENDARY COMPLETION!' : 'SYNAPTIC SYNC SUCCESS!'}
+                                            </h2>
                                         </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-
-                            <div className="text-center mb-12">
-                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-4 block">Definition Provided</span>
-                                <h3 className="text-3xl font-black text-white italic tracking-tight leading-relaxed">
-                                    "{words[currentWordIndex].definition}"
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4">
-                                {testOptions.map((option, i) => (
-                                    <motion.button
-                                        key={option}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: i * 0.1 }}
-                                        onClick={() => handleTestAnswer(option)}
-                                        className={`p-6 rounded-2xl text-left font-black transition-all flex items-center justify-between group relative overflow-hidden ${selectedOption === option
-                                            ? (isCorrect ? 'bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.3)]' : 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.3)]')
-                                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white hover:border-indigo-500/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-6 relative z-10">
-                                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono transition-colors ${selectedOption === option ? 'bg-white/20' : 'bg-white/5 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'}`}>
-                                                {String.fromCharCode(65 + i)}
-                                            </span>
-                                            <span className="text-xl uppercase tracking-tight">{option}</span>
-                                        </div>
-                                        <ChevronRight className={`transition-all relative z-10 ${selectedOption === option ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'}`} />
-                                    </motion.button>
-                                ))}
-                            </div>
                         </motion.div>
                     )}
 
