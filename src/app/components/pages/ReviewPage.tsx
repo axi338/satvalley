@@ -179,6 +179,25 @@ const ActionCard = ({ title, score, total, label, colorClass, icon: Icon }: any)
 const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, onNext, showAnswer, setShowAnswer, latestResult, apiBase }: any) => {
   if (currentIndex === null || !responses[currentIndex]) return null;
   const r = responses[currentIndex];
+  const [fetchedExplanation, setFetchedExplanation] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFetchedExplanation(null);
+    if (!r.explanation && r.id) {
+      supabase
+        .from('questions')
+        .select('explanation')
+        .eq('id', r.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.explanation) {
+            setFetchedExplanation(data.explanation);
+          }
+        });
+    }
+  }, [r.id, r.explanation]);
+
+  const displayExplanation = r.explanation || fetchedExplanation;
 
   return (
     <div className="fixed inset-0 z-[500] bg-[#020617] flex flex-col animate-in fade-in duration-200">
@@ -287,14 +306,14 @@ const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, o
               })
             )}
 
-            {showAnswer && r.explanation && (
+            {showAnswer && displayExplanation && (
               <div className="mt-12 p-8 bg-indigo-500/10 rounded-3xl border border-indigo-500/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="w-4 h-4 text-indigo-400 fill-current" />
                   <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
                 </div>
                 <p className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  <MathText text={r.explanation} className="block" />
+                  <MathText text={displayExplanation} className="block" />
                 </p>
               </div>
             )}
@@ -484,6 +503,36 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
   const scores = latestResult
     ? calculateSectionScores(latestResult.responses || [])
     : { rw: 200, math: 200, total: 400, rwCorrect: 0, rwTotal: 0, mathCorrect: 0, mathTotal: 0 };
+
+  // Enrich results with explanations if missing from stored responses
+  useEffect(() => {
+    if (latestResult && latestResult.responses) {
+      const missingExplaRefs = latestResult.responses.filter((r: any) => !r.explanation && r.id);
+      if (missingExplaRefs.length > 0) {
+        supabase
+          .from('questions')
+          .select('id, explanation')
+          .in('id', missingExplaRefs.map((r: any) => r.id))
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              const explanationMap = new Map(data.map(q => [q.id, q.explanation]));
+              setResults(prevResults => {
+                const updatedResults = [...prevResults];
+                const resultToUpdate = { ...updatedResults[selectedResultIndex] };
+                if (resultToUpdate.id === latestResult.id) {
+                  resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
+                    ...r,
+                    explanation: r.explanation || explanationMap.get(r.id)
+                  }));
+                  updatedResults[selectedResultIndex] = resultToUpdate;
+                }
+                return updatedResults;
+              });
+            }
+          });
+      }
+    }
+  }, [latestResult?.id, selectedResultIndex]);
 
   // Auto-refresh for background analysis
   useEffect(() => {

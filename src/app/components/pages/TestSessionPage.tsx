@@ -60,6 +60,7 @@ interface Question {
     imageUrl?: string;
     optionImages?: (string | null)[];
     subject?: 'rw' | 'math';
+    explanation?: string;
 }
 
 interface HighlightRange {
@@ -992,7 +993,8 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 const validQuestions = (data.questions || []).map((q: any) => ({
                     ...q,
                     imageUrl: q.image_url,
-                    optionImages: q.option_images
+                    optionImages: q.option_images,
+                    explanation: q.explanation
                 })).filter((q: any) => q && typeof q.text === 'string');
 
                 setQuestions(validQuestions);
