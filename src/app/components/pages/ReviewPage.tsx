@@ -238,12 +238,14 @@ const QuestionNavigationOverlay = ({ responses, currentIndex, onClose, onPrev, o
             </p>
 
             {showAnswer && displayExplanation && (
-              <div className="mt-8 p-8 bg-indigo-500/10 rounded-3xl border border-indigo-500/20">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-indigo-400 fill-current" />
-                  <h4 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Explanation</h4>
+              <div className="mt-8 p-10 bg-indigo-500/10 rounded-3xl border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.05)]">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-indigo-500/20 rounded-lg">
+                    <Zap className="w-6 h-6 text-indigo-400 fill-current" />
+                  </div>
+                  <h4 className="text-sm font-black text-indigo-400 uppercase tracking-[0.2em]">Neural Synthesis — Explanation</h4>
                 </div>
-                <div className="text-sm font-medium text-slate-300 leading-relaxed whitespace-pre-wrap">
+                <div className="text-lg font-medium text-slate-200 leading-relaxed whitespace-pre-wrap space-y-4">
                   <MathText text={displayExplanation} className="block" />
                 </div>
               </div>
@@ -744,12 +746,12 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                           </p>
 
                           {r.explanation && (
-                            <div className="mt-8 border border-indigo-500/20 bg-indigo-500/5 p-8 rounded-[2rem]">
-                              <h4 className="flex items-center gap-3 text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] mb-4">
-                                <Zap className="w-4 h-4 fill-current" />
-                                Neural Synthesis
+                            <div className="mt-8 border border-indigo-500/30 bg-indigo-500/10 p-10 rounded-[2.5rem] shadow-[0_0_30px_rgba(99,102,241,0.05)]">
+                              <h4 className="flex items-center gap-4 text-indigo-400 font-black text-xs uppercase tracking-[0.4em] mb-6">
+                                <Zap className="w-5 h-5 fill-current" />
+                                Neural Synthesis — Deep Explanation
                               </h4>
-                              <div className="text-indigo-100/70 text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                              <div className="text-slate-200 text-lg font-medium leading-relaxed whitespace-pre-wrap space-y-4">
                                 <MathText text={r.explanation} className="block" />
                               </div>
                             </div>
