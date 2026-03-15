@@ -496,10 +496,18 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
         (!r.explanation || r.explanation.length < 50 || !r.answer || r.answer === 'TBD') && r.id
       );
       if (missingRefs.length > 0) {
+        console.log(`[ReviewPage] Need to fetch enrichment for ${missingRefs.length} questions`);
         const ids = missingRefs.map((r: any) => r.id).join(',');
-        fetch(`${apiBase}/api/explanations?ids=${ids}`)
+        fetch(`${apiBase}/api/explanations?ids=${ids}`, {
+          cache: 'no-store', // Force fresh fetch, DO NOT CACHE
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
           .then(res => res.json())
           .then(data => {
+            console.log(`[ReviewPage] Received enrichment payload:`, Object.keys(data.enrichment || {}).length, 'items');
             if (data.enrichment) {
               setResults(prevResults => {
                 const updatedResults = [...prevResults];
@@ -508,22 +516,27 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
 
                 if (idx !== -1) {
                   const resultToUpdate = { ...updatedResults[idx] };
+                  let enrichedCount = 0;
                   resultToUpdate.responses = resultToUpdate.responses.map((r: any) => {
                     const extra = data.enrichment[r.id];
                     if (!extra) return r;
+                    enrichedCount++;
                     return {
                       ...r,
-                      explanation: (!r.explanation || r.explanation.length < 50) ? extra.explanation : r.explanation,
-                      answer: (!r.answer || r.answer === 'TBD') ? extra.answer : r.answer
+                      explanation: extra.explanation || r.explanation,
+                      answer: extra.answer || r.answer
                     };
                   });
+                  console.log(`[ReviewPage] Successfully enriched ${enrichedCount} responses for result ${targetId}`);
                   updatedResults[idx] = resultToUpdate;
                 }
                 return updatedResults;
               });
             }
           })
-          .catch(err => console.error("Enrichment fetch error:", err));
+          .catch(err => console.error("[ReviewPage] Enrichment fetch error:", err));
+      } else {
+        console.log(`[ReviewPage] All responses for result ${latestResult.id} are already enriched.`);
       }
     }
   }, [latestResult?.id, apiBase]);
