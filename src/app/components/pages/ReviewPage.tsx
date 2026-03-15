@@ -348,6 +348,16 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
   const [activeTab, setActiveTab] = useState<'all' | 'rw' | 'math'>('all');
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+
+  const toggleQuestionExplanation = (id: string) => {
+    setExpandedQuestions(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
 
@@ -717,119 +727,135 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                     <div className="h-px flex-1 bg-white/10" />
                   </div>
 
-                  {modResponses.map((r: any, qIdx: number) => (
-                    <div key={`${mod}-${qIdx}`} className="scroll-mt-48 group">
-                      <div className="flex items-center gap-6 mb-8">
-                        <span className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 text-white flex items-center justify-center font-black text-sm relative">
-                          {qIdx + 1}
-                        </span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">
-                            {r.module?.toUpperCase() || 'MOD'}
+                  {modResponses.map((r: any, qIdx: number) => {
+                    const uniqueId = r.id || `${mod}-${qIdx}`;
+                    const isExpanded = expandedQuestions.has(uniqueId);
+                    return (
+                      <div key={uniqueId} className="scroll-mt-48 group">
+                        <div className="flex items-center gap-6 mb-8">
+                          <span className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 text-white flex items-center justify-center font-black text-sm relative">
+                            {qIdx + 1}
                           </span>
-                          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                          <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Question Protocol</span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">
+                              {r.module?.toUpperCase() || 'MOD'}
+                            </span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Question Protocol</span>
+                          </div>
+                          <div className={`ml-auto px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${r.userAnswer === r.answer ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+                            {r.userAnswer === r.answer ? 'Correct' : 'Incorrect'}
+                          </div>
                         </div>
-                        <div className={`ml-auto px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${r.userAnswer === r.answer ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
-                          {r.userAnswer === r.answer ? 'Correct' : 'Incorrect'}
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 glass-card p-10 border-white/10 bg-white/[0.02]">
-                        <div className="space-y-8">
-                          {r.passage && (
-                            <div className="space-y-6">
-                              <div className="bg-[#0A0F1E] border border-white/5 p-8 rounded-3xl font-serif text-lg text-slate-300 leading-loose max-h-[400px] overflow-y-auto custom-scrollbar">
-                                <MathText text={r.passage} className="block" />
-                              </div>
-                              {r.imageUrl && (
-                                <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                                  <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 glass-card p-10 border-white/10 bg-white/[0.02]">
+                          <div className="space-y-8">
+                            {r.passage && (
+                              <div className="space-y-6">
+                                <div className="bg-[#0A0F1E] border border-white/5 p-8 rounded-3xl font-serif text-lg text-slate-300 leading-loose max-h-[400px] overflow-y-auto custom-scrollbar">
+                                  <MathText text={r.passage} className="block" />
                                 </div>
-                              )}
-                            </div>
-                          )}
-                          {!r.passage && r.imageUrl && (
-                            <div className="mb-6 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                              <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
-                            </div>
-                          )}
-                          <p className="text-xl text-white font-bold tracking-tight leading-relaxed">
-                            <MathText text={r.text} className="block" />
-                          </p>
-
-                          {r.explanation && (
-                            <div className="mt-8 border border-indigo-500/30 bg-indigo-500/10 p-10 rounded-[2.5rem] shadow-[0_0_30px_rgba(99,102,241,0.05)]">
-                              <h4 className="flex items-center gap-4 text-indigo-400 font-black text-xs uppercase tracking-[0.4em] mb-6">
-                                <Zap className="w-5 h-5 fill-current" />
-                                Neural Synthesis — Deep Explanation
-                              </h4>
-                              <div className="text-slate-200 text-lg font-medium leading-relaxed whitespace-pre-wrap space-y-4">
-                                <MathText text={r.explanation} className="block" />
+                                {r.imageUrl && (
+                                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                                    <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-6">
-                          {r.type === 'numeric' ? (
-                            <div className="p-10 border border-white/10 rounded-[2rem] space-y-8 bg-black/20">
-                              <div className={`p-4 rounded-xl border ${r.userAnswer === r.answer ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-rose-500/30 bg-rose-500/5'}`}>
-                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block mb-2">Your Answer</span>
-                                <p className={`text-4xl font-black ${r.userAnswer === r.answer ? 'text-emerald-400' : 'text-rose-400'}`}>{r.userAnswer || 'VOID'}</p>
+                            )}
+                            {!r.passage && r.imageUrl && (
+                              <div className="mb-6 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                                <img src={r.imageUrl.startsWith('http') ? r.imageUrl : `${apiBase}${r.imageUrl}`} alt="Question visual" className="w-full h-auto" />
                               </div>
-                              {r.userAnswer !== r.answer && (
-                                <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-                                  <span className="text-[10px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Correct Answer</span>
-                                  <p className="text-4xl font-black text-emerald-400">{r.answer}</p>
+                            )}
+                            <p className="text-xl text-white font-bold tracking-tight leading-relaxed">
+                              <MathText text={r.text} className="block" />
+                            </p>
+
+                            {r.explanation && (
+                              <>
+                                <button
+                                  onClick={() => toggleQuestionExplanation(uniqueId)}
+                                  className={`mt-8 w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border font-black uppercase tracking-widest text-xs transition-all ${isExpanded ? 'bg-indigo-500 text-white border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.4)]' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'}`}
+                                >
+                                  <Zap size={18} className={isExpanded ? 'text-white' : 'text-indigo-400'} />
+                                  {isExpanded ? 'Hide Neural Synthesis' : 'View Neural Synthesis'}
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="mt-6 border border-indigo-500/30 bg-indigo-500/10 p-10 rounded-[2.5rem] shadow-[0_0_30px_rgba(99,102,241,0.05)] animate-in slide-in-from-top-4 duration-300">
+                                    <h4 className="flex items-center gap-4 text-indigo-400 font-black text-xs uppercase tracking-[0.4em] mb-6">
+                                      <Zap className="w-5 h-5 fill-current" />
+                                      Neural Synthesis — Deep Explanation
+                                    </h4>
+                                    <div className="text-slate-200 text-lg font-medium leading-relaxed whitespace-pre-wrap space-y-4">
+                                      <MathText text={r.explanation} className="block" />
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          <div className="space-y-6">
+                            {r.type === 'numeric' ? (
+                              <div className="p-10 border border-white/10 rounded-[2rem] space-y-8 bg-black/20">
+                                <div className={`p-4 rounded-xl border ${r.userAnswer === r.answer ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-rose-500/30 bg-rose-500/5'}`}>
+                                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block mb-2">Your Answer</span>
+                                  <p className={`text-4xl font-black ${r.userAnswer === r.answer ? 'text-emerald-400' : 'text-rose-400'}`}>{r.userAnswer || 'VOID'}</p>
                                 </div>
-                              )}
-                            </div>
-                          ) : (
-                            ['A', 'B', 'C', 'D'].map((letter, i) => (
-                              <div key={letter} className={`p-5 rounded-2xl border flex items-center gap-5 transition-all relative overflow-hidden
+                                {r.userAnswer !== r.answer && (
+                                  <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                                    <span className="text-[10px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Correct Answer</span>
+                                    <p className="text-4xl font-black text-emerald-400">{r.answer}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              ['A', 'B', 'C', 'D'].map((letter, i) => (
+                                <div key={letter} className={`p-5 rounded-2xl border flex items-center gap-5 transition-all relative overflow-hidden
                                 ${r.answer === letter ? 'border-emerald-500 bg-emerald-500/10' :
-                                  r.userAnswer === letter ? 'border-rose-500 bg-rose-500/10' : 'bg-white/5 border-white/5 opacity-50'
-                                }`}>
-
-                                {/* Answer Badge */}
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] z-10
-                                  ${r.answer === letter ? 'bg-emerald-500 text-black' :
-                                    r.userAnswer === letter ? 'bg-rose-500 text-white' : 'bg-black/40 text-white/40'
+                                    r.userAnswer === letter ? 'border-rose-500 bg-rose-500/10' : 'bg-white/5 border-white/5 opacity-50'
                                   }`}>
-                                  {letter}
-                                </div>
 
-                                <div className="flex-1 flex flex-col gap-2 z-10">
-                                  <span className={`text-sm font-medium ${r.answer === letter ? 'text-emerald-200' : r.userAnswer === letter ? 'text-rose-200' : 'text-slate-400'}`}>
-                                    <MathText text={r.options?.[i] || `Sequence ${letter}`} />
-                                  </span>
-                                  {r.optionImages?.[i] && (
-                                    <div className="mt-1 rounded-lg border border-white/10 overflow-hidden bg-black/40 max-w-xs">
-                                      <img src={r.optionImages[i].startsWith('http') ? r.optionImages[i] : `${apiBase}${r.optionImages[i]}`} alt={`Option ${letter}`} className="w-full h-auto" />
+                                  {/* Answer Badge */}
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] z-10
+                                  ${r.answer === letter ? 'bg-emerald-500 text-black' :
+                                      r.userAnswer === letter ? 'bg-rose-500 text-white' : 'bg-black/40 text-white/40'
+                                    }`}>
+                                    {letter}
+                                  </div>
+
+                                  <div className="flex-1 flex flex-col gap-2 z-10">
+                                    <span className={`text-sm font-medium ${r.answer === letter ? 'text-emerald-200' : r.userAnswer === letter ? 'text-rose-200' : 'text-slate-400'}`}>
+                                      <MathText text={r.options?.[i] || `Sequence ${letter}`} />
+                                    </span>
+                                    {r.optionImages?.[i] && (
+                                      <div className="mt-1 rounded-lg border border-white/10 overflow-hidden bg-black/40 max-w-xs">
+                                        <img src={r.optionImages[i].startsWith('http') ? r.optionImages[i] : `${apiBase}${r.optionImages[i]}`} alt={`Option ${letter}`} className="w-full h-auto" />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Status Indicator */}
+                                  {r.answer === letter && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-900/40 px-3 py-1 rounded border border-emerald-500/30">
+                                      Correct
+                                    </div>
+                                  )}
+                                  {r.userAnswer === letter && r.answer !== letter && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-900/40 px-3 py-1 rounded border border-rose-500/30">
+                                      Your Choice
                                     </div>
                                   )}
                                 </div>
-
-                                {/* Status Indicator */}
-                                {r.answer === letter && (
-                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-900/40 px-3 py-1 rounded border border-emerald-500/30">
-                                    Correct
-                                  </div>
-                                )}
-                                {r.userAnswer === letter && r.answer !== letter && (
-                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-900/40 px-3 py-1 rounded border border-rose-500/30">
-                                    Your Choice
-                                  </div>
-                                )}
-                              </div>
-                            ))
-                          )}
+                              ))
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                    </div>
-                  ))}
+                      </div>
+                    )
+                  })}
                 </div>
               );
             })}
@@ -892,8 +918,8 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
             responses={latestResult.responses}
             currentIndex={reviewingQuestionIndex}
             onClose={() => setReviewingQuestionIndex(null)}
-            onPrev={() => setReviewingQuestionIndex(prev => prev! - 1)}
-            onNext={() => setReviewingQuestionIndex(prev => prev! + 1)}
+            onPrev={() => { setReviewingQuestionIndex(prev => prev! - 1); setShowAnswer(false); }}
+            onNext={() => { setReviewingQuestionIndex(prev => prev! + 1); setShowAnswer(false); }}
             showAnswer={showAnswer}
             setShowAnswer={setShowAnswer}
             latestResult={latestResult}
