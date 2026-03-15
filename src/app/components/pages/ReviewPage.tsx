@@ -513,18 +513,25 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
           .from('questions')
           .select('id, explanation')
           .in('id', missingExplaRefs.map((r: any) => r.id))
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Enrichment fetch error:", error);
+              return;
+            }
             if (data && data.length > 0) {
               const explanationMap = new Map(data.map(q => [q.id, q.explanation]));
               setResults(prevResults => {
                 const updatedResults = [...prevResults];
-                const resultToUpdate = { ...updatedResults[selectedResultIndex] };
-                if (resultToUpdate.id === latestResult.id) {
+                const targetId = latestResult.id;
+                const idx = updatedResults.findIndex(res => res.id === targetId);
+
+                if (idx !== -1) {
+                  const resultToUpdate = { ...updatedResults[idx] };
                   resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
                     ...r,
                     explanation: r.explanation || explanationMap.get(r.id)
                   }));
-                  updatedResults[selectedResultIndex] = resultToUpdate;
+                  updatedResults[idx] = resultToUpdate;
                 }
                 return updatedResults;
               });
@@ -532,7 +539,7 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
           });
       }
     }
-  }, [latestResult?.id, selectedResultIndex]);
+  }, [latestResult?.id]); // Only run when the selected result changes
 
   // Auto-refresh for background analysis
   useEffect(() => {
@@ -648,6 +655,40 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                 Divergent Optimal
               </span>
             </div>
+            <button
+              onClick={() => {
+                const missingExplaRefs = latestResult.responses.filter((r: any) => !r.explanation && r.id);
+                if (missingExplaRefs.length > 0) {
+                  supabase
+                    .from('questions')
+                    .select('id, explanation')
+                    .in('id', missingExplaRefs.map((r: any) => r.id))
+                    .then(({ data }) => {
+                      if (data && data.length > 0) {
+                        const explanationMap = new Map(data.map(q => [q.id, q.explanation]));
+                        setResults(prevResults => {
+                          const updatedResults = [...prevResults];
+                          const targetId = latestResult.id;
+                          const idx = updatedResults.findIndex(res => res.id === targetId);
+                          if (idx !== -1) {
+                            const resultToUpdate = { ...updatedResults[idx] };
+                            resultToUpdate.responses = resultToUpdate.responses.map((r: any) => ({
+                              ...r,
+                              explanation: r.explanation || explanationMap.get(r.id)
+                            }));
+                            updatedResults[idx] = resultToUpdate;
+                          }
+                          return updatedResults;
+                        });
+                      }
+                    });
+                }
+              }}
+              className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 flex items-center gap-2 group"
+            >
+              <Zap className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
+              Sync Explanations
+            </button>
             <button className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20 border border-white/10">
               Secure Export
             </button>
