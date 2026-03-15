@@ -15,30 +15,6 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function cleanJsonResponse(text) {
-    // Remove markdown code blocks
-    let cleaned = text.trim();
-    if (cleaned.startsWith('```json')) {
-        cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-
-    // Sometimes AI adds text before or after the JSON
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-    }
-
-    // Fix common JSON issues like unescaped backslashes in math
-    // But be careful not to break valid escapes. 
-    // The most common issue is unescaped \ in \frac or \sqrt
-    // We can try to escape them if they aren't part of a valid escape sequence
-
-    return cleaned;
-}
-
 async function generateExplanations() {
     const project = process.env.GOOGLE_CLOUD_PROJECT;
     const location = process.env.VERTEX_LOCATION || 'us-central1';
@@ -51,55 +27,63 @@ async function generateExplanations() {
         generationConfig: {
             temperature: 0.1,
             topP: 0.95,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 3000,
         }
     });
 
     const styleGuide = fs.readFileSync(path.join(__dirname, 'explanation_style_guide.md'), 'utf-8');
     const questions = JSON.parse(fs.readFileSync(path.join(__dirname, 'test_1_questions.json'), 'utf-8'));
 
-    console.log(`Starting TARGETED explanation generation for questions missing high-quality content...`);
+    console.log(`Starting ROBUST explanation generation...`);
 
-    for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
+    // Prioritize TBD questions first
+    const sortedQuestions = [...questions].sort((a, b) => {
+        const aTbd = !a.answer || a.answer === 'TBD';
+        const bTbd = !b.answer || b.answer === 'TBD';
+        if (aTbd && !bTbd) return -1;
+        if (!aTbd && bTbd) return 1;
+        return 0;
+    });
 
-        // Only regenerate if it doesn't meet the "incorrect" keyword criteria
-        if (q.explanation && q.explanation.includes('incorrect') && q.explanation.length > 200) {
+    for (let i = 0; i < sortedQuestions.length; i++) {
+        const q = sortedQuestions[i];
+
+        // High-quality threshold: 600 chars AND includes 'incorrect' analysis
+        const hasGoodExpla = q.explanation && q.explanation.includes('incorrect') && q.explanation.length > 600;
+        const hasGoodAnswer = q.answer && q.answer !== 'TBD';
+
+        if (hasGoodExpla && hasGoodAnswer) {
             continue;
         }
 
-        console.log(`[${i + 1}/${questions.length}] Generating HIGH-QUALITY explanation for question ${q.id} (${q.subject})...`);
+        console.log(`[${i + 1}/${sortedQuestions.length}] Generating DEEP explanation for question ${q.id} (Current Answer: ${q.answer})...`);
 
         const prompt = `
-        You are an expert SAT tutor. Your task is to write a COMPREHENSIVE, pedagogical explanation for the following SAT question. 
-        You MUST follow the "Explanation Style Guide" precisely. 
+        You are an expert SAT tutor. Write a COMPREHENSIVE, pedagogical explanation for this question. 
         
-        CRITICAL RULES:
-        1. STRUCTURE: 
-           - Part 1: Start with "Choice [Letter] is the best answer because..." and provide a detailed, step-by-step reasoning.
-           - Part 2: Explicitly state "Choice [Letter] is incorrect because..." for EVERY single incorrect choice (A, B, C, and D except the correct one).
-        2. LENGTH: The explanation must be thorough and educational. 
-        3. MATH: Use LaTeX for ALL mathematical notation (e.g., $x^2$, $\\frac{a}{b}$, $y=mx+b$). Wrap them in single dollar signs.
-           IMPORTANT: In your JSON response, ensure backslashes in LaTeX are double-escaped (e.g., "\\\\frac{a}{b}") so the JSON is valid.
-        4. ANSWER VERIFICATION: If the "CORRECT ANSWER" provided below is missing or seems incorrect, you MUST determine the correct answer yourself and start your explanation with the correct one.
-        5. FORMAT: Output your response as a JSON object with two fields: "explanation" (the full text) and "correct_answer" (the letter A, B, C, or D, or the numeric value).
+        REQUIRED FORMAT:
+        CORRECT ANSWER: [Just the letter A, B, C, or D, or the numeric value]
+        EXPLANATION: [Full multi-paragraph explanation text]
 
-        === EXPLANATION STYLE GUIDE ===
+        RULES:
+        1. STRUCTURE: 
+           - Part 1: Start with "Choice [Letter] is the best answer because..." and provide a detailed, step-by-step reasoning (at least 2 paragraphs).
+           - Part 2: Provide an explicit section: "Choice A is incorrect because...", "Choice B is incorrect because...", etc. for EVERY incorrect option.
+        2. DEPTH: Be pedagogical and encouraging. Use at least 300 words.
+        3. MATH: Use LaTeX ($...$) for ALL math notation.
+        4. VERIFICATION: Independently solve the question. Correct the answer if it is "TBD" or wrong.
+
+        === STYLE GUIDE ===
         ${styleGuide}
 
         === QUESTION DATA ===
         SUBJECT: ${q.subject}
-        TYPE: ${q.type}
         PASSAGE: ${q.passage || 'None'}
         QUESTION: ${q.text}
         OPTIONS: ${JSON.stringify(q.options)}
         CORRECT ANSWER: ${q.answer || 'MISSING'}
 
-        === OUTPUT FORMAT ===
-        {
-          "explanation": "...",
-          "correct_answer": "..."
-        }
+        BEGIN RESPONSE:
         `;
 
         try {
@@ -108,16 +92,28 @@ async function generateExplanations() {
             };
             const result = await model.generateContent(request);
             const response = await result.response;
-            const responseText = response.candidates[0].content.parts[0].text.trim();
+            const text = response.candidates[0].content.parts[0].text.trim();
 
-            const cleaned = cleanJsonResponse(responseText);
-            const data = JSON.parse(cleaned);
-            const explanation = data.explanation;
-            const finalAnswer = data.correct_answer;
+            // Even more robust parsing (handles A-D, negative numbers, decimals, fractions)
+            const answerMatch = text.match(/CORRECT\s*ANSWER:\s*([A-D]|[\d\.\/\-]+)/i);
+            const explanationMatch = text.match(/EXPLANATION:\s*([\s\S]+)/i);
 
-            // Update local object
-            q.explanation = explanation;
-            q.answer = finalAnswer;
+            if (!answerMatch || !explanationMatch) {
+                console.warn(`[${q.id}] Parsing failed. Raw output snippet:\n${text.substring(0, 200)}...`);
+                continue;
+            }
+
+            const finalAnswer = answerMatch[1].trim().toUpperCase();
+            const explanation = explanationMatch[1].trim();
+
+            console.log(`[${q.id}] Parsed Answer: ${finalAnswer}, Length: ${explanation.length}`);
+
+            // Find original question index and update
+            const originalIdx = questions.findIndex(orig => orig.id === q.id);
+            if (originalIdx !== -1) {
+                questions[originalIdx].explanation = explanation;
+                questions[originalIdx].answer = finalAnswer;
+            }
 
             // Update Supabase
             const { error } = await supabase
@@ -131,21 +127,21 @@ async function generateExplanations() {
             if (error) {
                 console.error(`Error updating database for question ${q.id}:`, error);
             } else {
-                console.log(`[${i + 1}/${questions.length}] Successfully updated question ${q.id} (Answer: ${finalAnswer})`);
+                console.log(`[${i + 1}/${sortedQuestions.length}] Successfully updated question ${q.id}`);
             }
 
             // Save progress locally
             fs.writeFileSync(path.join(__dirname, 'test_1_questions.json'), JSON.stringify(questions, null, 2));
 
             // small delay
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 500));
 
         } catch (err) {
             console.error(`Error processing question ${q.id}:`, err);
         }
     }
 
-    console.log('All targeted questions processed with high-quality explanations!');
+    console.log('All questions refined!');
 }
 
-generateExplanations().catch(console.error);
+generateExplanations().catch(console.error);
