@@ -9,6 +9,8 @@ import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
 import { fileURLToPath } from 'url';
+import { Server } from "socket.io";
+import { createServer } from "http";
 
 import { normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI } from "./satvalley-ai/src/processor.js";
 
@@ -75,6 +77,22 @@ const allowList = (process.env.ADMIN_EMAILS || "")
   .filter(Boolean);
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://sat-valley.web.app',
+      'https://satvalley.web.app',
+      'https://satvalley.pages.dev',
+      'https://satvalley.com',
+      'https://www.satvalley.com'
+    ],
+    methods: ["GET", "POST"]
+  }
+});
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -106,7 +124,8 @@ const verifyAdmin = async (req) => {
   const { data: { user }, error } = await supabase.auth.getUser(token);
 
   if (error || !user) {
-    throw Object.assign(new Error("Unauthenticated"), { status: 401 });
+    console.error("verifyAdmin Auth error:", error?.message || error);
+    throw Object.assign(new Error(`Unauthenticated: ${error?.message || 'Invalid token'}`), { status: 401 });
   }
 
   const email = user.email ? user.email.toLowerCase() : "";
@@ -2043,6 +2062,437 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// --- PREMIUM CLASS SECTION ENDPOINTS ---
+
+// --- TEACHER MANAGEMENT ---
+
+// List all teachers
+app.get("/api/admin/teachers", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, is_teacher")
+      .eq("is_teacher", true);
+
+    if (error) throw error;
+    res.json({ teachers: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "fetch_teachers_failed", message: err.message });
+  }
+});
+
+// Add teacher by email (Grant role to existing user)
+app.post("/api/admin/teachers", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "email_required" });
+
+    // Find profile by email
+    const { data: profile, error: pError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (pError || !profile) {
+      return res.status(404).json({ error: "user_not_found", message: "No profile found with that email. Ensure they have signed up." });
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_teacher: true })
+      .eq("id", profile.id);
+
+    if (error) throw error;
+    res.json({ success: true, message: `Teacher role granted to ${email}` });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "grant_teacher_failed", message: err.message });
+  }
+});
+
+// Create new teacher account with password
+app.post("/api/admin/teachers/create", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { email, password, full_name } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "email_and_password_required" });
+
+    const { data: { user }, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name }
+    });
+
+    if (error) throw error;
+
+    // Grant teacher role in profiles table
+    // Using upsert in case profile was partially created by auth trigger
+    await supabase.from("profiles").upsert({
+      id: user.id,
+      email: email,
+      full_name: full_name || "Teacher",
+      is_teacher: true,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: `Account created for ${email}` });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "create_teacher_failed", message: err.message });
+  }
+});
+
+// Revoke teacher role
+app.delete("/api/admin/teachers/:id", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_teacher: false })
+      .eq("id", id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "revoke_teacher_failed", message: err.message });
+  }
+});
+
+// 1. Assignments
+app.post("/api/assignments", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { title, due_date, total_marks, content } = req.body;
+    const teacher = await verifyUser(req);
+
+    const { data, error } = await supabase
+      .from("class_assignments")
+      .insert({
+        title,
+        due_date,
+        total_marks: total_marks || 100,
+        teacher_id: teacher.id,
+        content: content || {}
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Notify students via Socket.io
+    io.emit("new_assignment", { title, due_date });
+
+    res.json({ assignment: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "create_assignment_failed", message: err.message });
+  }
+});
+
+app.get("/api/assignments", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("class_assignments")
+      .select("*")
+      .order("due_date", { ascending: true });
+
+    if (error) throw error;
+    res.json({ assignments: data });
+  } catch (err) {
+    res.status(500).json({ error: "fetch_assignments_failed", message: err.message });
+  }
+});
+
+// 2. Submissions
+app.post("/api/submit-assignment", async (req, res) => {
+  try {
+    const user = await verifyUser(req);
+    const { assignment_id, content } = req.body;
+
+    const { data, error } = await supabase
+      .from("class_submissions")
+      .upsert({
+        assignment_id,
+        student_id: user.id,
+        content,
+        submission_time: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ submission: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "submission_failed", message: err.message });
+  }
+});
+
+app.get("/api/submissions/:assignment_id", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { assignment_id } = req.params;
+
+    const { data, error } = await supabase
+      .from("class_submissions")
+      .select("*, profiles(full_name)")
+      .eq("assignment_id", assignment_id);
+
+    if (error) throw error;
+    res.json({ submissions: data });
+  } catch (err) {
+    res.status(500).json({ error: "fetch_submissions_failed", message: err.message });
+  }
+});
+
+app.patch("/api/grade-assignment/:submission_id", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { submission_id } = req.params;
+    const { score, feedback } = req.body;
+
+    const { data, error } = await supabase
+      .from("class_submissions")
+      .update({
+        score,
+        feedback,
+        graded_at: new Date().toISOString()
+      })
+      .eq("id", submission_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Send notification to student
+    io.to(`user_${data.student_id}`).emit("assignment_graded", { assignment_id: data.assignment_id, score });
+
+    res.json({ submission: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "grading_failed", message: err.message });
+  }
+});
+
+// 3. Performance & Statistics
+app.get("/api/performance/:student_id", verifyUser, async (req, res) => {
+  const { student_id } = req.params;
+
+  // Security: Student can only see their own data
+  if (req.user.id !== student_id && !req.user.isAdmin) {
+    return res.status(403).json({ error: "Unauthorized access to performance data" });
+  }
+
+  const { data, error } = await supabase.from("class_performance").select("*").eq("student_id", student_id).single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ performance: data });
+});
+
+// GET Student Growth Data (for charts)
+app.get("/api/performance/growth/:student_id", verifyUser, async (req, res) => {
+  const { student_id } = req.params;
+
+  // Security: Student can only see their own data
+  if (req.user.id !== student_id && !req.user.isAdmin) {
+    return res.status(403).json({ error: "Unauthorized access to performance data" });
+  }
+  // In a real scenario, this would fetch from a 'class_performance_history' table.
+  // For now, we'll return mock historical data based on the current overall_score to demonstrate formatting.
+  const { data: current } = await supabase.from("class_performance").select("*").eq("student_id", student_id).single();
+
+  // Mocking 6 months of growth
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  const growthData = months.map((m, i) => ({
+    month: m,
+    score: (current?.overall_score || 50) - (5 * (5 - i)) + Math.floor(Math.random() * 5)
+  }));
+
+  res.json({ growth: growthData });
+});
+
+// 4. Teacher Specific: Create Class ID
+app.post("/api/teacher/create-class", verifyAdmin, async (req, res) => {
+  const { name } = req.body;
+  const teacher_id = req.user.id;
+  const class_id = "SAT-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+  const { data, error } = await supabase
+    .from("classes")
+    .insert({ id: class_id, teacher_id, name })
+    .select()
+    .single();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ class: data });
+});
+
+// 5. Student Specific: Join Class
+app.post("/api/student/join-class", verifyUser, async (req, res) => {
+  const { class_id } = req.body;
+  const student_id = req.user.id;
+
+  // Verify class exists
+  const { data: classData, error: cError } = await supabase
+    .from("classes")
+    .select("id")
+    .eq("id", class_id)
+    .single();
+
+  if (cError || !classData) return res.status(404).json({ error: "Class not found" });
+
+  // Update student's profile
+  const { error: uError } = await supabase
+    .from("profiles")
+    .update({ class_id: class_id })
+    .eq("id", student_id);
+
+  if (uError) return res.status(400).json({ error: uError.message });
+  res.json({ success: true, class_id });
+});
+
+// 6. Teacher Specific: List students in THEIR class
+app.get("/api/teacher/students", verifyAdmin, async (req, res) => {
+  const teacher_id = req.user.id;
+
+  // 1. Get teacher's classes
+  const { data: classes, error: cError } = await supabase
+    .from("classes")
+    .select("id")
+    .eq("teacher_id", teacher_id);
+
+  if (cError) return res.status(400).json({ error: cError.message });
+  const classIds = classes.map(c => c.id);
+
+  // 2. Get students in these classes
+  const { data: students, error: sError } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, email, class_id")
+    .in("class_id", classIds);
+
+  if (sError) return res.status(400).json({ error: sError.message });
+
+  // 3. Get performance
+  const { data: performance } = await supabase.from("class_performance").select("*");
+
+  const combined = students.map(s => {
+    const p = performance?.find(perf => perf.student_id === s.id);
+    return { ...s, performance: p || { overall_score: 0, improvement_percentage: 0 } };
+  });
+
+  res.json({ students: combined, classes: classes });
+});
+
+// 4. Leaderboard
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("class_leaderboard")
+      .select("*, profiles(full_name, avatar_url)")
+      .order("points", { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    res.json({ leaderboard: data });
+  } catch (err) {
+    res.status(500).json({ error: "fetch_leaderboard_failed", message: err.message });
+  }
+});
+
+// 2. Messaging
+app.get("/api/messages", verifyUser, async (req, res) => {
+  const user_id = req.user.id;
+
+  // Get group messages
+  const { data: group } = await supabase
+    .from("class_messages")
+    .select("*")
+    .eq("is_group_chat", true)
+    .order("timestamp", { ascending: true })
+    .limit(50);
+
+  // Get private messages involving the user
+  const { data: priv } = await supabase
+    .from("class_messages")
+    .select("*")
+    .or(`sender_id.eq.${user_id},receiver_id.eq.${user_id}`)
+    .eq("is_group_chat", false)
+    .order("timestamp", { ascending: true })
+    .limit(100);
+
+  res.json({ group: group || [], private: priv || [] });
+});
+
+app.post("/api/messages", verifyUser, async (req, res) => {
+  try {
+    const user = await verifyUser(req);
+    const { receiver_id, message_text, is_group_chat } = req.body;
+
+    const { data, error } = await supabase
+      .from("class_messages")
+      .insert({
+        sender_id: user.id,
+        receiver_id: is_group_chat ? null : receiver_id,
+        message_text,
+        is_group_chat: !!is_group_chat
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Real-time broadcast
+    if (is_group_chat) {
+      io.emit("new_group_message", data);
+    } else {
+      io.to(`user_${receiver_id}`).emit("new_private_message", data);
+    }
+
+    res.json({ message: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "send_message_failed", message: err.message });
+  }
+});
+
+// 6. To-Do & Exam Date
+app.get("/api/todo/:student_id", async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    const { data, error } = await supabase
+      .from("class_todo_items")
+      .select("*")
+      .eq("student_id", student_id)
+      .order("due_date", { ascending: true });
+
+    if (error) throw error;
+    res.json({ todos: data });
+  } catch (err) {
+    res.status(500).json({ error: "fetch_todos_failed", message: err.message });
+  }
+});
+
+app.post("/api/exam-date", async (req, res) => {
+  try {
+    const user = await verifyUser(req);
+    const { exam_date, subject } = req.body;
+
+    const { data, error } = await supabase
+      .from("class_exam_dates")
+      .upsert({
+        student_id: user.id,
+        exam_date,
+        subject
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ exam_date: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "set_exam_date_failed", message: err.message });
+  }
+});
+
 // --- PROFILE ENDPOINTS ---
 
 // POST /api/profile/upload-avatar
@@ -2167,7 +2617,22 @@ app.get("*", (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+
+// Socket.io connection handling
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`User ${userId} joined their private room`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+httpServer.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`Admin backend listening on ${port}`);
 });

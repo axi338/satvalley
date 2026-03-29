@@ -41,10 +41,12 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
         console.log("DEBUG: Sign in successful", data);
         onSuccess();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("DEBUG: handleEmailAuth error:", err);
-      const message =
-        err instanceof Error ? err.message : 'Authentication sequence failed. Verify credentials.';
+      let message = err.message || 'Authentication sequence failed.';
+      if (message.includes('Unexpected token') || message.includes('Failed to fetch') || message.includes('<html>')) {
+        message = "Connection to Auth Server blocked (likely by an Ad-Blocker or VPN). Please disable them for this site.";
+      }
       setError(message);
     } finally {
       setLoading(false);
@@ -65,10 +67,12 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
       });
       if (error) throw error;
       console.log("DEBUG: Google OAuth initiated", data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("DEBUG: handleGoogle error:", err);
-      const message =
-        err instanceof Error ? err.message : 'Google OAuth failed. Please try again.';
+      let message = err.message || 'Google OAuth failed.';
+      if (message.includes('Unexpected token') || message.includes('Failed to fetch') || message.includes('<html>')) {
+        message = "Connection to Auth Server blocked (likely by an Ad-Blocker or VPN). Please disable them for this site.";
+      }
       setError(message);
     } finally {
       setLoading(false);

@@ -29,6 +29,7 @@ export function Sidebar({
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'premium-class', label: 'Premium Class', icon: GraduationCap },
         { id: 'practice', label: 'DSAT Tests', icon: PenTool },
         { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
         { id: 'review', label: 'Review', icon: History },

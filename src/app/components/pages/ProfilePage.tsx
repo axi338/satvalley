@@ -7,23 +7,22 @@ import { toast } from 'sonner';
 interface ProfilePageProps {
     user: SupabaseUser;
     profile?: any;
+    onProfileUpdate?: () => void;
 }
 
-export function ProfilePage({ user, profile }: ProfilePageProps) {
+export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps) {
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
     const [editName, setEditName] = useState(profile?.full_name || user?.user_metadata?.full_name || '');
     const [editPhone, setEditPhone] = useState(profile?.phone || '');
     const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || user?.user_metadata?.avatar_url || '');
-    const [bannerUrl, setBannerUrl] = useState("https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2676&auto=format&fit=crop");
+    const [bannerUrl, setBannerUrl] = useState(profile?.banner_url || "https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2676&auto=format&fit=crop");
 
-    const getToken = async (): Promise<string | null> => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.access_token ?? null;
-    };
+
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -49,25 +48,49 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
 
         try {
             setIsUploadingAvatar(true);
-            const token = await getToken();
-            if (!token) { toast.error('You must be logged in'); return; }
 
-            const formData = new FormData();
-            formData.append('avatar', file);
+            // Determine file extension
+            const ext = file.name.split('.').pop() || 'jpg';
+            const filePath = `${user.id}/avatar.${ext}`;
 
-            const res = await fetch('/api/profile/upload-avatar', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
+            // Upload to Supabase Storage (bucket: avatars)
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, { upsert: true, contentType: file.type });
 
-            if (!res.ok) throw new Error('Upload failed');
-            const data = await res.json();
-            setAvatarUrl(data.url);
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            // Persist to profiles table (Include email as it is NOT NULL in schema)
+            const { error: dbError } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    avatar_url: publicUrl,
+                    email: user.email
+                }, { onConflict: 'id' });
+
+            if (dbError) throw dbError;
+
+            setAvatarUrl(publicUrl);
             toast.success('Profile picture updated!');
+            onProfileUpdate?.();
         } catch (err: any) {
             console.error('Avatar upload error:', err);
-            toast.error('Failed to upload picture');
+            let msg = err.message || 'Unknown error';
+
+            // Check specifically for HTML responses (means bucket is missing or server error)
+            if (msg.includes('Unexpected token') || msg.includes('<html>')) {
+                msg = "Storage bucket 'avatars' is likely missing. Please run the migration SQL to create it.";
+            } else if (msg.includes('Failed to fetch')) {
+                msg = "Connection blocked (VPN/Ad-blocker?). Please check your network.";
+            }
+
+            toast.error('Failed to upload picture: ' + msg);
         } finally {
             setIsUploadingAvatar(false);
         }
@@ -77,65 +100,73 @@ export function ProfilePage({ user, profile }: ProfilePageProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Compress banner
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1920;
-                const MAX_HEIGHT = 1080;
-                let width = img.width;
-                let height = img.height;
+        try {
+            setIsUploadingBanner(true);
+            const ext = file.name.split('.').pop() || 'jpg';
+            const filePath = `${user.id}/banner.${ext}`;
 
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                setBannerUrl(dataUrl);
-            };
-            img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
+            // Upload to banners bucket
+            const { error: uploadError } = await supabase.storage
+                .from('banners')
+                .upload(filePath, file, { upsert: true, contentType: file.type });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('banners')
+                .getPublicUrl(filePath);
+
+            // Persist to profiles
+            const { error: dbError } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    banner_url: publicUrl,
+                    email: user.email
+                }, { onConflict: 'id' });
+
+            if (dbError) throw dbError;
+
+            setBannerUrl(publicUrl);
+            toast.success('Cover photo updated!');
+            onProfileUpdate?.();
+        } catch (err: any) {
+            console.error('Banner upload error:', err);
+            let msg = err.message || 'Unknown error';
+            if (msg.includes('Unexpected token') || msg.includes('<html>')) {
+                msg = "Storage bucket 'banners' is missing. Run the migration SQL.";
+            }
+            toast.error('Failed to upload cover photo: ' + msg);
+        } finally {
+            setIsUploadingBanner(false);
+        }
     };
 
     const saveProfile = async () => {
         setIsSaving(true);
         try {
-            const token = await getToken();
-            if (!token) { toast.error('You must be logged in'); return; }
-
-            const res = await fetch('/api/profile/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
+            const { error } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    email: user.email,
                     full_name: editName,
                     phone: editPhone,
-                    avatar_url: avatarUrl
-                })
-            });
+                    avatar_url: avatarUrl,
+                    banner_url: bannerUrl
+                }, { onConflict: 'id' });
 
-            if (!res.ok) throw new Error('Failed to save profile');
+            if (error) throw error;
             toast.success('Profile saved!');
             setIsEditing(false);
+            onProfileUpdate?.();
         } catch (err: any) {
             console.error('Error saving profile:', err);
-            toast.error('Failed to save profile: ' + (err.message || 'Check console'));
+            let msg = err.message || 'Check console';
+            if (msg.includes('Unexpected token') || msg.includes('Failed to fetch') || msg.includes('<html>')) {
+                msg = "Connection blocked (likely by an Ad-Blocker or VPN). Please disable them for this site.";
+            }
+            toast.error('Failed to save profile: ' + msg);
         } finally {
             setIsSaving(false);
         }

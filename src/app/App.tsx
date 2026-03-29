@@ -27,6 +27,7 @@ import { ImportDashboard } from './components/pages/ImportDashboard';
 import { NewImport } from './components/pages/NewImport';
 import { ImportReview } from './components/pages/ImportReview';
 import { OnboardingPage } from './components/pages/OnboardingPage';
+import { ClassDashboardPage } from './components/pages/ClassDashboardPage';
 import { Toaster } from './components/ui/sonner';
 
 export default function App() {
@@ -142,6 +143,16 @@ export default function App() {
     checkProfile();
   }, [user]);
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (data) setProfile(data);
+  };
+
   const handleLogout = async () => {
     console.log("DEBUG: handleLogout called");
     try {
@@ -203,7 +214,7 @@ export default function App() {
         return <VocabularyPage user={user} />;
       case 'profile':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('profile')} />;
-        return <ProfilePage user={user} profile={profile} />;
+        return <ProfilePage user={user} profile={profile} onProfileUpdate={refreshProfile} />;
       case 'practice':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('practice')} />;
         return <PracticeTestsPage onNavigate={handleNavigate} user={user} profile={profile} />;
@@ -217,6 +228,9 @@ export default function App() {
       case 'review':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('review')} />;
         return <ReviewPage user={user} onNavigate={handleNavigate} params={currentParams} />;
+      case 'premium-class':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('premium-class')} />;
+        return <ClassDashboardPage user={user} profile={profile} onNavigate={handleNavigate} />;
       case 'admin':
         return adminUnlocked ? <AdminPage onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-olympiad':

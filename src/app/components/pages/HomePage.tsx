@@ -89,7 +89,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </button>
               <button
                 className="btn-secondary h-14 px-8 rounded-xl text-lg backdrop-blur-md flex items-center justify-center gap-2 group w-full sm:w-auto min-w-[200px] hover:bg-white/10 transition-all border border-white/10"
-                onClick={() => window.open('https://t.me/satvalley_admin', '_blank')}
+                onClick={() => window.open('https://t.me/satvalley_support', '_blank')}
               >
                 Get Courses
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />

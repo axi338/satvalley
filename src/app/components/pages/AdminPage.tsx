@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Shield, Plus, FileText, Award, Database, UserRound, RefreshCw, Trash2, Edit, Save, X as CloseIcon, Sparkles } from 'lucide-react';
+import { Shield, Plus, FileText, Award, Database, UserRound, Users, RefreshCw, Trash2, Edit, Save, X as CloseIcon, Sparkles } from 'lucide-react';
 import { OlympiadAdminPage } from './OlympiadAdminPage';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -98,6 +98,11 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [users, setUsers] = useState<Array<{ uid: string; email: string; lastLogin?: string }> | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [teachers, setTeachers] = useState<Array<{ id: string; email: string; full_name?: string }>>([]);
+  const [teacherEmail, setTeacherEmail] = useState('');
+  const [teacherName, setTeacherName] = useState('');
+  const [teacherPassword, setTeacherPassword] = useState('');
+  const [teachersLoading, setTeachersLoading] = useState(false);
 
   // Site Content Management
   const [siteContent, setSiteContent] = useState<any>({});
@@ -131,8 +136,21 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     }
   };
 
+  const fetchTeachers = async () => {
+    setTeachersLoading(true);
+    try {
+      const data = await authedRequest('/api/admin/teachers');
+      setTeachers(data.teachers || []);
+    } catch (err) {
+      showFlash('Failed to load teachers');
+    } finally {
+      setTeachersLoading(false);
+    }
+  };
+
   useEffect(() => {
     void fetchUsers();
+    void fetchTeachers();
   }, [apiBase]);
 
   const authedRequest = async (path: string, options: RequestInit = {}) => {
@@ -148,6 +166,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       },
     });
     if (!res.ok) {
+      
       const body = await res.json().catch(() => ({}));
       throw new Error(body.message || `Request failed (${res.status})`);
     }
@@ -531,6 +550,50 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     }
   };
 
+  const handleAddTeacher = async () => {
+    if (!teacherEmail) return;
+    try {
+      // If password is provided, use the create endpoint
+      if (teacherPassword) {
+        await authedRequest('/api/admin/teachers/create', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: teacherEmail,
+            password: teacherPassword,
+            full_name: teacherName || 'Teacher'
+          }),
+        });
+      } else {
+        // Otherwise, grant role to existing user
+        await authedRequest('/api/admin/teachers', {
+          method: 'POST',
+          body: JSON.stringify({ email: teacherEmail }),
+        });
+      }
+
+      setTeacherEmail('');
+      setTeacherName('');
+      setTeacherPassword('');
+      await fetchTeachers();
+      showFlash(teacherPassword ? 'Teacher account created.' : 'Teacher role granted.');
+    } catch (err: any) {
+      showFlash(err.message);
+    }
+  };
+
+  const handleRevokeTeacher = async (id: string) => {
+    if (!window.confirm('Revoke teacher privileges?')) return;
+    try {
+      await authedRequest(`/api/admin/teachers/${id}`, {
+        method: 'DELETE',
+      });
+      await fetchTeachers();
+      showFlash('Teacher role revoked.');
+    } catch (err: any) {
+      showFlash(err.message);
+    }
+  };
+
   const renderQuestionForm = () => (
     <div className="space-y-6 max-w-3xl animate-in fade-in slide-in-from-top-4 duration-300">
       <div className="grid grid-cols-2 gap-4">
@@ -768,6 +831,9 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <UserRound className="w-4 h-4 mr-2" /> Users
+            </TabsTrigger>
+            <TabsTrigger value="teachers" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              <Users className="w-4 h-4 mr-2" /> Teachers
             </TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <RefreshCw className="w-4 h-4 mr-2" /> Settings
@@ -1147,6 +1213,91 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                     <div className="text-[10px] text-muted-foreground italic">Last login: {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="teachers">
+            <div className="bg-card border border-white/10 rounded-3xl p-8 lg:p-12">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl text-white">Teacher Management</h2>
+                  <p className="text-muted-foreground">Assign teacher roles to users by email</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchTeachers} disabled={teachersLoading} className="ml-auto border-white/10">
+                  <RefreshCw className={`w-4 h-4 mr-2 ${teachersLoading ? 'animate-spin' : ''}`} /> Refresh
+                </Button>
+              </div>
+
+              <div className="max-w-xl p-6 bg-white/5 border border-white/10 rounded-2xl mb-12">
+                <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-widest">Add or Create Teacher</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider ml-1">Email Address</label>
+                      <Input
+                        value={teacherEmail}
+                        onChange={e => setTeacherEmail(e.target.value)}
+                        placeholder="teacher@example.com"
+                        className="bg-white/5 border-white/10"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider ml-1">Full Name (Optional)</label>
+                      <Input
+                        value={teacherName}
+                        onChange={e => setTeacherName(e.target.value)}
+                        placeholder="John Doe"
+                        className="bg-white/5 border-white/10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider ml-1">Password (To create new account)</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        value={teacherPassword}
+                        onChange={e => setTeacherPassword(e.target.value)}
+                        placeholder="Leave blank to assign role to existing user"
+                        className="bg-white/5 border-white/10"
+                      />
+                      <Button onClick={handleAddTeacher} className="bg-indigo-600 hover:bg-indigo-500 text-white px-8">
+                        {teacherPassword ? 'Create' : 'Add'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-4 italic leading-relaxed">
+                  Tip: If the user doesn't have an account yet, provide a password to create one. If they already signed up, just enter their email to grant the teacher role.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {teachers.map(teacher => (
+                  <div key={teacher.id} className="p-4 rounded-xl border border-white/10 bg-white/5 flex items-center justify-between group">
+                    <div>
+                      <div className="text-white font-bold">{teacher.full_name || 'Unnamed Teacher'}</div>
+                      <div className="text-xs text-muted-foreground">{teacher.email}</div>
+                    </div>
+                    <button
+                      onClick={() => handleRevokeTeacher(teacher.id)}
+                      className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Revoke Teacher Role"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {teachers.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-white/5 rounded-3xl">
+                    No teachers assigned yet.
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>
