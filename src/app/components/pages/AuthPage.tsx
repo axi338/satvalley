@@ -8,7 +8,8 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -19,7 +20,7 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   };
 
   const handleEmailAuth = async () => {
-    setLoading(true);
+    setEmailLoading(true);
     setError(null);
     setSuccess(null);
     console.log(`DEBUG: handleEmailAuth started for mode: ${mode}, email: ${email}`);
@@ -31,7 +32,11 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
         });
         if (error) throw error;
         console.log("DEBUG: Sign up successful", data);
-        onSuccess();
+        if (data.user && !data.session) {
+          setSuccess("Registration successful! Please check your email to confirm your account.");
+        } else {
+          onSuccess();
+        }
       } else if (mode === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -49,12 +54,12 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
       }
       setError(message);
     } finally {
-      setLoading(false);
+      setEmailLoading(false);
     }
   };
 
   const handleGoogle = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     setError(null);
     setSuccess(null);
     console.log("DEBUG: handleGoogle started with origin:", window.location.origin);
@@ -75,7 +80,7 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
       }
       setError(message);
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -178,9 +183,9 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
               <button
                 className="w-full h-20 bg-white text-black hover:bg-indigo-400 hover:text-white rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] shadow-xl shadow-black/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 group"
                 onClick={handleEmailAuth}
-                disabled={loading || !email || !password}
+                disabled={emailLoading || googleLoading || !email || !password}
               >
-                {loading ? (
+                {emailLoading ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin" />
                     <span className="animate-pulse">Processing...</span>
@@ -201,10 +206,19 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
               <button
                 className="w-full h-20 border border-white/10 hover:bg-white/5 text-white/80 rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4"
                 onClick={handleGoogle}
-                disabled={loading}
+                disabled={emailLoading || googleLoading}
               >
-                <Chrome className="w-6 h-6 text-indigo-400" />
-                Continue with Google
+                {googleLoading ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+                    <span className="animate-pulse">Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Chrome className="w-6 h-6 text-indigo-400" />
+                    Continue with Google
+                  </>
+                )}
               </button>
             </div>
           </div>

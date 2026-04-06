@@ -49,50 +49,48 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
         profile?.is_teacher === true;
 
     useEffect(() => {
-        if (profile?.class_id || isAdmin) {
-            dispatch(fetchAssignments());
+        dispatch(fetchAssignments());
 
-            const fetchStats = async () => {
-                try {
-                    const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
-                    const headers = { 'Authorization': `Bearer ${token}` };
+        const fetchStats = async () => {
+            try {
+                const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+                const headers = { 'Authorization': `Bearer ${token}` };
 
-                    const [perfResp, todoResp] = await Promise.all([
-                        fetch(`/api/performance/${user.id}`, { headers }),
-                        fetch(`/api/todo/${user.id}`, { headers })
-                    ]);
+                const [perfResp, todoResp] = await Promise.all([
+                    fetch(`/api/performance/${user.id}`, { headers }),
+                    fetch(`/api/todo/${user.id}`, { headers })
+                ]);
 
-                    if (perfResp.ok) {
-                        const perfData = await perfResp.json();
-                        if (perfData.performance) dispatch(setPerformance(perfData.performance));
-                    }
-                    if (todoResp.ok) {
-                        const todoData = await todoResp.json();
-                        dispatch(setTodos(todoData.todos || []));
-                    }
-                } catch (err) {
-                    console.error(err);
+                if (perfResp.ok) {
+                    const perfData = await perfResp.json();
+                    if (perfData.performance) dispatch(setPerformance(perfData.performance));
                 }
-            };
-            fetchStats();
+                if (todoResp.ok) {
+                    const todoData = await todoResp.json();
+                    dispatch(setTodos(todoData.todos || []));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchStats();
 
-            socket.emit('join', user.id);
+        socket.emit('join', user.id);
 
-            socket.on('new_assignment', (data) => {
-                toast.success(`New Assignment: ${data.title}`);
-                dispatch(fetchAssignments());
-            });
+        socket.on('new_assignment', (data) => {
+            toast.success(`New Assignment: ${data.title}`);
+            dispatch(fetchAssignments());
+        });
 
-            socket.on('assignment_graded', (data) => {
-                toast.info(`Assignment Graded! Your score: ${data.score}`);
-            });
+        socket.on('assignment_graded', (data) => {
+            toast.info(`Assignment Graded! Your score: ${data.score}`);
+        });
 
-            return () => {
-                socket.off('new_assignment');
-                socket.off('assignment_graded');
-            };
-        }
-    }, [dispatch, user.id, profile?.class_id, isAdmin]);
+        return () => {
+            socket.off('new_assignment');
+            socket.off('assignment_graded');
+        };
+    }, [dispatch, user.id]);
 
     const handleCreateAssignment = async () => {
         if (!newTitle || !newDueDate) return;
@@ -147,33 +145,7 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
         }
     };
 
-    if (!isAdmin && !profile?.class_id) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center p-8">
-                <div className="bg-[#0a0f1d]/80 border border-white/10 p-12 rounded-3xl max-w-md w-full text-center shadow-2xl">
-                    <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Lock className="text-indigo-500" size={32} />
-                    </div>
-                    <h2 className="text-2xl font-black text-white mb-2">Join a Class</h2>
-                    <p className="text-indigo-200/60 mb-8">Enter your class ID to access assignments and performance tracking.</p>
-                    <input
-                        type="text"
-                        value={joinClassId}
-                        onChange={(e) => setJoinClassId(e.target.value)}
-                        placeholder="Enter Class ID"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 focus:outline-none focus:border-indigo-500"
-                    />
-                    <button
-                        onClick={handleJoinClass}
-                        disabled={isJoining}
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                    >
-                        {isJoining ? <Loader2 className="animate-spin" size={18} /> : 'Join Class'}
-                    </button>
-                </div>
-            </div>
-        );
-    }
+
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">

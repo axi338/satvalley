@@ -103,10 +103,17 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [teacherName, setTeacherName] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
   const [teachersLoading, setTeachersLoading] = useState(false);
+  const [invites, setInvites] = useState<Array<any>>([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
 
   // Site Content Management
   const [siteContent, setSiteContent] = useState<any>({});
   const [contentLoading, setContentLoading] = useState(false);
+
+  const showFlash = (message: string) => {
+    setFlash(message);
+    setTimeout(() => setFlash(null), 3000);
+  };
 
   const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
   const adminUsersEndpoint = `${apiBase}/listUsers`;
@@ -141,16 +148,43 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     try {
       const data = await authedRequest('/api/admin/teachers');
       setTeachers(data.teachers || []);
-    } catch (err) {
-      showFlash('Failed to load teachers');
+    } catch (err: any) {
+      showFlash(`Failed to load teachers: ${err.message}`);
     } finally {
       setTeachersLoading(false);
     }
   };
 
+  const fetchInvites = async () => {
+    setInvitesLoading(true);
+    try {
+      const data = await authedRequest('/api/admin/teacher-invites');
+      setInvites(data.invites || []);
+    } catch (err: any) {
+      showFlash(`Failed to load invites: ${err.message}`);
+    } finally {
+      setInvitesLoading(false);
+    }
+  };
+
+  const generateInvite = async () => {
+    try {
+      const data = await authedRequest('/api/admin/teacher-invites', { method: 'POST' });
+      setInvites([data.invite, ...invites]);
+      showFlash('Invite code generated!');
+    } catch (err: any) {
+      showFlash(`Failed to generate invite: ${err.message}`);
+    }
+  };
+
   useEffect(() => {
-    void fetchUsers();
-    void fetchTeachers();
+    const init = async () => {
+      await loadData();
+      await fetchUsers();
+      await fetchTeachers();
+      await fetchInvites();
+    };
+    init();
   }, [apiBase]);
 
   const authedRequest = async (path: string, options: RequestInit = {}) => {
@@ -166,7 +200,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       },
     });
     if (!res.ok) {
-      
+
       const body = await res.json().catch(() => ({}));
       throw new Error(body.message || `Request failed (${res.status})`);
     }
@@ -203,14 +237,6 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     }
   };
 
-  useEffect(() => {
-    void loadData();
-  }, [apiBase]);
-
-  const showFlash = (message: string) => {
-    setFlash(message);
-    setTimeout(() => setFlash(null), 2000);
-  };
 
   const handleAddTest = () => {
     if (!testTitle) {
@@ -832,10 +858,13 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             <TabsTrigger value="users" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <UserRound className="w-4 h-4 mr-2" /> Users
             </TabsTrigger>
-            <TabsTrigger value="teachers" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              <Users className="w-4 h-4 mr-2" /> Teachers
+            <TabsTrigger value="teachers" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white rounded-xl gap-2 transition-all">
+              <Users className="w-4 h-4" /> Teachers
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            <TabsTrigger value="invites" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white rounded-xl gap-2 transition-all">
+              <Plus className="w-4 h-4" /> Invites
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white rounded-xl gap-2 transition-all">
               <RefreshCw className="w-4 h-4 mr-2" /> Settings
             </TabsTrigger>
           </TabsList>
@@ -1298,6 +1327,60 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                     No teachers assigned yet.
                   </div>
                 )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="invites" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 bg-[#0a0f1d]/60 border border-white/10 rounded-[2.5rem] backdrop-blur-xl">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <Plus className="text-indigo-400" /> Teacher Invitations
+                  </h2>
+                  <p className="text-indigo-200/40 text-sm font-bold mt-1">Generate and manage unique codes for inviting new teachers.</p>
+                </div>
+                <Button onClick={generateInvite} className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl h-12 px-6 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Generate New Code
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {invitesLoading && <div className="text-center py-12 text-indigo-200/40 animate-pulse">Loading invites...</div>}
+                {!invitesLoading && invites.length === 0 && <div className="text-center py-12 text-indigo-400/30 font-bold uppercase tracking-widest italic border-2 border-dashed border-white/5 rounded-3xl">No invitations generated yet</div>}
+
+                {invites.map((invite: any) => (
+                  <div key={invite.id} className="p-6 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-between group hover:border-indigo-500/30 transition-all">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3">
+                        <code className="text-xl font-black text-white bg-indigo-500/20 px-3 py-1 rounded-xl border border-indigo-500/20">{invite.code}</code>
+                        {invite.used_by ? (
+                          <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Used</span>
+                        ) : (
+                          new Date(invite.expires_at) < new Date() ? (
+                            <span className="text-[10px] font-black uppercase text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">Expired</span>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">Active</span>
+                          )
+                        )}
+                      </div>
+                      <p className="text-[10px] text-indigo-200/40 font-bold uppercase tracking-[0.2em] mt-1">
+                        Expires: {new Date(invite.expires_at).toLocaleDateString()}
+                        {invite.profiles && ` • Used by: ${invite.profiles.full_name} (${invite.profiles.email})`}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="text-indigo-400 hover:text-white hover:bg-white/5 rounded-xl uppercase text-[10px] font-black tracking-widest"
+                      onClick={() => {
+                        navigator.clipboard.writeText(invite.code);
+                        showFlash('Code copied to clipboard!');
+                      }}
+                    >
+                      Copy Code
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           </TabsContent>

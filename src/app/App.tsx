@@ -28,6 +28,8 @@ import { NewImport } from './components/pages/NewImport';
 import { ImportReview } from './components/pages/ImportReview';
 import { OnboardingPage } from './components/pages/OnboardingPage';
 import { ClassDashboardPage } from './components/pages/ClassDashboardPage';
+import { TeacherPage } from './components/pages/TeacherPage';
+import { TeacherSignupPage } from './components/pages/TeacherSignupPage';
 import { Toaster } from './components/ui/sonner';
 
 export default function App() {
@@ -231,6 +233,13 @@ export default function App() {
       case 'premium-class':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('premium-class')} />;
         return <ClassDashboardPage user={user} profile={profile} onNavigate={handleNavigate} />;
+      case 'teacher':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('teacher')} />;
+        const isTeacher = profile?.is_teacher === true || adminUnlocked;
+        if (!isTeacher) return <DashboardPage user={user} profile={profile} onNavigate={handleNavigate} />;
+        return <TeacherPage user={user} profile={profile} onNavigate={handleNavigate} />;
+      case 'teacher-signup':
+        return <TeacherSignupPage onNavigate={handleNavigate} />;
       case 'admin':
         return adminUnlocked ? <AdminPage onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-olympiad':

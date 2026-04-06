@@ -34,10 +34,12 @@ export function Sidebar({
         { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
         { id: 'review', label: 'Review', icon: History },
         { id: 'profile', label: 'Profile', icon: User },
-        // { id: 'results', label: 'Hall of Fame', icon: Award },
-        // { id: 'calculator', label: 'SAT Calculator', icon: Radio },
-        // { id: 'olympiad', label: 'SAT Olympiad', icon: GraduationCap },
     ];
+
+    const isTeacher = profile?.is_teacher === true || isAdmin;
+    if (isTeacher) {
+        navItems.splice(1, 0, { id: 'teacher', label: 'Teacher Panel', icon: GraduationCap });
+    }
 
     const adminItems = [
         { id: 'admin', label: 'Admin Panel', icon: User },

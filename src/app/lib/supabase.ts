@@ -9,4 +9,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// PKCE must match Supabase OAuth redirects (?code= in the URL). The JS client
+// defaults to implicit flow (hash tokens); with implicit + a PKCE callback the
+// session is never detected and Google sign-in appears to "do nothing".
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        flowType: 'pkce',
+    },
+});

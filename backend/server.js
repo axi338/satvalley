@@ -82,6 +82,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: [
       'http://localhost:5173',
+      'http://127.0.0.1:5173',
       'http://localhost:3000',
       'https://sat-valley.web.app',
       'https://satvalley.web.app',
@@ -99,6 +100,7 @@ const upload = multer({ storage: storage });
 app.use(cors({
   origin: [
     'http://localhost:5173',
+    'http://127.0.0.1:5173',
     'http://localhost:3000',
     'https://sat-valley.web.app',
     'https://satvalley.web.app',
@@ -114,7 +116,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static('public/uploads'));
 
-const verifyAdmin = async (req) => {
+const verifyTeacher = async (req) => {
   const authHeader = req.headers.authorization || "";
   const match = authHeader.match(/^Bearer (.+)$/);
   if (!match) {
@@ -124,19 +126,61 @@ const verifyAdmin = async (req) => {
   const { data: { user }, error } = await supabase.auth.getUser(token);
 
   if (error || !user) {
-    console.error("verifyAdmin Auth error:", error?.message || error);
     throw Object.assign(new Error(`Unauthenticated: ${error?.message || 'Invalid token'}`), { status: 401 });
   }
 
   const email = user.email ? user.email.toLowerCase() : "";
-  // Check if user has an 'admin' claim or is in the allowList
-  const isAdmin = user.app_metadata?.admin === true || allowList.includes(email);
 
-  if (isAdmin) {
+  // A teacher is either an admin OR has is_teacher = true
+  const { data: profile } = await supabase.from("profiles").select("is_teacher").eq("id", user.id).single();
+  const isAdmin = user.app_metadata?.admin === true || allowList.includes(email);
+  const isTeacher = profile?.is_teacher === true || isAdmin;
+
+  if (isTeacher) {
+    req.user = { id: user.id, email, isAdmin, isTeacher };
     return user;
   }
-  console.warn(`WARN: Admin access denied for ${email}. Checked against allowList: [${allowList.join(", ")}]`);
-  throw Object.assign(new Error("Not an admin"), { status: 403 });
+
+  throw Object.assign(new Error("Not a teacher"), { status: 403 });
+};
+
+const verifyAdmin = async (req) => {
+  const authHeader = req.headers.authorization || "";
+  const match = authHeader.match(/^Bearer (.+)$/);
+  if (!match) {
+    console.warn("verifyAdmin: Missing bearer token in header");
+    throw Object.assign(new Error("Missing bearer token"), { status: 401 });
+  }
+  const token = match[1];
+  console.log(`verifyAdmin: Verifying token (prefix: ${token.substring(0, 10)}...)`);
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      console.error("verifyAdmin Auth error:", error?.message || error);
+      throw Object.assign(new Error(`Unauthenticated: ${error?.message || 'Invalid token'}`), { status: 401 });
+    }
+
+    const email = user.email ? user.email.toLowerCase() : "";
+    console.log(`verifyAdmin: User verified as ${email}. Token: ${token.substring(0, 10)}...`);
+
+    // Check if user has an 'admin' claim or is in the allowList
+    const isAdmin = user.app_metadata?.admin === true || allowList.includes(email);
+
+    if (isAdmin) {
+      return user;
+    }
+    console.warn(`WARN: Admin access denied for ${email}. Checked against allowList: [${allowList.join(", ")}]`);
+    throw Object.assign(new Error("Not an admin"), { status: 403 });
+  } catch (err) {
+    console.error("verifyAdmin Unexpected error:", err.message);
+    if (err.message.includes("Unexpected token")) {
+      console.error("DEBUG: Possible Supabase URL or network issue. URL:", supabaseUrl);
+      console.error("DEBUG: Full error stack:", err.stack);
+    }
+    throw err;
+  }
 };
 
 // Helper: Recalculate and update test metadata (counts and sections)
@@ -2160,6 +2204,98 @@ app.delete("/api/admin/teachers/:id", async (req, res) => {
   } catch (err) {
     res.status(err.status || 500).json({ error: "revoke_teacher_failed", message: err.message });
   }
+});// Generate Invite Code (Admin only)
+app.post("/api/admin/teacher-invites", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const code = "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const expires_at = new Date();
+    expires_at.setDate(expires_at.getDate() + 7); // 7 days expiry
+
+    const { data, error } = await supabase
+      .from("teacher_invites")
+      .insert({ code, expires_at: expires_at.toISOString() })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ invite: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "generate_invite_failed", message: err.message });
+  }
+});
+
+// List all invites (Admin only)
+app.get("/api/admin/teacher-invites", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { data, error } = await supabase
+      .from("teacher_invites")
+      .select("*, profiles(full_name, email)")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json({ invites: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "fetch_invites_failed", message: err.message });
+  }
+});
+
+// Teacher Sign-up/Upgrade with code
+app.post("/api/auth/teacher-signup", async (req, res) => {
+  try {
+    const { code, email, password, full_name } = req.body;
+    if (!code) return res.status(400).json({ error: "invite_code_required" });
+
+    // 1. Verify invite code
+    const { data: invite, error: iError } = await supabase
+      .from("teacher_invites")
+      .select("*")
+      .eq("code", code)
+      .is("used_by", null)
+      .gt("expires_at", new Date().toISOString())
+      .single();
+
+    if (iError || !invite) {
+      return res.status(400).json({ error: "invalid_or_expired_invite", message: "The invite code is invalid, already used, or expired." });
+    }
+
+    let userId;
+    // 2. Handle account creation or finding existing user
+    const { data: { session }, error: aError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name } }
+    });
+
+    if (aError) {
+      if (aError.message.includes("already registered")) {
+        // User already exists, they just need to log in to upgrade
+        return res.status(400).json({ error: "user_exists", message: "User already exists. Please log in first, then use your invite code to upgrade your account." });
+      }
+      throw aError;
+    }
+    userId = session.user.id;
+
+    // 3. Mark invite as used
+    await supabase.from("teacher_invites").update({
+      used_by: userId,
+      used_at: new Date().toISOString()
+    }).eq("id", invite.id);
+
+    // 4. Update profile with teacher role
+    await supabase.from("profiles").upsert({
+      id: userId,
+      email,
+      full_name: full_name || "Teacher",
+      is_teacher: true,
+      updated_at: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: "Teacher account created successfully!" });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "teacher_signup_failed", message: err.message });
+  }
 });
 
 // 1. Assignments
@@ -2276,55 +2412,70 @@ app.patch("/api/grade-assignment/:submission_id", async (req, res) => {
 });
 
 // 3. Performance & Statistics
-app.get("/api/performance/:student_id", verifyUser, async (req, res) => {
-  const { student_id } = req.params;
+app.get("/api/performance/:student_id", async (req, res) => {
+  try {
+    const user = await verifyTeacher(req);
+    const { student_id } = req.params;
 
-  // Security: Student can only see their own data
-  if (req.user.id !== student_id && !req.user.isAdmin) {
-    return res.status(403).json({ error: "Unauthorized access to performance data" });
+    // Security: Student can only see their own data, Teachers/Admins can see any
+    if (user.id !== student_id && !user.isTeacher) {
+      return res.status(403).json({ error: "Unauthorized access to performance data" });
+    }
+
+    const { data, error } = await supabase.from("class_performance").select("*").eq("student_id", student_id).single();
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ performance: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "fetch_performance_failed", message: err.message });
   }
-
-  const { data, error } = await supabase.from("class_performance").select("*").eq("student_id", student_id).single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ performance: data });
 });
 
 // GET Student Growth Data (for charts)
-app.get("/api/performance/growth/:student_id", verifyUser, async (req, res) => {
-  const { student_id } = req.params;
+app.get("/api/performance/growth/:student_id", async (req, res) => {
+  try {
+    const user = await verifyTeacher(req);
+    const { student_id } = req.params;
 
-  // Security: Student can only see their own data
-  if (req.user.id !== student_id && !req.user.isAdmin) {
-    return res.status(403).json({ error: "Unauthorized access to performance data" });
+    // Security: Student can only see their own data, Teachers/Admins can see any
+    if (user.id !== student_id && !user.isTeacher) {
+      return res.status(403).json({ error: "Unauthorized access to performance data" });
+    }
+    // In a real scenario, this would fetch from a 'class_performance_history' table.
+    // For now, we'll return mock historical data based on the current overall_score to demonstrate formatting.
+    const { data: current } = await supabase.from("class_performance").select("*").eq("student_id", student_id).single();
+
+    // Mocking 6 months of growth
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const growthData = months.map((m, i) => ({
+      month: m,
+      score: (current?.overall_score || 50) - (5 * (5 - i)) + Math.floor(Math.random() * 5)
+    }));
+
+    res.json({ growth: growthData });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "fetch_growth_failed", message: err.message });
   }
-  // In a real scenario, this would fetch from a 'class_performance_history' table.
-  // For now, we'll return mock historical data based on the current overall_score to demonstrate formatting.
-  const { data: current } = await supabase.from("class_performance").select("*").eq("student_id", student_id).single();
-
-  // Mocking 6 months of growth
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  const growthData = months.map((m, i) => ({
-    month: m,
-    score: (current?.overall_score || 50) - (5 * (5 - i)) + Math.floor(Math.random() * 5)
-  }));
-
-  res.json({ growth: growthData });
 });
 
 // 4. Teacher Specific: Create Class ID
-app.post("/api/teacher/create-class", verifyAdmin, async (req, res) => {
-  const { name } = req.body;
-  const teacher_id = req.user.id;
-  const class_id = "SAT-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+app.post("/api/teacher/create-class", async (req, res) => {
+  try {
+    const user = await verifyTeacher(req);
+    const { name } = req.body;
+    const teacher_id = user.id;
+    const class_id = "SAT-" + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-  const { data, error } = await supabase
-    .from("classes")
-    .insert({ id: class_id, teacher_id, name })
-    .select()
-    .single();
+    const { data, error } = await supabase
+      .from("classes")
+      .insert({ id: class_id, teacher_id, name })
+      .select()
+      .single();
 
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ class: data });
+    if (error) throw error;
+    res.json({ class: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "create_class_failed", message: err.message });
+  }
 });
 
 // 5. Student Specific: Join Class
