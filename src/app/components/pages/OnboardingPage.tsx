@@ -66,7 +66,16 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
                 })
             });
 
-            if (!res.ok) throw new Error((await res.json()).error);
+            if (!res.ok) {
+                let errorMessage = 'Failed to save profile. Please try again.';
+                try {
+                    const data = await res.json();
+                    errorMessage = data.error || errorMessage;
+                } catch (e) {
+                    errorMessage = `Server Error (${res.status}): Please contact support.`;
+                }
+                throw new Error(errorMessage);
+            }
 
             onComplete(); // Successfully saved, signal to App.tsx to remove lock
         } catch (err) {

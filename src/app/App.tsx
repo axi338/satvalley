@@ -201,10 +201,17 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      // Clear immediately for better UX
+      setUser(null);
+      setIsProfileComplete(null);
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (err) {
       console.error("DEBUG: Sign out failed", err);
+      // Ensure we are logged out locally even if remote call fails
+      setUser(null);
+      setIsProfileComplete(null);
     }
   };
 

@@ -2844,21 +2844,73 @@ app.post("/api/profile/upload-banner", upload.single('file'), async (req, res) =
   }
 });
 
+// GET /api/me/profile
+app.get("/api/me/profile", async (req, res) => {
+  try {
+    const user = await verifyUser(req);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    res.json({ profile: data });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "fetch_profile_failed", message: err.message });
+  }
+});
+
+// POST /api/me/profile
+app.post("/api/me/profile", async (req, res) => {
+  try {
+    const user = await verifyUser(req);
+    const { full_name, phone, graduation_year, sat_deadline, onboarding_complete } = req.body;
+
+    const updates = {
+      id: user.id,
+      updated_at: new Date().toISOString()
+    };
+    if (full_name !== undefined) updates.full_name = full_name;
+    if (phone !== undefined) updates.phone = phone;
+    if (graduation_year !== undefined) updates.graduation_year = graduation_year;
+    if (sat_deadline !== undefined) updates.sat_deadline = sat_deadline;
+    if (onboarding_complete !== undefined) updates.onboarding_complete = onboarding_complete;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(updates)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, profile: data });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(err.status || 500).json({ error: "profile_update_failed", message: err.message });
+  }
+});
+
 // POST /api/profile/update
 app.post("/api/profile/update", async (req, res) => {
   try {
     const user = await verifyUser(req);
-    const { full_name, phone, avatar_url, banner_url } = req.body;
+    const { full_name, phone, avatar_url, banner_url, graduation_year, sat_deadline } = req.body;
 
-    const updates = { updated_at: new Date().toISOString() };
+    const updates = {
+      id: user.id,
+      updated_at: new Date().toISOString()
+    };
     if (full_name !== undefined) updates.full_name = full_name;
     if (phone !== undefined) updates.phone = phone;
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
     if (banner_url !== undefined) updates.banner_url = banner_url;
+    if (graduation_year !== undefined) updates.graduation_year = graduation_year;
+    if (sat_deadline !== undefined) updates.sat_deadline = sat_deadline;
 
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: user.id, ...updates });
+      .upsert(updates);
 
     if (error) throw error;
     res.json({ success: true });
