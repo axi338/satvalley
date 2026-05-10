@@ -12,67 +12,66 @@ interface MathTextProps {
  * any inline $...$ or block $$...$$ LaTeX definitions into beautifully rendered KaTeX equations.
  */
 export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
-    const processedText = useMemo(() => {
-        if (typeof text !== 'string') return '';
-        // Automatically wrap standalone fractions (e.g. 1/2) in LaTeX inline math 
-        // if they aren't already preceded by a backslash or dollar sign.
-        return text.replace(/(^|[^$\\])\b(\d+)\/(\d+)\b(?=[^$]|$)/g, '$1$\\frac{$2}{$3}$');
-    }, [text]);
-
-    // Use a custom parser to avoid issues with standard Regex splits on complex LaTeX strings.
     const segments = useMemo(() => {
-        if (!processedText) return [];
-        const result = [];
-        let i = 0;
-        let isMath = false;
-        let isBlock = false;
-        let currentText = '';
+        if (!text || typeof text !== 'string') return [];
 
-        while (i < processedText.length) {
-            // Check for block math $$...$$
-            if (processedText.substr(i, 2) === '$$' && !isMath) {
-                if (currentText) result.push({ type: 'text', content: currentText });
-                currentText = '';
-                isMath = true;
-                isBlock = true;
-                i += 2;
-                continue;
-            } else if (processedText.substr(i, 2) === '$$' && isMath && isBlock) {
-                if (currentText) result.push({ type: 'blockMath', content: currentText });
-                currentText = '';
-                isMath = false;
-                isBlock = false;
-                i += 2;
-                continue;
+        const result: Array<{ type: string, content: string }> = [];
+        let currentIndex = 0;
+
+        // Match $$...$$, $...$, \[...\], \(...\)
+        const mathPattern = /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\$[\s\S]*?\$|\\\([\s\S]*?\\\))/g;
+
+        let match;
+        while ((match = mathPattern.exec(text)) !== null) {
+            // Push preceding text (apply fraction auto-replace here to avoid breaking actual LaTeX)
+            if (match.index > currentIndex) {
+                let plainText = text.slice(currentIndex, match.index);
+                // Convert simple standalone fractions like 1/2 -> \frac{1}{2} and wrap in $...$
+                plainText = plainText.replace(/(^|[^$\\])\b(\d+)\/(\d+)\b(?=[^$]|$)/g, '$1$\\frac{$2}{$3}$');
+
+                // If the plainText itself now contains $...$, we need to split it again.
+                // Simple workaround: just parse the plainText recursively, or since it's just fractions, we can split by $ again.
+                const subParts = plainText.split(/(\$[\s\S]*?\$)/g);
+                for (const subPart of subParts) {
+                    if (subPart.startsWith('$') && subPart.endsWith('$')) {
+                        result.push({ type: 'inlineMath', content: subPart.slice(1, -1) });
+                    } else if (subPart) {
+                        result.push({ type: 'text', content: subPart });
+                    }
+                }
             }
 
-            // Check for inline math $...$
-            if (processedText[i] === '$' && !isMath) {
-                if (currentText) result.push({ type: 'text', content: currentText });
-                currentText = '';
-                isMath = true;
-                isBlock = false;
-                i += 1;
-                continue;
-            } else if (processedText[i] === '$' && isMath && !isBlock) {
-                if (currentText) result.push({ type: 'inlineMath', content: currentText });
-                currentText = '';
-                isMath = false;
-                i += 1;
-                continue;
+            const fullMatch = match[0];
+            if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$')) {
+                result.push({ type: 'blockMath', content: fullMatch.slice(2, -2) });
+            } else if (fullMatch.startsWith('\\[') && fullMatch.endsWith('\\]')) {
+                result.push({ type: 'blockMath', content: fullMatch.slice(2, -2) });
+            } else if (fullMatch.startsWith('$') && fullMatch.endsWith('$')) {
+                result.push({ type: 'inlineMath', content: fullMatch.slice(1, -1) });
+            } else if (fullMatch.startsWith('\\(') && fullMatch.endsWith('\\)')) {
+                result.push({ type: 'inlineMath', content: fullMatch.slice(2, -2) });
             }
 
-            currentText += processedText[i];
-            i++;
+            currentIndex = mathPattern.lastIndex;
         }
 
-        // Push whatever remains
-        if (currentText) {
-            result.push({ type: isMath ? (isBlock ? 'blockMath' : 'inlineMath') : 'text', content: currentText });
+        // Push remaining text
+        if (currentIndex < text.length) {
+            let remainingText = text.slice(currentIndex);
+            remainingText = remainingText.replace(/(^|[^$\\])\b(\d+)\/(\d+)\b(?=[^$]|$)/g, '$1$\\frac{$2}{$3}$');
+
+            const subParts = remainingText.split(/(\$[\s\S]*?\$)/g);
+            for (const subPart of subParts) {
+                if (subPart.startsWith('$') && subPart.endsWith('$')) {
+                    result.push({ type: 'inlineMath', content: subPart.slice(1, -1) });
+                } else if (subPart) {
+                    result.push({ type: 'text', content: subPart });
+                }
+            }
         }
 
         return result;
-    }, [processedText]);
+    }, [text]);
 
     if (!text || typeof text !== 'string') return null;
 

@@ -45,7 +45,19 @@ function getModel() {
         }
 
         vertexAI = new VertexAI({ project: projectId, location });
-        model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        // Safety Settings: BLOCK_NONE to ensure SAT questions aren't falsely flagged
+        const safetySettings = [
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+        ];
+
+        model = vertexAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            safetySettings: safetySettings
+        });
     }
     return model;
 }
@@ -121,7 +133,14 @@ async function generateWithRetry(request, onProgress, maxAttempts = 5) {
         try {
             return await generateContentWithRateLimit(request, onProgress);
         } catch (e) {
-            if (!isRetryableVertexError(e) || attempt === maxAttempts) throw e;
+            // Log deep failure details if it's the last attempt or not retryable
+            const isRetryable = isRetryableVertexError(e);
+
+            if (!isRetryable || attempt === maxAttempts) {
+                const errorDetails = e?.response?.data || e?.message || String(e);
+                console.error(`[VertexAI Error] Full Details:`, JSON.stringify(errorDetails, null, 2));
+                throw e;
+            }
 
             const waitSecs = Math.round(delay / 1000);
             console.log(
@@ -376,48 +395,49 @@ OUTPUT FORMAT(Strict JSON):
  */
 export async function analyzePerformanceAI(responses) {
     const prompt = `
-Analyze the following student SAT practice test performance data. 
-Provide a deep pedagogical synthesis including a skill - by - skill breakdown, a roadmap for improvement, and an overall readiness score.
+Analyze the following student SAT practice test performance data.
+Provide a deep pedagogical synthesis including a skill-by-skill breakdown, a roadmap for improvement, and an overall readiness score.
 
-        RESPONSES:
+RESPONSES:
 ${JSON.stringify(responses, null, 2)}
 
-OUTPUT FORMAT(Strict JSON):
+CATEGORIES TO ANALYZE (Map results to these):
+- Information and Ideas (Reading)
+- Craft and Structure (Reading/Writing)
+- Expression of Ideas (Writing)
+- Standard English Conventions (Grammar)
+- Heart of Algebra (Algebra)
+- Problem Solving and Data Analysis (Statistics/Modeling)
+- Passport to Advanced Math (Functions/Advanced Equations)
+- Geometry and Trigonometry
+
+OUTPUT FORMAT (Strict JSON):
+{
+  "mastery_score": 85, // Scale 0-100 indicating overall readiness for the SAT
+  "encouragement": "A high-energy, motivational one-liner tailored to their performance level.",
+  "overall_critique": "A professional, pedagogical summary (3-4 sentences) analyzing their test-taking strategy, common pitfalls, and conceptual gaps.",
+  "skill_breakdown": [
     {
-        "mastery_score": 85, // Scale 0-100 indicating overall readiness
-            "encouragement": "A high-energy, motivational one-liner.",
-                "overall_critique": "A professional, pedagogical summary of the performance.",
-                    "skill_breakdown": [
-                        {
-                            "skill": "Heart of Algebra", // e.g., "Heart of Algebra", "Rhetoric", "Standard English Conventions"
-                            "mastery": 70, // 0-100 score for this specific skill
-                            "insight": "Briefly explain why this score was given based on their answers."
-                        }
-                    ],
-                        "roadmap": [
-                            {
-                                "step": 1,
-                                "title": "Master Linear Equations",
-                                "action": "Focus on isolating variables in complex word problems. Spend 30 mins each day on multi-step equations."
-                            }
-                        ]
+      "skill": "Skill Name From Categories List",
+      "mastery": 70, // 0-100 score
+      "insight": "Explain specific patterns observed (e.g., 'Struggles with punctuation in complex sentences')."
     }
+  ],
+  "roadmap": [
+    {
+      "step": 1,
+      "title": "Clear Objective",
+      "action": "Specific, actionable instruction (e.g., 'Review Circle Theorems on Khan Academy for 20 mins')."
+    }
+  ]
+}
 
-CATEGORIES TO ANALYZE(If applicable):
-    - Information and Ideas
-        - Craft and Structure
-            - Expression of Ideas
-                - Standard English Conventions
-                    - Heart of Algebra
-                        - Problem Solving and Data Analysis
-                            - Passport to Advanced Math
-                                - Geometry and Trigonometry
-
-    RULES:
-    1. Output ONLY the JSON object.
-2. Be encouraging but direct and technical.
-3. If specific question data is missing for a category, omit that category from the breakdown.
-4. Ensure the roadmap steps are sequential and highly specific.
+RULES:
+1. Output ONLY the JSON object.
+2. Be technical yet encouraging.
+3. If specific question data is missing for a category, omit it.
+4. ROADMAP: Steps must be sequential and focus on the weakest skills first.
+5. CALCULATION: The mastery_score should be a weighted average of their performance, not just a count.
 `;
 
     try {

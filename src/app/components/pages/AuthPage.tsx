@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Mail, Lock, Loader2, Chrome, ShieldCheck, Sparkles, GraduationCap, Zap, Globe, Cpu } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { authApi } from '../../lib/auth';
 
 type Mode = 'login' | 'register';
 
@@ -39,6 +40,7 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
         });
         if (error) throw error;
         console.log("DEBUG: Sign in successful", data);
+        onSuccess(); // Redirect on success
       }
     } catch (err) {
       console.error("DEBUG: handleEmailAuth error:", err);
@@ -56,10 +58,16 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
     setSuccess(null);
     console.log("DEBUG: handleGoogle started with origin:", window.location.origin);
     try {
+      const redirectUrl = window.location.origin;
+      console.log("DEBUG: Initiating Google OAuth with redirect:", redirectUrl);
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account'
+          }
         },
       });
       if (error) throw error;

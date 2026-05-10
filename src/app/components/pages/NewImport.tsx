@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, X, ArrowLeft, Loader2, CheckCircle2, AlertCircle, FileText, Clock, Zap, Sparkles } from 'lucide-react';
+import { Upload, X, ArrowLeft, Loader2, CheckCircle2, AlertCircle, FileText, Clock, Zap, Sparkles, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
@@ -18,10 +18,22 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
     const [moduleCounts, setModuleCounts] = useState<any>(null);
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [isAdminProfile, setIsAdminProfile] = useState(false);
 
     useEffect(() => {
         fetchTests();
+        checkUser();
     }, []);
+
+    const checkUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUserEmail(user?.email || 'Not Signed In');
+        if (user) {
+            const { data } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+            setIsAdminProfile(data?.is_admin || false);
+        }
+    };
 
     useEffect(() => {
         if (destinationTestId) {
@@ -32,8 +44,24 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
     }, [destinationTestId]);
 
     const fetchTests = async () => {
-        const { data } = await supabase.from('tests').select('id, title').order('created_at', { ascending: false });
-        setTests(data || []);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch('/api/admin/tests', {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error('Fetch tests API error:', result);
+                toast.error('Could not load tests: ' + (result.message || 'Server error'));
+                return;
+            }
+
+            setTests(result.tests || []);
+        } catch (err: any) {
+            console.error('Unexpected error fetching tests:', err);
+            toast.error('Connection error while fetching tests');
+        }
     };
 
     const fetchModuleCounts = async (testId: string) => {
@@ -79,8 +107,8 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
     const handleStartImport = async () => {
         if (!file) return;
 
-        // Validate module selection if uploading to a test
-        if (destinationTestId && (!subject || !module)) {
+        // Validate module selection if uploading to a specific test and NOT a full test
+        if (destinationTestId && testType !== 'sat-mixed' && (!subject || !module)) {
             toast.error('Please select both subject and module');
             return;
         }
@@ -91,8 +119,10 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
         formData.append('testType', testType);
         if (destinationTestId) {
             formData.append('testId', destinationTestId);
-            formData.append('subject', subject);
-            formData.append('module', module);
+            if (testType !== 'sat-mixed') {
+                formData.append('subject', subject);
+                formData.append('module', module);
+            }
         }
 
         try {
@@ -132,9 +162,18 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                 Back to Dashboard
             </motion.button>
 
-            <div className="mb-12">
-                <h1 className="text-4xl font-black text-white mb-2 tracking-tight">New Import</h1>
-                <p className="text-indigo-200/60 font-medium">Upload docs or PDFs and AI will extract questions</p>
+            <div className="mb-12 flex justify-between items-end">
+                <div>
+                    <h1 className="text-4xl font-black text-white mb-2 tracking-tight">New Import</h1>
+                    <p className="text-indigo-200/60 font-medium">Upload docs or PDFs and AI will extract questions</p>
+                </div>
+                <div className="text-right">
+                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1">Logged in as</span>
+                    <span className="text-xs font-bold text-white block">{userEmail}</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mt-2 inline-block ${isAdminProfile ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                        {isAdminProfile ? 'Admin Verified' : 'Standard User'}
+                    </span>
+                </div>
             </div>
 
             <div className="space-y-8">
@@ -233,8 +272,8 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                         </div>
                     </div>
 
-                    {/* Subject & Module Selection (only show if test is selected) */}
-                    {destinationTestId && (
+                    {/* Subject & Module Selection (only show if test is selected AND not a full test) */}
+                    {destinationTestId && testType !== 'sat-mixed' && (
                         <div className="grid md:grid-cols-2 gap-6 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/10">
                             {/* Subject */}
                             <div className="space-y-3">
@@ -299,16 +338,32 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
 
                     {/* Destination */}
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em] ml-2">Destination (Optional)</label>
+                        <div className="flex justify-between items-center px-2">
+                            <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.2em]">Destination (Optional)</label>
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    fetchTests();
+                                }}
+                                className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 uppercase tracking-widest"
+                            >
+                                <RefreshCcw className="w-3 h-3" />
+                                Refresh List
+                            </button>
+                        </div>
                         <select
                             value={destinationTestId}
                             onChange={(e) => setDestinationTestId(e.target.value)}
                             className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
                         >
                             <option value="" className="bg-[#020617]">Add to question bank only</option>
-                            {tests.map(test => (
-                                <option key={test.id} value={test.id} className="bg-[#020617]">{test.title}</option>
-                            ))}
+                            {tests.length > 0 ? (
+                                tests.map(test => (
+                                    <option key={test.id} value={test.id} className="bg-[#020617]">{test.title}</option>
+                                ))
+                            ) : (
+                                <option disabled className="bg-[#020617] text-white/20 italic">No tests found...</option>
+                            )}
                         </select>
                     </div>
                 </motion.div>
@@ -361,27 +416,32 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
                             { icon: Zap, label: 'Split' },
                             { icon: Sparkles, label: 'Normalize' },
                             { icon: CheckCircle2, label: 'Review' }
-                        ].map((step, i) => (
-                            <div key={i} className="flex flex-col items-center gap-4 relative z-10">
-                                <motion.div
-                                    whileHover={{ scale: 1.1 }}
-                                    className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${i === 0 ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,223,0.3)]' : 'bg-white/5 text-indigo-200/20'
-                                        }`}
-                                >
-                                    <step.icon className="w-7 h-7" />
-                                </motion.div>
-                                <span className={`text-[9px] font-black uppercase tracking-widest ${i === 0 ? 'text-indigo-400' : 'text-indigo-200/20'
-                                    }`}>
-                                    {step.label}
-                                </span>
-                            </div>
-                        ))}
+                        ].map((step, i) => {
+                            const isActive = uploading ? i === 1 : i === 0;
+                            return (
+                                <div key={i} className="flex flex-col items-center gap-4 relative z-10">
+                                    <motion.div
+                                        whileHover={{ scale: 1.1 }}
+                                        className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isActive ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,223,0.3)]' : 'bg-white/5 text-indigo-200/20'
+                                            }`}
+                                    >
+                                        <step.icon className={`w-7 h-7 ${isActive && uploading && i === 1 ? 'animate-pulse' : ''}`} />
+                                    </motion.div>
+                                    <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-indigo-400' : 'text-indigo-200/20'
+                                        }`}>
+                                        {step.label}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <div className="mt-8 flex justify-center">
                         <div className="px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                            <span className="text-[9px] font-bold text-indigo-300 uppercase tracking-widest">Awaiting File Signal...</span>
+                            <div className={`w-1.5 h-1.5 rounded-full bg-indigo-500 ${uploading ? 'animate-ping' : 'animate-pulse'}`} />
+                            <span className="text-[9px] font-bold text-indigo-300 uppercase tracking-widest">
+                                {uploading ? 'Pipeline Active: Transmission IP-77...' : 'Awaiting File Signal...'}
+                            </span>
                         </div>
                     </div>
                 </motion.div>

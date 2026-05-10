@@ -778,14 +778,12 @@ export function VocabularyPage({ user }: { user: any }) {
                                         animate={{ scale: 1 }}
                                         initial={{ scale: 0.8 }}
                                         className="absolute inset-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-fuchsia-600 border border-white/20 rounded-[4rem] p-6 cursor-grab active:cursor-grabbing select-none shadow-[0_0_50px_rgba(124,58,237,0.3)]"
-                                        style={{ perspective: '1000px' }}
                                     >
-                                        <div className="w-full h-full relative" style={{ transformStyle: 'preserve-3d' }}>
+                                        <div className="w-full h-full relative">
                                             <motion.div
                                                 animate={{ rotateY: isFlipped ? 180 : 0 }}
                                                 transition={{ duration: 0.6, type: 'spring', damping: 20, stiffness: 100 }}
                                                 className="w-full h-full relative"
-                                                style={{ transformStyle: 'preserve-3d' }}
                                             >
                                                 {/* Front */}
                                                 <div

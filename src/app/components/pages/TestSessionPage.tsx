@@ -1260,6 +1260,21 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         };
     }, [isDraggingSplit]);
 
+    const [colorMode, setColorMode] = useState<'light' | 'reverse'>('light');
+    const [activeModal, setActiveModal] = useState<'none' | 'settings' | 'help' | 'exit'>('none');
+
+    useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveModal('none');
+        };
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, []);
+
+    const handleSaveAndExit = () => {
+        onNavigate('dashboard');
+    };
+
     if (loading) return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
@@ -1280,7 +1295,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     if (stage === 'break') return <BreakScreen timeLeft={timeLeft} formatTime={formatTime} onSkip={() => setStage('math-m1')} />;
 
     if (screen === 'review') return (
-        <div className="fixed inset-0 bg-[#F2F4F7] flex flex-col z-50 overflow-hidden">
+        <div className={`fixed inset-0 bg-[#F2F4F7] flex flex-col z-50 overflow-hidden ${colorMode === 'reverse' ? 'color-reverse' : ''}`}>
             <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 relative z-30 shadow-sm">
                 <div className="flex items-center gap-6">
                     <span className="text-sm font-black text-slate-900 tracking-tight italic">SATVALLEY NODE</span>
@@ -1337,7 +1352,12 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const currentQ = questions[currentIndex];
 
     return (
-        <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none">
+        <div className={`fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none ${colorMode === 'reverse' ? 'color-reverse font-medium' : ''}`}>
+            {/* Modals */}
+            <AnimatePresence>
+                {/* ... existing modals ... */}
+            </AnimatePresence>
+
             {/* Soft Warning Toast */}
             {lastWarning && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-300">
@@ -1347,9 +1367,9 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     </div>
                 </div>
             )}
-            <header className="h-[64px] bg-white flex items-center justify-between px-6 shrink-0 relative z-40">
+            <header className="h-[64px] bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 relative z-40 transition-colors">
                 <div className="flex flex-col">
-                    <h1 className="text-[17px] font-bold text-[#1e293b] leading-tight">
+                    <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
                         {stage === 'rw-m1' ? 'Section 1, Module 1: Reading and Writing' :
                             stage === 'rw-m2' ? 'Section 1, Module 2: Reading and Writing' :
                                 stage === 'math-m1' ? 'Section 2, Module 1: Math' : 'Section 2, Module 2: Math'}
@@ -1361,88 +1381,86 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         Directions <ChevronDown className={`w-3 h-3 transition-transform ${showDirections ? 'rotate-180' : ''}`} />
                     </button>
                 </div>
-
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
-                    <span className={`font-bold text-[24px] tracking-tight ${timeLeft < 300 ? 'text-rose-600' : 'text-[#1e293b]'}`}>
-                        {showTimer ? formatTime(timeLeft) : ''}
-                    </span>
-                    <button
-                        onClick={() => setShowTimer(!showTimer)}
-                        className="px-4 py-1 border border-slate-300 rounded font-bold text-[13px] text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                        {showTimer ? 'Hide' : 'Show'}
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-6">
-                    {stage.startsWith('math') ? (
-                        <>
-                            <button onClick={() => calculatorRef.current?.open()} className="flex flex-col items-center gap-1 group text-slate-800">
-                                <Calculator className="w-5 h-5 group-hover:text-blue-600 transition-colors" />
-                                <span className="text-[11px] font-bold uppercase tracking-wider">Calculator</span>
-                            </button>
-                            <button onClick={() => setShowReference(true)} className="flex flex-col items-center gap-1 group text-slate-800">
-                                <Book className="w-5 h-5 group-hover:text-blue-600 transition-colors" />
-                                <span className="text-[11px] font-bold uppercase tracking-wider">Reference</span>
-                            </button>
-                        </>
-                    ) : (
-                        <button onClick={() => setIsHighlighterActive(!isHighlighterActive)} className={`flex flex-col items-center gap-1 group transition-colors ${isHighlighterActive ? 'text-blue-600' : 'text-slate-800 hover:text-blue-600'}`}>
-                            <PenLine className="w-5 h-5" />
-                            <span className="text-[11px] font-bold uppercase tracking-wider">Annotate</span>
-                        </button>
-                    )}
-
-                    <div className="w-px h-8 bg-slate-200" />
-
-                    <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="flex flex-col items-center gap-1 group text-slate-800 hover:text-blue-600 transition-colors">
-                        <MoreVertical className="w-5 h-5 transition-colors" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">More</span>
-                    </button>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setActiveModal('settings')} className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"><Settings className="w-5 h-5" /></button>
+                    <button onClick={() => setActiveModal('help')} className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"><HelpIcon className="w-5 h-5" /></button>
+                    <button onClick={() => setActiveModal('exit')} className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100">Exit Test</button>
                 </div>
             </header>
 
-            <div className="bluebook-practice-bar">
-                This is a practice test
-            </div>
+            <AnimatePresence>
+                {activeModal === 'settings' && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal('none')} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-200">
+                            <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                                <Settings className="w-6 h-6 text-indigo-500" />
+                                Accessibility Settings
+                            </h2>
+                            <div className="space-y-6">
+                                <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-4">Color Mode</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => setColorMode('light')} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${colorMode === 'light' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                                            <div className="w-full h-8 bg-white border border-slate-200 rounded shadow-sm" />
+                                            <span className="text-xs font-bold">Standard</span>
+                                        </button>
+                                        <button onClick={() => setColorMode('reverse')} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${colorMode === 'reverse' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-[#1e293b] text-slate-600 hover:border-slate-400'}`}>
+                                            <div className="w-full h-8 bg-black border border-white/20 rounded shadow-sm" />
+                                            <span className="text-xs font-bold font-black">Reverse Contrast</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setActiveModal('none')} className="w-full mt-8 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors">Done</button>
+                        </motion.div>
+                    </div>
+                )}
 
+                {activeModal === 'help' && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal('none')} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden">
+                            <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                                <HelpIcon className="w-6 h-6 text-indigo-500" />
+                                Support & Instructions
+                            </h2>
+                            <div className="space-y-6 max-h-[60vh] overflow-y-auto bluebook-scroll pr-4">
+                                <section>
+                                    <h3 className="font-bold text-slate-900 mb-2">Test Navigation</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">Use the 'Next' and 'Back' buttons to move between questions. You can also click the bottom navigation bar to jump to any question in the module.</p>
+                                </section>
+                                <section>
+                                    <h3 className="font-bold text-slate-900 mb-2">Accommodations</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">The 'More' menu provides access to the <strong>Line Reader</strong> and <strong>Contrast Settings</strong> to assist during your exam.</p>
+                                </section>
+                                <section>
+                                    <h3 className="font-bold text-slate-900 mb-2">Technical Assistance</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">If the application becomes unresponsive, your progress is automatically saved to the cloud. Simply refresh the page to resume.</p>
+                                </section>
+                            </div>
+                            <button onClick={() => setActiveModal('none')} className="w-full mt-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-500 transition-colors">Return to Test</button>
+                        </motion.div>
+                    </div>
+                )}
 
-
-            {showMoreMenu && (
-                <div className="fixed top-[60px] right-6 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                    <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            alert("Settings functionality would open here.");
-                        }}
-                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-slate-700 transition-colors"
-                    >
-                        <Settings className="w-4 h-4" />
-                        <span className="text-[14px] font-medium">Settings</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            alert("Help dialog would open here.");
-                        }}
-                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-slate-700 transition-colors"
-                    >
-                        <HelpIcon className="w-4 h-4" />
-                        <span className="text-[14px] font-medium">Help</span>
-                    </button>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            onNavigate('dashboard');
-                        }}
-                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-slate-50 text-rose-600 transition-colors"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-[14px] font-medium">Save and Exit</span>
-                    </button>
-                </div>
-            )}
+                {activeModal === 'exit' && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal('none')} className="absolute inset-0 bg-rose-900/40 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 text-center">
+                            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <LogOut className="w-8 h-8 text-rose-600" />
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-900 mb-2 italic">Save and Exit</h2>
+                            <p className="text-sm text-slate-500 mb-8 font-medium">Are you sure you want to pause your test? Your current progress will be preserved.</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setActiveModal('none')} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                                <button onClick={handleSaveAndExit} className="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-500 transition-colors">Exit Test</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {showDirections && (
                 <div className="fixed inset-x-0 top-[64px] bg-[#F6F8FA] border-b border-slate-200 p-8 text-[15px] text-slate-700 animate-in slide-in-from-top-2 z-50 shadow-lg">
@@ -1484,7 +1502,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                             </div>
                             <button
                                 onClick={toggleFlag}
-                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-[#333333] hover:text-black'}`}
+                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-slate-900 hover:text-black'}`}
                             >
                                 <Bookmark className={`w-4 h-5 ${flags.has(currentQ?.id || 0) ? 'fill-[#0077c8] text-[#0077c8]' : 'text-[#666666]'}`} strokeWidth={1.5} />
                                 <span className={flags.has(currentQ?.id || 0) ? 'font-bold' : ''}>Mark for Review</span>
@@ -1547,7 +1565,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                             onSelectionChange={(sel) => setCurrentSelection(sel)}
                                         />
                                     ) : (
-                                        <div className="font-serif text-[#111827] whitespace-pre-wrap pr-4">
+                                        <div className="font-serif text-slate-900 whitespace-pre-wrap pr-4">
                                             <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
                                             <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
                                                 <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
@@ -1610,7 +1628,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         <div className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll ${!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <div className="mb-10 space-y-6">
                                 {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
-                                <p className="text-[18px] leading-[1.6] text-[#111827] font-medium"><MathText text={currentQ?.text} className="block" /></p>
+                                <p className="text-[18px] leading-[1.6] text-slate-900 font-medium"><MathText text={currentQ?.text} className="block" /></p>
                             </div>
 
                             <div className="space-y-4">
@@ -1662,12 +1680,12 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                                             <Input
                                                 value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
                                                 onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
-                                                className="h-[52px] text-[20px] bg-white text-[#111827] font-medium border border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-4 tracking-wider"
+                                                className="h-[52px] text-[20px] bg-white text-slate-900 font-medium border border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-4 tracking-wider"
                                             />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-[18px] text-[#111827] mb-2">Answer Preview:</div>
-                                            <div className="text-[20px] text-[#111827] tracking-wider min-h-[30px]">
+                                            <div className="font-bold text-[18px] text-slate-900 mb-2">Answer Preview:</div>
+                                            <div className="text-[20px] text-slate-900 tracking-wider min-h-[30px]">
                                                 {currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''}
                                             </div>
                                         </div>
@@ -1680,7 +1698,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
             </main>
 
             {showMoreMenu && (
-                <div className="fixed top-[60px] right-6 bg-white border border-slate-200 shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed top-[60px] right-6 bg-white border border-slate-200 shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 text-slate-800">
                     <button
                         onClick={() => { setShowLineReader(true); setShowMoreMenu(false); }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
@@ -1688,17 +1706,23 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         <Accessibility className="w-4 h-4 text-slate-500" />
                         <span>Line Reader</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors">
+                    <button
+                        onClick={() => { setActiveModal('settings'); setShowMoreMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
+                    >
                         <Settings className="w-4 h-4 text-slate-500" />
                         <span>Settings</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors">
+                    <button
+                        onClick={() => { setActiveModal('help'); setShowMoreMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
+                    >
                         <HelpIcon className="w-4 h-4 text-slate-500" />
                         <span>Help</span>
                     </button>
                     <div className="h-px bg-slate-100 my-1 mx-2" />
                     <button
-                        onClick={() => onNavigate('dashboard')}
+                        onClick={() => { setActiveModal('exit'); setShowMoreMenu(false); }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-rose-600 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
@@ -1707,7 +1731,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                 </div>
             )}
 
-            <footer className="h-[72px] bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 z-40">
+            <footer className="h-[72px] bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 z-40 transition-colors">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
                         <span className="text-slate-500 font-bold text-sm">

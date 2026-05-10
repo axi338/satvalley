@@ -32,17 +32,20 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
 
     const fetchCandidates = async () => {
         try {
-            const { data, error } = await supabase
-                .from('import_candidates')
-                .select(`
-                    *,
-                    import_jobs(id, filename, destination_test_id, config)
-                `)
-                .eq('job_id', jobId)
-                .order('created_at', { ascending: true });
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`/api/admin/import/jobs/${jobId}/candidates`, {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await response.json();
 
-            if (error) throw error;
-            setCandidates(data || []);
+            if (!response.ok) {
+                console.error('Fetch candidates API error:', result);
+                toast.error('Could not load candidates: ' + (result.message || 'Server error'));
+                return;
+            }
+
+            const data = result.candidates || [];
+            setCandidates(data);
 
             // Store job info for later use
             if (data && data.length > 0) {
@@ -50,7 +53,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
             }
 
             // Find first pending review
-            const firstPending = data?.findIndex(c => c.status === 'review_required');
+            const firstPending = data?.findIndex((c: any) => c.status === 'review_required');
             if (firstPending !== -1 && firstPending !== undefined) {
                 setCurrentIndex(firstPending);
             }

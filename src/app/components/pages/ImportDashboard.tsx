@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Clock, FileText, CheckCircle, AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Clock, FileText, CheckCircle, AlertCircle, Loader2, Trash2, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 
@@ -14,7 +14,7 @@ interface ImportJob {
 
 interface ImportDashboardProps {
     onNavigate: (page: string, params?: any) => void;
-}   
+}
 
 export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
     const [jobs, setJobs] = useState<ImportJob[]>([]);
@@ -36,13 +36,18 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
 
     const fetchJobs = async () => {
         try {
-            const { data, error } = await supabase
-                .from('import_jobs')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch('/api/admin/import/jobs', {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const result = await response.json();
 
-            if (error) throw error;
-            setJobs(data || []);
+            if (!response.ok) {
+                console.error('Fetch jobs API error:', result);
+                return;
+            }
+
+            setJobs(result.jobs || []);
         } catch (err) {
             console.error('Error fetching jobs:', err);
         } finally {
@@ -56,16 +61,22 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
 
         try {
             setLoading(true);
-            // 1. Delete candidates
-            await supabase.from('import_candidates').delete().eq('job_id', id);
-            // 2. Delete job
-            const { error } = await supabase.from('import_jobs').delete().eq('id', id);
-            if (error) throw error;
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`/api/admin/import/jobs/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.message || 'Delete failed');
+            }
 
             setJobs(prev => prev.filter(job => job.id !== id));
-        } catch (err) {
+            toast.success('Job deleted successfully');
+        } catch (err: any) {
             console.error('Error deleting job:', err);
-            alert('Failed to delete job');
+            toast.error(err.message || 'Failed to delete job');
         } finally {
             setLoading(false);
         }
@@ -222,30 +233,40 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
                                     </div>
                                 </div>
 
-                                {(job.status === 'normalizing' || job.status === 'candidate_split') && (
+                                {(job.status === 'extracting' || job.status === 'normalizing' || job.status === 'candidate_split') && (
                                     <div className="mt-6 space-y-3">
                                         <div className="flex justify-between items-center text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                                {job.config?.progress_message || (job.status === 'candidate_split' ? 'Analyzing PDF...' : 'Processing Candidates...')}
+                                                {job.config?.progress_message || (
+                                                    job.status === 'extracting' ? 'Extracting text from document...' :
+                                                        job.status === 'candidate_split' ? 'Analyzing PDF structure...' :
+                                                            'Processing Candidates...'
+                                                )}
                                             </div>
-                                            {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
-                                                <span>{Math.round((job.config.processed_candidates / job.config.total_candidates) * 100)}%</span>
+                                            {(job.status === 'normalizing' || job.status === 'publishing') && job.config?.total_candidates > 0 && (
+                                                <span>{Math.round(((job.config.processed_candidates || 0) / job.config.total_candidates) * 100)}%</span>
                                             )}
                                         </div>
-                                        {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
-                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                                                <motion.div
-                                                    className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${(job.config.processed_candidates / job.config.total_candidates) * 100}%` }}
-                                                    transition={{ duration: 0.5 }}
-                                                />
-                                            </div>
-                                        )}
+
+                                        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                            <motion.div
+                                                className={`h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)] ${job.status === 'extracting' || job.status === 'candidate_split' ? 'animate-shimmer' : ''}`}
+                                                initial={{ width: 0 }}
+                                                animate={{
+                                                    width: (job.status === 'extracting' || job.status === 'candidate_split')
+                                                        ? '40%'
+                                                        : job.config?.total_candidates > 0
+                                                            ? `${((job.config.processed_candidates || 0) / job.config.total_candidates) * 100}%`
+                                                            : '0%'
+                                                }}
+                                                transition={{ duration: 0.5 }}
+                                            />
+                                        </div>
+
                                         {job.status === 'normalizing' && job.config?.total_candidates > 0 && (
                                             <p className="text-[9px] text-indigo-200/30 font-bold text-center italic tracking-wider">
-                                                {job.config.processed_candidates} of {job.config.total_candidates} candidates normalized
+                                                {job.config.processed_candidates || 0} of {job.config.total_candidates} candidates normalized
                                             </p>
                                         )}
                                     </div>
