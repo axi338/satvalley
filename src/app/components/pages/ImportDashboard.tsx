@@ -14,7 +14,7 @@ interface ImportJob {
 
 interface ImportDashboardProps {
     onNavigate: (page: string, params?: any) => void;
-}   
+}
 
 export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
     const [jobs, setJobs] = useState<ImportJob[]>([]);
@@ -22,27 +22,26 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
 
     useEffect(() => {
         fetchJobs();
-        const subscription = supabase
-            .channel('import_jobs_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'import_jobs' }, () => {
-                fetchJobs();
-            })
-            .subscribe();
+
+        // Use polling instead of Supabase Realtime to bypass RLS restrictions
+        const intervalId = setInterval(() => {
+            fetchJobs();
+        }, 3000);
 
         return () => {
-            subscription.unsubscribe();
+            clearInterval(intervalId);
         };
     }, []);
 
     const fetchJobs = async () => {
         try {
-            const { data, error } = await supabase
-                .from('import_jobs')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setJobs(data || []);
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/admin/import/jobs', {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed');
+            setJobs(data.jobs || []);
         } catch (err) {
             console.error('Error fetching jobs:', err);
         } finally {
@@ -56,11 +55,12 @@ export const ImportDashboard = ({ onNavigate }: ImportDashboardProps) => {
 
         try {
             setLoading(true);
-            // 1. Delete candidates
-            await supabase.from('import_candidates').delete().eq('job_id', id);
-            // 2. Delete job
-            const { error } = await supabase.from('import_jobs').delete().eq('id', id);
-            if (error) throw error;
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(`/api/admin/import/jobs/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            if (!res.ok) throw new Error('Failed to delete job');
 
             setJobs(prev => prev.filter(job => job.id !== id));
         } catch (err) {

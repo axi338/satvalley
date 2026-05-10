@@ -141,17 +141,17 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
 
     const fetchCandidates = async () => {
         try {
-            const { data, error } = await supabase
-                .from('import_candidates')
-                .select('*')
-                .eq('job_id', jobId)
-                .order('created_at', { ascending: true });
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(`/api/admin/import/jobs/${jobId}/candidates`, {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to fetch candidates');
 
-            if (error) throw error;
-            setCandidates(data || []);
+            setCandidates(data.candidates || []);
 
             // Find first pending review
-            const firstPending = data?.findIndex(c => c.status === 'review_required');
+            const firstPending = data.candidates?.findIndex((c: any) => c.status === 'review_required');
             if (firstPending !== -1 && firstPending !== undefined) {
                 setCurrentIndex(firstPending);
             }

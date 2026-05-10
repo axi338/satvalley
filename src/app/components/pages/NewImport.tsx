@@ -32,8 +32,16 @@ export const NewImport = ({ onNavigate }: NewImportProps) => {
     }, [destinationTestId]);
 
     const fetchTests = async () => {
-        const { data } = await supabase.from('tests').select('id, title').order('created_at', { ascending: false });
-        setTests(data || []);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/tests', {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
+            const data = await res.json();
+            setTests(data.tests || []);
+        } catch (err) {
+            console.error('Failed to fetch tests:', err);
+        }
     };
 
     const fetchModuleCounts = async (testId: string) => {
