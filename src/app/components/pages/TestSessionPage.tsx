@@ -1328,7 +1328,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     if (stage === 'break') return <BreakScreen timeLeft={timeLeft} formatTime={formatTime} onSkip={() => setStage('math-m1')} />;
 
     if (screen === 'review') return (
-        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-[#F2F4F7]'} flex flex-col z-50 overflow-hidden`}>
+        <div className={`fixed inset-0 ${theme === 'dark' ? 'dark bg-[#0F172A] text-white' : 'bg-[#F2F4F7]'} flex flex-col z-50 overflow-hidden`}>
             <header className={`h-20 ${theme === 'dark' ? 'bg-[#0F172A] border-white/10' : 'bg-white border-slate-200'} border-b flex items-center justify-between px-8 shrink-0 relative z-30 shadow-sm`}>
                 <div className="flex items-center gap-6">
                     <span className={`text-sm font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tight italic`}>SATVALLEY NODE</span>

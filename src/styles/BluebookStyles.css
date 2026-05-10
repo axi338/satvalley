@@ -19,6 +19,30 @@
   --bb-pink: #FFD1E8;
 }
 
+/* ============================================================
+   Dark Theme (theme === 'dark' via JS — bg-[#0F172A] root)
+   The .dark class is toggled on the top-level container.
+   These rules ensure KaTeX and hardcoded colours look correct.
+   ============================================================ */
+
+/* Make KaTeX output inherit the text colour */
+.dark .katex {
+  color: inherit !important;
+}
+
+.dark .katex .mord,
+.dark .katex .mbin,
+.dark .katex .mrel,
+.dark .katex .mopen,
+.dark .katex .mclose,
+.dark .katex .mpunct,
+.dark .katex .minner,
+.dark .katex .mop,
+.dark .katex .mfrac,
+.dark .katex .mspace {
+  color: inherit !important;
+}
+
 /* Practice Test Bar */
 .bluebook-practice-bar {
   height: 32px;
