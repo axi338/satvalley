@@ -46,15 +46,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
   const stats = [
     {
       score: content.stats_1_value || '1500+',
-      label: content.stats_1_label || 'Students'
+      label: content.stats_1_label || 'SAT Score'
     },
     {
-      score: content.stats_2_value || '1550+',
-      label: content.stats_2_label || 'Students'
+      score: content.stats_2_value || '1600',
+      label: content.stats_2_label || 'Target'
     },
     {
-      score: content.stats_3_value || '1600',
-      label: content.stats_3_label || 'Perfect Scores'
+      score: content.stats_3_value || '100%',
+      label: content.stats_3_label || 'Reliability'
     },
   ];
 

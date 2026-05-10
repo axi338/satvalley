@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import { Send, User as UserIcon, MessageSquare, Users as UsersIcon } from 'lucide-react';
 import { authApi, apiFetch } from '../lib/auth';
 
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000');
+const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
 
 export function ClassChat({ user, profile, initialSelectedUserId }: { user: any; profile: any; initialSelectedUserId?: string | null }) {
     const [input, setInput] = useState('');
@@ -26,10 +26,7 @@ export function ClassChat({ user, profile, initialSelectedUserId }: { user: any;
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const token = (await authApi.getSession()).data.session?.access_token;
-                const resp = await fetch('/api/messages', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const resp = await apiFetch('/api/messages');
                 const data = await resp.json();
                 dispatch(setMessages({ private: data.private || [], group: data.group || [] }));
             } catch (err) {
@@ -39,10 +36,7 @@ export function ClassChat({ user, profile, initialSelectedUserId }: { user: any;
         const fetchStudents = async () => {
             if (!profile?.is_admin && !profile?.raw_app_metadata?.admin) return;
             try {
-                const token = (await authApi.getSession()).data.session?.access_token;
-                const resp = await fetch('/api/teacher/students', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const resp = await apiFetch('/api/teacher/students');
                 const data = await resp.json();
                 setStudents(data.students || []);
             } catch (err) {
@@ -84,12 +78,8 @@ export function ClassChat({ user, profile, initialSelectedUserId }: { user: any;
                 receiver_id: chatMode === 'private' ? selectedUserId : null
             };
 
-            const resp = await fetch('/api/messages', {
+            const resp = await apiFetch('/api/messages', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify(body)
             });
             if (resp.ok) setInput('');

@@ -34,6 +34,9 @@ export function ResultsMarquee() {
 
     if (results.length === 0) return null;
 
+    // Duplicate results for seamless loop
+    const displayResults = [...results, ...results];
+
     return (
         <div className="relative py-24 bg-[#020617] overflow-hidden border-t border-white/5 mt-24">
             {/* Background Decor */}
@@ -51,27 +54,31 @@ export function ResultsMarquee() {
                 </h2>
             </div>
 
-            <div className="relative max-w-5xl mx-auto px-6 overflow-hidden">
+            <div className="relative">
+                {/* Fade Gradients for seamless look */}
+                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#020617] to-transparent z-10" />
+                <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#020617] to-transparent z-10" />
+
                 <motion.div
-                    className="flex gap-8"
+                    className="flex gap-8 px-4"
                     animate={{
-                        x: `calc(-${currentIndex * 100}% - ${currentIndex * 32}px)`
+                        x: [0, -1 * (results.length * (400 + 32))] // Width of 1 set of items
                     }}
                     transition={{
-                        duration: 1.2,
-                        type: "spring",
-                        bounce: 0.2
+                        duration: results.length * 10, // Adjust speed: 10s per item
+                        ease: "linear",
+                        repeat: Infinity
                     }}
                 >
-                    {results.map((r) => (
+                    {displayResults.map((r, idx) => (
                         <div
-                            key={r.id}
-                            className="flex-shrink-0 w-full p-8 lg:p-12 rounded-[2.5rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 group"
+                            key={`${r.id}-${idx}`}
+                            className="flex-shrink-0 w-[400px] p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 group backdrop-blur-sm"
                         >
-                            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+                            <div className="flex items-start gap-6">
                                 {/* Photo */}
                                 <div className="relative flex-shrink-0">
-                                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-indigo-500/20 shadow-xl group-hover:scale-105 transition-transform duration-300">
+                                    <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-indigo-500/20 shadow-xl group-hover:scale-105 transition-transform duration-300">
                                         <img
                                             src={r.photoUrl || '/avatar-placeholder.jpg'}
                                             alt={r.name}
@@ -81,18 +88,18 @@ export function ResultsMarquee() {
                                             }}
                                         />
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 px-3 py-1 bg-indigo-500 rounded-lg text-white font-black text-xs shadow-lg">
+                                    <div className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-indigo-500 rounded-lg text-white font-black text-[10px] shadow-lg">
                                         {r.score}
                                     </div>
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex-1 space-y-3">
+                                <div className="flex-1 space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-lg font-black text-white tracking-tight">{r.name}</span>
-                                        <Quote className="w-5 h-5 text-indigo-500/30" />
+                                        <span className="text-sm font-black text-white tracking-tight">{r.name}</span>
+                                        <Quote className="w-4 h-4 text-indigo-500/30" />
                                     </div>
-                                    <p className="text-slate-400 leading-relaxed text-sm italic font-medium">
+                                    <p className="text-slate-400 leading-relaxed text-xs italic font-medium line-clamp-3">
                                         "{r.note || "This platform helped me achieve my dream score and gain confidence for the Digital SAT."}"
                                     </p>
                                 </div>
@@ -100,18 +107,6 @@ export function ResultsMarquee() {
                         </div>
                     ))}
                 </motion.div>
-
-                {/* Navigation Dots */}
-                <div className="flex justify-center gap-2 mt-8">
-                    {results.map((_, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => setCurrentIndex(idx)}
-                            className={`w-2 h-2 rounded-full transition-all duration-300 ${currentIndex === idx ? 'bg-indigo-500 w-8' : 'bg-white/20 hover:bg-white/40'
-                                }`}
-                        />
-                    ))}
-                </div>
             </div>
 
             {/* Footer-like info below marquee */}

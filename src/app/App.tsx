@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { Sidebar } from './components/Sidebar';
 import { ResultsMarquee } from './components/ResultsMarquee';
+import { Footer } from './components/Footer';
 import { HomePage } from './components/pages/HomePage';
 import { FeaturesPage } from './components/pages/FeaturesPage';
 import { FAQPage } from './components/pages/FAQPage';
@@ -353,7 +354,7 @@ export default function App() {
             isAdmin={adminUnlocked}
           />
           <main
-            className={`flex-1 transition-all duration-300 relative z-10 ${!isSidebarVisible ? 'ml-0' : (isSidebarCollapsed ? 'ml-20' : 'ml-64')
+            className={`flex-1 transition-all duration-300 relative z-10 flex flex-col ${!isSidebarVisible ? 'ml-0' : (isSidebarCollapsed ? 'ml-20' : 'ml-64')
               }`}
           >
             {!isSidebarVisible && (
@@ -373,16 +374,22 @@ export default function App() {
                 </div>
               </button>
             )}
-            {renderPage()}
+            <div className="flex-1">
+              {renderPage()}
+            </div>
+            {currentPage === 'home' && <ResultsMarquee />}
+            {!isTestSession && <Footer onNavigate={handleNavigate} />}
           </main>
         </div>
       ) : (
-        <main className="relative z-10">{renderPage()}</main>
+        <main className="relative z-10">
+          {renderPage()}
+          {currentPage === 'home' && <ResultsMarquee />}
+          {!isTestSession && <Footer onNavigate={handleNavigate} />}
+        </main>
       )}
 
       <Toaster />
-      {!isAppMode && !isTestSession && <ResultsMarquee />}
-      {!isAppMode && !isTestSession && <Footer onNavigate={handleNavigate} />}
     </div>
   );
 }

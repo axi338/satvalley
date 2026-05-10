@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Brain, Award, Sparkles, TrendingUp, BookOpen, Clock, ChevronRight, Zap, CheckCircle2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Target, Brain, Award, Sparkles, TrendingUp, BookOpen, Clock, ChevronRight, Zap, CheckCircle2, Edit2 } from 'lucide-react';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell, AreaChart, Area
 } from 'recharts';
 
@@ -38,23 +37,29 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
     });
     const [loading, setLoading] = useState(true);
 
+    const apiBase = (import.meta as any).env.VITE_BACKEND_URL || '';
+
     useEffect(() => {
         const fetchUserStats = async () => {
             try {
-                const { data: results, error } = await supabase
-                    .from('results')
-                    .select('*')
-                    .eq('user_email', user.email)
-                    .order('created_at', { ascending: true }); // Ascending for chart
+                const res = await fetch(`${apiBase}/api/results?userEmail=${encodeURIComponent(user.email)}`);
+                const data = await res.json();
 
-                if (error) throw error;
+                if (!res.ok) throw new Error(data.message || 'Failed to fetch results');
+
+                const results = data.results || [];
 
                 if (results && results.length > 0) {
-                    setAllResults(results);
-                    const totalScore = results.reduce((acc, curr) => acc + (curr.score || 0), 0);
+                    // Sort results by date for chart (already sorted by server, but be safe)
+                    const sortedResults = [...results].sort((a, b) =>
+                        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                    );
+
+                    setAllResults(sortedResults);
+                    const totalScore = results.reduce((acc: number, curr: any) => acc + (curr.score || 0), 0);
 
                     // Latest result for weak area and roadmap
-                    const latest = results[results.length - 1];
+                    const latest = sortedResults[sortedResults.length - 1];
                     const ai: AIAnalysis = latest.ai_suggestions || {};
 
                     // Determine weak area from skill breakdown if possible
@@ -66,7 +71,7 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
 
                     setStats({
                         testsTaken: results.length,
-                        vocabMastered: 124, // Mock until vocab system is refined
+                        vocabMastered: 0, // Reset to 0 until vocab system is refined
                         avgScore: Math.round(totalScore / results.length),
                         lastScore: latest.score || 0,
                         weakArea
@@ -80,7 +85,7 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
         };
 
         if (user) fetchUserStats();
-    }, [user]);
+    }, [user, apiBase]);
 
     // Derived data for charts
     const chartData = useMemo(() => {
@@ -121,10 +126,19 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
         <div className="min-h-screen bg-[#020617] p-8 pb-24 text-slate-200">
             {/* Header */}
             <div className="max-w-6xl mx-auto mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                <div>
-                    <h1 className="text-4xl font-black text-white mb-2 tracking-tight">
-                        Good Afternoon, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Scholar'} 👋
-                    </h1>
+                <div className="flex-1">
+                    <div className="flex items-center gap-4 mb-2">
+                        <h1 className="text-4xl font-black text-white tracking-tight">
+                            Good Afternoon, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Scholar'} 👋
+                        </h1>
+                        <button
+                            onClick={() => onNavigate('profile')}
+                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all group"
+                            title="Edit Profile"
+                        >
+                            <Edit2 size={18} className="group-hover:scale-110 transition-transform" />
+                        </button>
+                    </div>
                     <p className="text-slate-400 font-medium">Your SAT growth journey is powered by AI insights.</p>
                 </div>
                 {allResults.length > 0 && (

@@ -10,17 +10,16 @@ import {
     BarChart3,
     CheckCircle2,
     Clock,
-    Plus,
-    Loader2,
-    Lock
+    Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClassChat } from '../ClassChat';
 import { ClassLeaderboard } from '../ClassLeaderboard';
 import { ClassPerformance } from '../ClassPerformance';
 import { TeacherDashboard } from '../TeacherDashboard';
+import { authApi, apiFetch } from '../../lib/auth';
 
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000');
+const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
 
 interface ClassDashboardPageProps {
     user: any;
@@ -53,12 +52,9 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
 
         const fetchStats = async () => {
             try {
-                const token = (await authApi.getSession()).data.session?.access_token;
-                const headers = { 'Authorization': `Bearer ${token}` };
-
                 const [perfResp, todoResp] = await Promise.all([
-                    fetch(`/api/performance/${user.id}`, { headers }),
-                    fetch(`/api/todo/${user.id}`, { headers })
+                    apiFetch(`/api/performance/${user.id}`),
+                    apiFetch(`/api/todo/${user.id}`)
                 ]);
 
                 if (perfResp.ok) {
@@ -95,13 +91,8 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
     const handleCreateAssignment = async () => {
         if (!newTitle || !newDueDate) return;
         try {
-            const token = (await authApi.getSession()).data.session?.access_token;
-            const resp = await fetch('/api/assignments', {
+            const resp = await apiFetch('/api/assignments', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     title: newTitle,
                     due_date: newDueDate,
@@ -122,13 +113,8 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
         if (!joinClassId.trim()) return;
         try {
             setIsJoining(true);
-            const token = (await authApi.getSession()).data.session?.access_token;
-            const resp = await fetch('/api/student/join-class', {
+            const resp = await apiFetch('/api/student/join-class', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ class_id: joinClassId })
             });
             const data = await resp.json();

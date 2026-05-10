@@ -226,8 +226,9 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
   const [error, setError] = useState<string | null>(null);
   const [isDetailedReview, setIsDetailedReview] = useState(false);
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+  const [isTestSelected, setIsTestSelected] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'rw' | 'math'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'rw' | 'math' | null>(null);
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -246,7 +247,10 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
         // Auto-select latest or passed resultId
         if (params?.resultId && fetchedResults.length > 0) {
           const idx = fetchedResults.findIndex((r: any) => r.id === params.resultId);
-          if (idx !== -1) setSelectedResultIndex(idx);
+          if (idx !== -1) {
+            setSelectedResultIndex(idx);
+            setIsTestSelected(true);
+          }
         }
 
         setLoading(false);
@@ -676,195 +680,300 @@ export function ReviewPage({ user, onNavigate, params }: { user: any; onNavigate
                 <span className="text-[11px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Practice Test Review</span>
               </div>
               <h1 className="text-4xl font-black text-white tracking-tight">
-                {latestResult?.name || 'SAT Practice Test'}
+                {isTestSelected ? (latestResult?.name || 'SAT Practice Test') : 'Your Practice Results'}
               </h1>
-              <div className="flex items-center gap-6 text-slate-400">
-                <div className="flex items-center gap-2">
-                  <History size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">{new Date(latestResult?.created_at).toLocaleDateString()}</span>
+              {isTestSelected && (
+                <div className="flex items-center gap-6 text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <History size={16} />
+                    <span className="text-xs font-bold uppercase tracking-wider">{new Date(latestResult?.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} />
+                    <span className="text-xs font-bold uppercase tracking-wider">{Math.floor((latestResult?.time_taken_seconds || 0) / 60)}m taken</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsTestSelected(false);
+                      setActiveTab(null);
+                    }}
+                    className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors ml-2"
+                  >
+                    Change Test
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">{Math.floor((latestResult?.time_taken_seconds || 0) / 60)}m taken</span>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="flex gap-4">
-              <div className="bg-slate-900 px-10 py-6 rounded-[2rem] text-white flex flex-col items-center min-w-[180px]">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-50">Total Score</span>
-                <span className="text-5xl font-black italic">{scores.total}</span>
+            {isTestSelected && (
+              <div className="flex gap-4">
+                <div className="bg-slate-900 px-10 py-6 rounded-[2rem] text-white flex flex-col items-center min-w-[180px]">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-50">Total Score</span>
+                  <span className="text-5xl font-black italic">{scores.total}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-8 mt-12 space-y-12">
         {/* Tabs */}
-        <div className="flex border-b border-white/10">
-          {(['all', 'rw', 'math'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-8 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'
-                }`}
-            >
-              {tab === 'all' ? 'All Questions' : tab === 'rw' ? 'Reading and Writing' : 'Math'}
-            </button>
-          ))}
-        </div>
-
-        {/* Knowledge and Skills */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-black text-white tracking-tight">Knowledge and Skills <span className="text-indigo-400 text-[11px] font-black uppercase tracking-widest ml-1 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">New!</span></h2>
-            <Info size={16} className="text-slate-500" />
+        {isTestSelected && activeTab !== null && (
+          <div className="flex border-b border-white/10">
+            {(['all', 'rw', 'math'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-8 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+              >
+                {tab === 'all' ? 'All Questions' : tab === 'rw' ? 'Reading and Writing' : 'Math'}
+              </button>
+            ))}
           </div>
-          <p className="text-slate-400 font-medium">View your performance across the 8 content domains measured on the SAT.</p>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
-            <div className="space-y-10">
-              <h3 className="text-lg font-black text-white border-b border-white/5 pb-4">Reading and Writing</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-                {performanceData.domains.rw.map(d => (
-                  <DomainCard key={d.id} {...d} colorClass="bg-indigo-500" />
-                ))}
-              </div>
-            </div>
-            <div className="space-y-10">
-              <h3 className="text-lg font-black text-white border-b border-white/5 pb-4">Math</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-                {performanceData.domains.math.map(d => (
-                  <DomainCard key={d.id} {...d} colorClass="bg-indigo-500" />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Questions Overview */}
-        <section className="space-y-8 pt-12 border-t border-white/10">
-          <div>
-            <h2 className="text-2xl font-black text-white tracking-tight">Questions Overview</h2>
-            <p className="text-slate-400 font-medium mt-1">Review your results for each question from this practice test.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <ActionCard label="Total Questions" score={latestResult.responses?.length || 0} icon={ListChecks} colorClass="bg-indigo-500" />
-            <ActionCard label="Correct Answers" score={scores.rwCorrect + scores.mathCorrect} icon={CheckCircle2} colorClass="bg-emerald-500" />
-            <ActionCard label="Incorrect Answers" score={(latestResult.responses?.length || 0) - (scores.rwCorrect + scores.mathCorrect)} icon={X} colorClass="bg-rose-500" />
-          </div>
-
-          {/* Table */}
-          <div className="bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-white/5 text-slate-300 border-b border-white/10">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Question</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Section</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Correct Answer</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Your Answer</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Actions</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Domain</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredTableData.map((row) => (
-                    <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="px-6 py-5">
-                        <span className="text-sm font-bold text-slate-300">{row.id}</span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-sm font-bold text-slate-300">{row.section}</span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-black text-xs">
-                          {row.correctAnswer}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className={`w-fit px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${row.isCorrect ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                          }`}>
-                          {row.yourAnswer}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <button
-                          onClick={() => setReviewingQuestionIndex(row.questionIndex)}
-                          className="text-indigo-400 text-xs font-black uppercase tracking-widest hover:text-indigo-300 transition-colors flex items-center gap-1"
-                        >
-                          Review <ArrowUpRight size={14} />
-                        </button>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-xs font-bold text-slate-500">{row.domain}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        {/* Analysis Section */}
-        {latestResult.ai_suggestions ? (
-          <section className="space-y-8 pt-12 border-t border-white/10">
-            <div className="flex items-center gap-3">
-              <Brain className="text-indigo-400" />
-              <h2 className="text-2xl font-black text-white tracking-tight">AI Insights</h2>
+        {!isTestSelected ? (
+          <div className="space-y-12">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-black text-white tracking-tight">Select a test to review</h2>
+              <p className="text-slate-400 font-medium max-w-2xl mx-auto">Choose from your past practice attempts to see a detailed breakdown of your performance.</p>
             </div>
 
-            <div className="bg-indigo-600/20 border border-indigo-500/20 p-12 rounded-[3rem] text-white relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                <Sparkles size={200} className="text-indigo-400" />
-              </div>
-              <div className="relative z-10 max-w-2xl">
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-4 py-2 rounded-full mb-8 inline-block">Neural Analysis</span>
-                <h3 className="text-3xl font-black italic mb-6 leading-tight text-white">"{latestResult.ai_suggestions.encouragement}"</h3>
-                <p className="text-lg font-medium text-slate-300 leading-relaxed italic">{latestResult.ai_suggestions.overall_critique}</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+              {results.map((result, idx) => {
+                const s = calculateSectionScores(result.responses || []);
+                return (
+                  <button
+                    key={result.id}
+                    onClick={() => {
+                      setSelectedResultIndex(idx);
+                      setIsTestSelected(true);
+                    }}
+                    className="group p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 hover:border-white/20 transition-all text-left flex flex-col justify-between min-h-[220px]"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                        <History size={24} />
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Total Score</span>
+                        <span className="text-2xl font-black text-white italic">{s.total}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-1">{result.name || `Practice Test #${results.length - idx}`}</h3>
+                      <p className="text-xs font-medium text-slate-500 mt-1">{new Date(result.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div className="pt-4 border-t border-white/5 flex items-center justify-between text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-auto">
+                      <span>View Analysis</span>
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : activeTab === null ? (
+          <div className="space-y-12">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-black text-white tracking-tight">First, choose a section to review</h2>
+              <p className="text-slate-400 font-medium max-w-2xl mx-auto">Select which part of the examination you would like to analyze in detail. You can switch between sections at any time.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {latestResult.ai_suggestions.roadmap?.map((step: any, idx: number) => (
-                <div key={idx} className="bg-white/5 p-8 rounded-[2rem] border border-white/10 flex gap-6 hover:bg-white/[0.07] transition-all">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-black italic shrink-0">
-                    {idx + 1}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-12">
+              <button
+                onClick={() => setActiveTab('rw')}
+                className="group relative p-12 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all text-left overflow-hidden"
+              >
+                <div className="relative z-10">
+                  <div className="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-8 group-hover:scale-110 transition-transform">
+                    <BookOpen size={32} />
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="text-lg font-black text-white tracking-tight uppercase">{step.title}</h4>
-                    <p className="text-sm text-slate-400 font-medium leading-relaxed">{step.action}</p>
+                  <h3 className="text-3xl font-black text-white mb-4">Reading and Writing</h3>
+                  <p className="text-slate-400 font-medium leading-relaxed max-w-xs">
+                    Review your performance on Information and Ideas, Craft and Structure, Expression of Ideas, and Standard English Conventions.
+                  </p>
+                </div>
+                <ArrowRight className="absolute bottom-12 right-12 text-white/10 group-hover:text-indigo-400 group-hover:translate-x-2 transition-all" size={48} />
+              </button>
+
+              <button
+                onClick={() => setActiveTab('math')}
+                className="group relative p-12 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all text-left overflow-hidden"
+              >
+                <div className="relative z-10">
+                  <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 mb-8 group-hover:scale-110 transition-transform">
+                    <Calculator size={32} />
+                  </div>
+                  <h3 className="text-3xl font-black text-white mb-4">Math</h3>
+                  <p className="text-slate-400 font-medium leading-relaxed max-w-xs">
+                    Analyze your results in Algebra, Advanced Math, Problem-Solving and Data Analysis, and Geometry and Trigonometry.
+                  </p>
+                </div>
+                <ArrowRight className="absolute bottom-12 right-12 text-white/10 group-hover:text-emerald-400 group-hover:translate-x-2 transition-all" size={48} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Knowledge and Skills */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-black text-white tracking-tight">Knowledge and Skills <span className="text-indigo-400 text-[11px] font-black uppercase tracking-widest ml-1 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">New!</span></h2>
+                <Info size={16} className="text-slate-500" />
+              </div>
+              <p className="text-slate-400 font-medium">View your performance across the 8 content domains measured on the SAT.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                {(activeTab === 'all' || activeTab === 'rw') && (
+                  <div className="space-y-10">
+                    <h3 className="text-lg font-black text-white border-b border-white/5 pb-4">Reading and Writing</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
+                      {performanceData.domains.rw.map(d => (
+                        <DomainCard key={d.id} {...d} colorClass="bg-indigo-500" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(activeTab === 'all' || activeTab === 'math') && (
+                  <div className="space-y-10">
+                    <h3 className="text-lg font-black text-white border-b border-white/5 pb-4">Math</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
+                      {performanceData.domains.math.map(d => (
+                        <DomainCard key={d.id} {...d} colorClass="bg-indigo-500" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Questions Overview */}
+            <section className="space-y-8 pt-12 border-t border-white/10">
+              <div>
+                <h2 className="text-2xl font-black text-white tracking-tight">Questions Overview</h2>
+                <p className="text-slate-400 font-medium mt-1">Review your results for each question from this practice test.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <ActionCard label="Total Questions" score={latestResult.responses?.length || 0} icon={ListChecks} colorClass="bg-indigo-500" />
+                <ActionCard label="Correct Answers" score={scores.rwCorrect + scores.mathCorrect} icon={CheckCircle2} colorClass="bg-emerald-500" />
+                <ActionCard label="Incorrect Answers" score={(latestResult.responses?.length || 0) - (scores.rwCorrect + scores.mathCorrect)} icon={X} colorClass="bg-rose-500" />
+              </div>
+
+              {/* Table */}
+              <div className="bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-slate-300 border-b border-white/10">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Question</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Section</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Correct Answer</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Your Answer</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Actions</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Domain</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredTableData.map((row) => (
+                        <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-slate-300">{row.id}</span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-slate-300">{row.section}</span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-black text-xs">
+                              {row.correctAnswer}
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className={`w-fit px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${row.isCorrect ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              }`}>
+                              {row.yourAnswer}
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <button
+                              onClick={() => setReviewingQuestionIndex(row.questionIndex)}
+                              className="text-indigo-400 text-xs font-black uppercase tracking-widest hover:text-indigo-300 transition-colors flex items-center gap-1"
+                            >
+                              Review <ArrowUpRight size={14} />
+                            </button>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className="text-xs font-bold text-slate-500">{row.domain}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            {/* Analysis Section */}
+            {latestResult.ai_suggestions ? (
+              <section className="space-y-8 pt-12 border-t border-white/10">
+                <div className="flex items-center gap-3">
+                  <Brain className="text-indigo-400" />
+                  <h2 className="text-2xl font-black text-white tracking-tight">AI Insights</h2>
+                </div>
+
+                <div className="bg-indigo-600/20 border border-indigo-500/20 p-12 rounded-[3rem] text-white relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                    <Sparkles size={200} className="text-indigo-400" />
+                  </div>
+                  <div className="relative z-10 max-w-2xl">
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-4 py-2 rounded-full mb-8 inline-block">Neural Analysis</span>
+                    <h3 className="text-3xl font-black italic mb-6 leading-tight text-white">"{latestResult.ai_suggestions.encouragement}"</h3>
+                    <p className="text-lg font-medium text-slate-300 leading-relaxed italic">{latestResult.ai_suggestions.overall_critique}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        ) : (
-          <section className="space-y-8 pt-12 border-t border-white/10 flex flex-col items-center justify-center py-12">
-            <Brain className="w-16 h-16 text-indigo-500/50 mb-4" />
-            <h2 className="text-2xl font-black text-white tracking-tight mb-2">AI Performance Analysis</h2>
-            <p className="text-slate-400 mb-8 text-center max-w-md">Get personalized insights and a study roadmap generated by our advanced AI model based on your test performance.</p>
-            <button
-              onClick={handleAnalyzePerformance}
-              disabled={isAnalyzing}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 transition-colors text-white font-bold rounded-2xl flex items-center gap-3 disabled:opacity-50"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  Generate AI Review
-                </>
-              )}
-            </button>
-          </section>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {latestResult.ai_suggestions.roadmap?.map((step: any, idx: number) => (
+                    <div key={idx} className="bg-white/5 p-8 rounded-[2rem] border border-white/10 flex gap-6 hover:bg-white/[0.07] transition-all">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-black italic shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="text-lg font-black text-white tracking-tight uppercase">{step.title}</h4>
+                        <p className="text-sm text-slate-400 font-medium leading-relaxed">{step.action}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="space-y-8 pt-12 border-t border-white/10 flex flex-col items-center justify-center py-12">
+                <Brain className="w-16 h-16 text-indigo-500/50 mb-4" />
+                <h2 className="text-2xl font-black text-white tracking-tight mb-2">AI Performance Analysis</h2>
+                <p className="text-slate-400 mb-8 text-center max-w-md">Get personalized insights and a study roadmap generated by our advanced AI model based on your test performance.</p>
+                <button
+                  onClick={handleAnalyzePerformance}
+                  disabled={isAnalyzing}
+                  className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 transition-colors text-white font-bold rounded-2xl flex items-center gap-3 disabled:opacity-50"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Generate AI Review
+                    </>
+                  )}
+                </button>
+              </section>
+            )}
+          </>
         )}
       </div>
     </div>

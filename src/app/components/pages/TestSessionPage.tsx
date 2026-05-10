@@ -1352,7 +1352,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const currentQ = questions[currentIndex];
 
     return (
-        <div className={`fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none ${colorMode === 'reverse' ? 'color-reverse font-medium' : ''}`}>
+        <div className={`fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none text-slate-900 ${colorMode === 'reverse' ? 'color-reverse font-medium' : ''}`}>
             {/* Modals */}
             <AnimatePresence>
                 {/* ... existing modals ... */}

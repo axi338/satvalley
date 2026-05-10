@@ -169,7 +169,7 @@ function extractTextFromVertexResponse(response) {
 /**
  * Normalizes a raw question text into a structured JSON format.
  */
-export async function normalizeQuestion(rawText, onProgress) {
+async function normalizeQuestion(rawText, onProgress) {
     const prompt = `
 You are an expert SAT question parser. Your task is to convert the following raw text into a strict JSON object following the schema below.
 
@@ -284,7 +284,7 @@ RULES:
 /**
  * Extracts ALL SAT questions from a document.
  */
-export async function splitTextToCandidates(fileBuffer, mimeType = "application/pdf", onProgress) {
+async function splitTextToCandidates(fileBuffer, mimeType = "application/pdf", onProgress) {
     const prompt = `
     You are an expert SAT exam digitizer.
     Your task is to extract ALL questions from this document.
@@ -338,7 +338,7 @@ export async function splitTextToCandidates(fileBuffer, mimeType = "application/
 /**
  * Generates high-quality vocabulary details (Cambridge-style definition, example) using Gemini.
  */
-export async function generateVocabularyAI(word, theme = "Standard") {
+async function generateVocabularyAI(word, theme = "Standard") {
     const prompt = `
 Generate vocabulary details for the following word:
         WORD: "${word}"
@@ -381,7 +381,7 @@ OUTPUT FORMAT(Strict JSON):
 /**
  * Analyzes student performance and gives comprehensive, skill-based pedagogical suggestions.
  */
-export async function analyzePerformanceAI(responses) {
+async function analyzePerformanceAI(responses) {
     const prompt = `
 Analyze the following student SAT practice test performance data. 
 Provide a deep pedagogical synthesis including a skill - by - skill breakdown, a roadmap for improvement, and an overall readiness score.
@@ -440,6 +440,7 @@ CATEGORIES TO ANALYZE(If applicable):
         return data;
     } catch (error) {
         logAiActivity("ERROR", "PERF_ANALYZE", error?.message || String(error));
-        throw error;
     }
 }
+
+export { logAiActivity, normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI };

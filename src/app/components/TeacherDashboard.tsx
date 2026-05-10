@@ -5,13 +5,11 @@ import {
     TrendingUp,
     Search,
     ArrowUpRight,
-    ArrowDownRight,
     User as UserIcon,
     MessageSquare
 } from 'lucide-react';
+import { apiFetch } from '../lib/auth';
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -50,10 +48,7 @@ export function TeacherDashboard({ onMessageStudent }: { onMessageStudent?: (stu
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const token = (await authApi.getSession()).data.session?.access_token;
-                const resp = await fetch('/api/teacher/students', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const resp = await apiFetch('/api/teacher/students');
                 const data = await resp.json();
                 setStudents(data.students || []);
                 setClasses(data.classes || []);
@@ -73,13 +68,8 @@ export function TeacherDashboard({ onMessageStudent }: { onMessageStudent?: (stu
         if (!newClassName.trim()) return;
         try {
             setIsCreatingClass(true);
-            const token = (await authApi.getSession()).data.session?.access_token;
-            const resp = await fetch('/api/teacher/create-class', {
+            const resp = await apiFetch('/api/teacher/create-class', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ name: newClassName })
             });
             const data = await resp.json();
@@ -97,10 +87,7 @@ export function TeacherDashboard({ onMessageStudent }: { onMessageStudent?: (stu
     const handleSelectStudent = async (student: Student) => {
         setSelectedStudent(student);
         try {
-            const token = (await authApi.getSession()).data.session?.access_token;
-            const resp = await fetch(`/api/performance/growth/${student.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const resp = await apiFetch(`/api/performance/growth/${student.id}`);
             const data = await resp.json();
             setGrowthData(data.growth || []);
         } catch (err) {

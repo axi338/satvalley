@@ -105,6 +105,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [teachersLoading, setTeachersLoading] = useState(false);
   const [invites, setInvites] = useState<Array<any>>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
+  const [stats, setStats] = useState<{ totalUsers: number; activeProfiles: number } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Site Content Management
   const [siteContent, setSiteContent] = useState<any>({});
@@ -167,6 +169,18 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     }
   };
 
+  const fetchStats = async () => {
+    setStatsLoading(true);
+    try {
+      const data = await authedRequest('/api/admin/stats');
+      setStats(data);
+    } catch (err: any) {
+      console.error("Failed to fetch stats:", err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   const generateInvite = async () => {
     try {
       const data = await authedRequest('/api/admin/teacher-invites', { method: 'POST' });
@@ -183,6 +197,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       await fetchUsers();
       await fetchTeachers();
       await fetchInvites();
+      await fetchStats();
     };
     init();
   }, [apiBase]);
@@ -836,6 +851,41 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
               </ul>
             </div>
           )}
+
+          {/* User Stats Banner */}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Users className="w-12 h-12" />
+              </div>
+              <div className="text-[10px] uppercase font-black text-indigo-400 tracking-widest mb-1 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                Total Registered Users
+              </div>
+              <div className="text-4xl font-black text-white italic">
+                {statsLoading ? '...' : stats?.totalUsers || 0}
+              </div>
+              <div className="mt-2 text-[10px] text-muted-foreground font-bold">
+                AUTH ENTITIES DISCOVERED
+              </div>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-emerald-500/50 transition-all group overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <UserRound className="w-12 h-12" />
+              </div>
+              <div className="text-[10px] uppercase font-black text-emerald-400 tracking-widest mb-1 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Active Profiles
+              </div>
+              <div className="text-4xl font-black text-white italic">
+                {statsLoading ? '...' : stats?.activeProfiles || 0}
+              </div>
+              <div className="mt-2 text-[10px] text-muted-foreground font-bold">
+                ONBOARDING COMPLETED
+              </div>
+            </div>
+          </div>
         </div>
 
         {flash && (
@@ -1498,7 +1548,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                     <div className="space-y-4 p-4 rounded-xl bg-white/5 border border-white/10">
                       <div className="text-xs font-black text-indigo-400 uppercase tracking-widest">Card 2</div>
                       <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">Value (e.g. 1550+)</label>
+                        <label className="text-xs text-muted-foreground">Value (e.g. 1600)</label>
                         <Input
                           value={siteContent.stats_2_value || ''}
                           onChange={e => setSiteContent({ ...siteContent, stats_2_value: e.target.value })}
@@ -1506,7 +1556,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">Label (e.g. Students)</label>
+                        <label className="text-xs text-muted-foreground">Label (e.g. Target Score)</label>
                         <Input
                           value={siteContent.stats_2_label || ''}
                           onChange={e => setSiteContent({ ...siteContent, stats_2_label: e.target.value })}
@@ -1518,7 +1568,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                     <div className="space-y-4 p-4 rounded-xl bg-white/5 border border-white/10">
                       <div className="text-xs font-black text-indigo-400 uppercase tracking-widest">Card 3</div>
                       <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">Value (e.g. 1600)</label>
+                        <label className="text-xs text-muted-foreground">Value (e.g. 100%)</label>
                         <Input
                           value={siteContent.stats_3_value || ''}
                           onChange={e => setSiteContent({ ...siteContent, stats_3_value: e.target.value })}
@@ -1526,7 +1576,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">Label (e.g. Perfect Scores)</label>
+                        <label className="text-xs text-muted-foreground">Label (e.g. Reliability)</label>
                         <Input
                           value={siteContent.stats_3_label || ''}
                           onChange={e => setSiteContent({ ...siteContent, stats_3_label: e.target.value })}

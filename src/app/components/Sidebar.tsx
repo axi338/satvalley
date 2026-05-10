@@ -31,6 +31,7 @@ export function Sidebar({
         { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
         { id: 'classes', label: 'Premium Class', icon: GraduationCap },
         { id: 'review', label: 'Review', icon: History },
+        { id: 'profile', label: 'Profile', icon: User },
         // { id: 'results', label: 'Hall of Fame', icon: Award },
         // { id: 'calculator', label: 'SAT Calculator', icon: Radio },
         // { id: 'olympiad', label: 'SAT Olympiad', icon: GraduationCap },

@@ -51,7 +51,7 @@ export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps
 
             const formData = new FormData();
             formData.append('file', file);
-            const res = await apiFetch('/api/me/avatar', { method: 'POST', body: formData, headers: {} });
+            const res = await apiFetch('/api/profile/upload-avatar', { method: 'POST', body: formData, headers: {} });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
@@ -85,7 +85,7 @@ export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps
             setIsUploadingBanner(true);
             const formData = new FormData();
             formData.append('file', file);
-            const res = await apiFetch('/api/me/banner', { method: 'POST', body: formData, headers: {} });
+            const res = await apiFetch('/api/profile/upload-banner', { method: 'POST', body: formData, headers: {} });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
@@ -109,7 +109,7 @@ export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps
     const saveProfile = async () => {
         setIsSaving(true);
         try {
-            const res = await apiFetch('/api/me/profile', {
+            const res = await apiFetch('/api/profile/update', {
                 method: 'POST',
                 body: JSON.stringify({
                     full_name: editName,

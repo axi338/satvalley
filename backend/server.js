@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -6,7 +8,6 @@ import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import multer from "multer";
-import dotenv from "dotenv";
 import fs from "fs";
 import { fileURLToPath } from 'url';
 import { Server } from "socket.io";
@@ -17,7 +18,6 @@ import { normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyze
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
 import { v4 as uuidv4 } from 'uuid';
 // import sharp from 'sharp';
 // import pdfImgConvert from 'pdf-img-convert';
@@ -80,7 +80,6 @@ const allowList = (process.env.ADMIN_EMAILS || "")
   .filter(Boolean);
 
 const app = express();
-<<<<<<< HEAD
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -98,14 +97,11 @@ const io = new Server(httpServer, {
   }
 });
 
-=======
-
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} | ${req.method} ${req.url}`);
   next();
 });
->>>>>>> master
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -128,9 +124,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static('public/uploads'));
 
-<<<<<<< HEAD
-const verifyTeacher = async (req) => {
-=======
 // --- AUTHENTICATION ENDPOINTS ---
 
 app.post("/api/auth/signup", async (req, res) => {
@@ -189,8 +182,7 @@ app.post("/api/auth/logout", async (req, res) => {
   }
 });
 
-const verifyAdmin = async (req) => {
->>>>>>> master
+const verifyTeacher = async (req) => {
   const authHeader = req.headers.authorization || "";
   const match = authHeader.match(/^Bearer (.+)$/);
   if (!match) {
@@ -204,16 +196,10 @@ const verifyAdmin = async (req) => {
   }
 
   const email = user.email ? user.email.toLowerCase() : "";
-<<<<<<< HEAD
-=======
-  // Check if user has an 'admin' claim, is in the allowList, or has is_admin set in profiles
-  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
-  const isAdmin = user.app_metadata?.admin === true || allowList.includes(email) || profile?.is_admin === true;
->>>>>>> master
 
   // A teacher is either an admin OR has is_teacher = true
-  const { data: profile } = await supabase.from("profiles").select("is_teacher").eq("id", user.id).single();
-  const isAdmin = user.app_metadata?.admin === true || allowList.includes(email);
+  const { data: profile } = await supabase.from("profiles").select("is_teacher, is_admin").eq("id", user.id).maybeSingle();
+  const isAdmin = user.app_metadata?.admin === true || allowList.includes(email) || profile?.is_admin === true;
   const isTeacher = profile?.is_teacher === true || isAdmin;
 
   if (isTeacher) {
@@ -238,26 +224,29 @@ const verifyAdmin = async (req) => {
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error("verifyAdmin Auth error:", error?.message || error);
+      console.error(`[DEBUG verifyAdmin] Auth error for URL: ${supabaseUrl}`);
+      console.error(`[DEBUG verifyAdmin] Error:`, error?.message || error);
+      console.error(`[DEBUG verifyAdmin] Token prefix: ${token.substring(0, 15)}...`);
       throw Object.assign(new Error(`Unauthenticated: ${error?.message || 'Invalid token'}`), { status: 401 });
     }
 
     const email = user.email ? user.email.toLowerCase() : "";
-    console.log(`verifyAdmin: User verified as ${email}. Token: ${token.substring(0, 10)}...`);
+    console.log(`[DEBUG verifyAdmin] User verified: ${email}`);
 
-    // Check if user has an 'admin' claim or is in the allowList
-    const isAdmin = user.app_metadata?.admin === true || allowList.includes(email);
+    // Check if user has an 'admin' claim, is in the allowList, or is_admin in profiles
+    const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+    const isAdmin = user.app_metadata?.admin === true || allowList.includes(email) || profile?.is_admin === true;
 
     if (isAdmin) {
       return user;
     }
-    console.warn(`WARN: Admin access denied for ${email}. Checked against allowList: [${allowList.join(", ")}]`);
+    console.warn(`[DEBUG verifyAdmin] Admin access denied for ${email}`);
     throw Object.assign(new Error("Not an admin"), { status: 403 });
   } catch (err) {
-    console.error("verifyAdmin Unexpected error:", err.message);
-    if (err.message.includes("Unexpected token")) {
-      console.error("DEBUG: Possible Supabase URL or network issue. URL:", supabaseUrl);
-      console.error("DEBUG: Full error stack:", err.stack);
+    console.error(`[DEBUG verifyAdmin] Exception: ${err.message}`);
+    if (err.message.includes("Unexpected token") || err.message.includes("is not valid JSON")) {
+      console.error("[DEBUG verifyAdmin] Supabase returned non-JSON response. This usually indicates a 404, 502, or 431 error from the Supabase API.");
+      console.error("[DEBUG verifyAdmin] URL:", supabaseUrl);
     }
     throw err;
   }
@@ -338,6 +327,31 @@ app.get("/listUsers", async (req, res) => {
       error: status === 401 ? "unauthenticated" : "forbidden",
       message: err.message || "Unauthorized",
     });
+  }
+});
+
+app.get("/api/admin/stats", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+
+    // We fetch auth users count
+    const { data: { users }, error: authError } = await supabase.auth.admin.listUsers();
+    if (authError) throw authError;
+
+    // We can also count profiles for "active" or "completed onboarding" users
+    const { count: profileCount, error: profileError } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
+
+    if (profileError) throw profileError;
+
+    res.json({
+      totalUsers: users.length,
+      activeProfiles: profileCount
+    });
+  } catch (err) {
+    console.error("Stats fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch stats", message: err.message });
   }
 });
 
@@ -1711,7 +1725,10 @@ const verifyUser = async (req) => {
       role: payload.role
     };
   } catch (err) {
-    console.error("verifyUser JWT decode error:", err.message);
+    console.error("[DEBUG verifyUser] JWT error:", err.message);
+    if (err.message.includes("Unexpected token")) {
+      console.error("[DEBUG verifyUser] Malformed token/payload detected.");
+    }
     throw Object.assign(new Error("Unauthenticated: " + err.message), { status: 401 });
   }
 };
@@ -2765,8 +2782,8 @@ app.post("/api/exam-date", async (req, res) => {
 // --- PROFILE ENDPOINTS ---
 
 // POST /api/profile/upload-avatar
-// Accepts multipart form with 'avatar' field, uploads to Supabase Storage
-app.post("/api/profile/upload-avatar", upload.single('avatar'), async (req, res) => {
+// Accepts multipart form with 'file' field, uploads to Supabase Storage
+app.post("/api/profile/upload-avatar", upload.single('file'), async (req, res) => {
   try {
     const user = await verifyUser(req);
 
@@ -2800,17 +2817,44 @@ app.post("/api/profile/upload-avatar", upload.single('avatar'), async (req, res)
   }
 });
 
+// POST /api/profile/upload-banner
+app.post("/api/profile/upload-banner", upload.single('file'), async (req, res) => {
+  try {
+    const user = await verifyUser(req);
+    if (!req.file) return res.status(400).json({ error: "no_file", message: "No file uploaded" });
+
+    const fileExt = req.file.originalname.split('.').pop() || 'jpg';
+    const fileName = `${user.id}/banner-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('banners')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('banners').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+
+    await supabase.from('profiles').upsert({ id: user.id, banner_url: publicUrl, updated_at: new Date().toISOString() });
+    res.json({ url: publicUrl });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: "banner_upload_failed", message: err.message });
+  }
+});
+
 // POST /api/profile/update
-// Saves full_name, phone, avatar_url to profiles table
 app.post("/api/profile/update", async (req, res) => {
   try {
     const user = await verifyUser(req);
-    const { full_name, phone, avatar_url } = req.body;
+    const { full_name, phone, avatar_url, banner_url } = req.body;
 
     const updates = { updated_at: new Date().toISOString() };
     if (full_name !== undefined) updates.full_name = full_name;
     if (phone !== undefined) updates.phone = phone;
     if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+    if (banner_url !== undefined) updates.banner_url = banner_url;
 
     const { error } = await supabase
       .from('profiles')
@@ -2819,7 +2863,6 @@ app.post("/api/profile/update", async (req, res) => {
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
-    console.error("Profile update error:", err);
     res.status(err.status || 500).json({ error: "profile_update_failed", message: err.message });
   }
 });
@@ -2903,5 +2946,5 @@ io.on("connection", (socket) => {
 
 httpServer.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Admin backend listening on ${port}`);
+  console.log(`Admin backend [DEBUG-V3] listening on ${port}`);
 });
