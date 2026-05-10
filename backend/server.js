@@ -2867,8 +2867,10 @@ app.post("/api/me/profile", async (req, res) => {
     const user = await verifyUser(req);
     const { full_name, phone, graduation_year, sat_deadline, onboarding_complete } = req.body;
 
+    // Build upsert payload — always include id and email (email is NOT NULL in schema)
     const updates = {
       id: user.id,
+      email: user.email || '',
       updated_at: new Date().toISOString()
     };
     if (full_name !== undefined) updates.full_name = full_name;
@@ -2877,13 +2879,18 @@ app.post("/api/me/profile", async (req, res) => {
     if (sat_deadline !== undefined) updates.sat_deadline = sat_deadline;
     if (onboarding_complete !== undefined) updates.onboarding_complete = onboarding_complete;
 
+    console.log(`[POST /api/me/profile] Upserting profile for ${user.email}`, updates);
+
     const { data, error } = await supabase
       .from('profiles')
-      .upsert(updates)
+      .upsert(updates, { onConflict: 'id' })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error(`[POST /api/me/profile] DB error for ${user.email}:`, error);
+      throw error;
+    }
     res.json({ success: true, profile: data });
   } catch (err) {
     console.error("Profile update error:", err);
