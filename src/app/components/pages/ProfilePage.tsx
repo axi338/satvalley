@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { User, Mail, Phone, Edit2, Copy, Send, CheckCircle2, Gift, Users, Loader2, X, Save, Camera } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '../../lib/supabase';
+import { authApi, apiFetch } from '../../lib/auth';
 import { toast } from 'sonner';
 
 interface ProfilePageProps {
@@ -49,32 +49,13 @@ export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps
         try {
             setIsUploadingAvatar(true);
 
-            // Determine file extension
-            const ext = file.name.split('.').pop() || 'jpg';
-            const filePath = `${user.id}/avatar.${ext}`;
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await apiFetch('/api/me/avatar', { method: 'POST', body: formData, headers: {} });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
 
-            // Upload to Supabase Storage (bucket: avatars)
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file, { upsert: true, contentType: file.type });
-
-            if (uploadError) throw uploadError;
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-
-            // Persist to profiles table (Include email as it is NOT NULL in schema)
-            const { error: dbError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    avatar_url: publicUrl,
-                    email: user.email
-                }, { onConflict: 'id' });
-
-            if (dbError) throw dbError;
+            const publicUrl = data.url;
 
             setAvatarUrl(publicUrl);
             toast.success('Profile picture updated!');
@@ -102,30 +83,13 @@ export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps
 
         try {
             setIsUploadingBanner(true);
-            const ext = file.name.split('.').pop() || 'jpg';
-            const filePath = `${user.id}/banner.${ext}`;
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await apiFetch('/api/me/banner', { method: 'POST', body: formData, headers: {} });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
 
-            // Upload to banners bucket
-            const { error: uploadError } = await supabase.storage
-                .from('banners')
-                .upload(filePath, file, { upsert: true, contentType: file.type });
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('banners')
-                .getPublicUrl(filePath);
-
-            // Persist to profiles
-            const { error: dbError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    banner_url: publicUrl,
-                    email: user.email
-                }, { onConflict: 'id' });
-
-            if (dbError) throw dbError;
+            const publicUrl = data.url;
 
             setBannerUrl(publicUrl);
             toast.success('Cover photo updated!');
@@ -145,18 +109,17 @@ export function ProfilePage({ user, profile, onProfileUpdate }: ProfilePageProps
     const saveProfile = async () => {
         setIsSaving(true);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    email: user.email,
+            const res = await apiFetch('/api/me/profile', {
+                method: 'POST',
+                body: JSON.stringify({
                     full_name: editName,
                     phone: editPhone,
                     avatar_url: avatarUrl,
                     banner_url: bannerUrl
-                }, { onConflict: 'id' });
+                })
+            });
 
-            if (error) throw error;
+            if (!res.ok) throw new Error((await res.json()).error);
             toast.success('Profile saved!');
             setIsEditing(false);
             onProfileUpdate?.();

@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { supabase } from '../lib/supabase';
+import { authApi, apiFetch } from '../lib/auth';
 
 interface Assignment {
     id: string;

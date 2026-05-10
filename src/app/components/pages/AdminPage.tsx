@@ -53,16 +53,16 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [testTitle, setTestTitle] = useState('');
   const [testDifficulty, setTestDifficulty] = useState('Medium');
   const [testDescription, setTestDescription] = useState('');
-  const [mathq, setMathq] = useState('58');
-  const [readingq, setReadingq] = useState('52');
-  const [writingq, setWritingq] = useState('44');
+  const [mathq, setMathq] = useState('44');
+  const [readingq, setReadingq] = useState('54');
+  const [writingq, setWritingq] = useState('0'); // Added missing state
   const [questionText, setQuestionText] = useState('');
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [studentName, setStudentName] = useState('');
   const [studentScore, setStudentScore] = useState('');
   const [studentPhoto, setStudentPhoto] = useState<File | null>(null);
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
-  const [studentNote, setStudentNote] = useState('');
+  const [studentQuote, setStudentQuote] = useState(''); // Renamed from studentNote
   const [isOlympiad, setIsOlympiad] = useState(false);
   const [olympiadEndDate, setOlympiadEndDate] = useState('');
   const [tests, setTests] = useState<Array<{ id: string; title: string; difficulty: string; mathq?: string; readingq?: string; writingq?: string; is_olympiad?: boolean; olympiad_end_date?: string }>>([]);
@@ -248,7 +248,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       title: testTitle,
       difficulty: testDifficulty,
       description: testDescription,
-      sections: [`Math: ${mathq}Q`, `Reading: ${readingq}Q`, `Writing: ${writingq}Q`],
+      sections: [`Math: ${mathq}Q`, `Reading & Writing: ${readingq}Q`],
       mathq,
       readingq,
       writingq,
@@ -287,9 +287,9 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setTestTitle('');
     setTestDifficulty('Medium');
     setTestDescription('');
-    setMathq('58');
-    setReadingq('52');
-    setWritingq('44');
+    setMathq('44');
+    setReadingq('54');
+    setWritingq('0');
     setIsOlympiad(false);
     setOlympiadEndDate('');
     setEditingTestId(null);
@@ -300,9 +300,9 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setTestTitle(t.title || '');
     setTestDifficulty(t.difficulty || 'Medium');
     setTestDescription(t.description || '');
-    setMathq(t.mathq || '58');
-    setReadingq(t.readingq || '52');
-    setWritingq(t.writingq || '44');
+    setMathq(t.mathq || '44');
+    setReadingq(t.readingq || '54');
+    setWritingq(t.writingq || '0');
     setIsOlympiad(t.is_olympiad || false);
     setOlympiadEndDate(t.olympiad_end_date ? t.olympiad_end_date.split('T')[0] : '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -501,7 +501,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       showFlash('Student name and score are required.');
       return;
     }
-    const payload = { name: studentName, score: studentScore, note: studentNote, photoUrl: studentPhotoPreview || undefined };
+    const payload = { name: studentName, score: studentScore, note: studentQuote, photoUrl: studentPhotoPreview || undefined }; // Mapping quote to note column
 
     if (editingResultId) {
       authedRequest(`/api/results/${editingResultId}`, {
@@ -535,7 +535,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setStudentScore('');
     setStudentPhoto(null);
     setStudentPhotoPreview(null);
-    setStudentNote('');
+    setStudentQuote('');
     setEditingResultId(null);
   };
 
@@ -543,7 +543,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setEditingResultId(r.id);
     setStudentName(r.name || '');
     setStudentScore(r.score || '');
-    setStudentNote(r.note || '');
+    setStudentQuote(r.note || '');
     setStudentPhotoPreview(r.photoUrl || null);
     window.scrollTo({ top: 300, behavior: 'smooth' });
   };
@@ -782,7 +782,10 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             <div className="px-3 py-1.5 rounded-lg bg-primary/20 text-sm font-semibold tracking-wide">
               VALLEY | SAT
             </div>
-            <div className="text-sm text-muted-foreground">Admin access bar</div>
+            <div className="text-sm text-muted-foreground mr-4">Admin access bar</div>
+            <Button onClick={() => onNavigate('dashboard')} variant="ghost" className="h-8 px-3 text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 border border-indigo-400/20 rounded-lg">
+              ← Back to Dashboard
+            </Button>
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">Secret key:</span> <span className="font-semibold">882336201</span>
@@ -903,12 +906,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                       <Input value={mathq} onChange={e => setMathq(e.target.value)} className="h-9 bg-white/5 border-white/10 text-white" />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase text-muted-foreground">Read</label>
+                      <label className="text-[10px] uppercase text-muted-foreground">Reading & Writing</label>
                       <Input value={readingq} onChange={e => setReadingq(e.target.value)} className="h-9 bg-white/5 border-white/10 text-white" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] uppercase text-muted-foreground">Write</label>
-                      <Input value={writingq} onChange={e => setWritingq(e.target.value)} className="h-9 bg-white/5 border-white/10 text-white" />
                     </div>
                   </div>
                 </div>
@@ -956,7 +955,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                       <div key={t.id} className="p-4 rounded-xl border border-white/10 bg-white/5 flex items-center justify-between group">
                         <div>
                           <div className="font-medium text-white">{t.title}</div>
-                          <div className="text-xs text-muted-foreground">{t.difficulty} • {t.mathq}M / {t.readingq}R / {t.writingq}W</div>
+                          <div className="text-xs text-muted-foreground">{t.difficulty} • {t.mathq}M / {t.readingq}RW</div>
                         </div>
                         <div className="flex gap-2">
                           <button onClick={() => handleEditTest(t)} className="p-2 rounded-lg hover:bg-white/10 text-blue-400"><Edit className="w-4 h-4" /></button>
@@ -1170,24 +1169,24 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                   <p className="text-muted-foreground">Add student results for the spotlight</p>
                 </div>
               </div>
-              <div className="space-y-6 max-w-3xl">
+              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Name</label>
-                    <Input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="e.g., Jane D." className="bg-white/5 border-white/10 text-white h-12" />
+                    <label className="text-sm text-muted-foreground">Student Name</label>
+                    <Input value={studentName} onChange={e => setStudentName(e.target.value)} className="bg-white/5 border-white/10 h-12 text-white" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm text-muted-foreground">Score</label>
-                    <Input value={studentScore} onChange={e => setStudentScore(e.target.value)} placeholder="1600" className="bg-white/5 border-white/10 text-white h-12" />
+                    <Input value={studentScore} onChange={e => setStudentScore(e.target.value)} className="bg-white/5 border-white/10 h-12 text-white" />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Student Quote</label>
+                  <Textarea value={studentQuote} onChange={e => setStudentQuote(e.target.value)} placeholder="e.g., This platform changed my life!" className="bg-white/5 border-white/10 min-h-24 text-white" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Photo URL (Preview)</label>
                   <Input value={studentPhotoPreview || ''} onChange={e => setStudentPhotoPreview(e.target.value)} placeholder="https://..." className="bg-white/5 border-white/10 text-white h-12" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Description (Note)</label>
-                  <Textarea value={studentNote} onChange={e => setStudentNote(e.target.value)} placeholder="e.g., Improved Math from 680 to 790" className="bg-white/5 border-white/10 text-white min-h-24" />
                 </div>
                 <Button onClick={handleAddResult} className="bg-primary text-primary-foreground min-w-[140px]">
                   {editingResultId ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}

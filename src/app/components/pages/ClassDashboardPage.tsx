@@ -53,7 +53,7 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
 
         const fetchStats = async () => {
             try {
-                const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+                const token = (await authApi.getSession()).data.session?.access_token;
                 const headers = { 'Authorization': `Bearer ${token}` };
 
                 const [perfResp, todoResp] = await Promise.all([
@@ -95,7 +95,7 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
     const handleCreateAssignment = async () => {
         if (!newTitle || !newDueDate) return;
         try {
-            const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+            const token = (await authApi.getSession()).data.session?.access_token;
             const resp = await fetch('/api/assignments', {
                 method: 'POST',
                 headers: {
@@ -122,7 +122,7 @@ export function ClassDashboardPage({ user, profile, onNavigate, onProfileUpdate 
         if (!joinClassId.trim()) return;
         try {
             setIsJoining(true);
-            const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+            const token = (await authApi.getSession()).data.session?.access_token;
             const resp = await fetch('/api/student/join-class', {
                 method: 'POST',
                 headers: {

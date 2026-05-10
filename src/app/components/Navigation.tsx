@@ -68,6 +68,14 @@ export function Navigation({ currentPage, onNavigate, userEmail, onLogout, isAdm
                 {item.label}
               </button>
             ))}
+            {isAdmin && (
+              <button
+                onClick={() => onNavigate('admin')}
+                className="px-4 py-1.5 rounded-lg text-sm font-black text-amber-400 hover:text-amber-300 hover:bg-white/5 transition-all"
+              >
+                Admin
+              </button>
+            )}
           </nav>
 
           {/* User Actions */}

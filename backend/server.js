@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 import { Server } from "socket.io";
 import { createServer } from "http";
 
-import { normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI } from "./satvalley-ai/src/processor.js";
+import { normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI, logAiActivity } from "./satvalley-ai/src/processor.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +21,9 @@ dotenv.config();
 import { v4 as uuidv4 } from 'uuid';
 // import sharp from 'sharp';
 // import pdfImgConvert from 'pdf-img-convert';
+
+process.stdout.on('error', (err) => { if (err.code === 'EPIPE') return; });
+process.stderr.on('error', (err) => { if (err.code === 'EPIPE') return; });
 
 // Global Crash Logger
 const logCrash = (type, err) => {
@@ -77,6 +80,7 @@ const allowList = (process.env.ADMIN_EMAILS || "")
   .filter(Boolean);
 
 const app = express();
+<<<<<<< HEAD
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -94,6 +98,14 @@ const io = new Server(httpServer, {
   }
 });
 
+=======
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} | ${req.method} ${req.url}`);
+  next();
+});
+>>>>>>> master
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -116,7 +128,69 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static('public/uploads'));
 
+<<<<<<< HEAD
 const verifyTeacher = async (req) => {
+=======
+// --- AUTHENTICATION ENDPOINTS ---
+
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post("/api/auth/google", async (req, res) => {
+  try {
+    const { origin } = req.body;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: origin || 'http://localhost:5173',
+        skipBrowserRedirect: true
+      }
+    });
+
+    if (error) throw error;
+    res.json({ url: data.url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const verifyAdmin = async (req) => {
+>>>>>>> master
   const authHeader = req.headers.authorization || "";
   const match = authHeader.match(/^Bearer (.+)$/);
   if (!match) {
@@ -130,6 +204,12 @@ const verifyTeacher = async (req) => {
   }
 
   const email = user.email ? user.email.toLowerCase() : "";
+<<<<<<< HEAD
+=======
+  // Check if user has an 'admin' claim, is in the allowList, or has is_admin set in profiles
+  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
+  const isAdmin = user.app_metadata?.admin === true || allowList.includes(email) || profile?.is_admin === true;
+>>>>>>> master
 
   // A teacher is either an admin OR has is_teacher = true
   const { data: profile } = await supabase.from("profiles").select("is_teacher").eq("id", user.id).single();
@@ -295,7 +375,27 @@ app.get("/api/tests", async (req, res) => {
     }
 
     if (error) throw error;
-    res.json({ tests: data });
+
+    // Fetch user counts for each test
+    const { data: results, error: resultsError } = await supabase
+      .from("results")
+      .select("test_id, user_email");
+
+    const userCounts = {};
+    if (!resultsError && results) {
+      results.forEach(r => {
+        if (!r.test_id) return;
+        if (!userCounts[r.test_id]) userCounts[r.test_id] = new Set();
+        if (r.user_email) userCounts[r.test_id].add(r.user_email.toLowerCase());
+      });
+    }
+
+    const testsWithCounts = data.map(t => ({
+      ...t,
+      user_count: userCounts[t.id]?.size || 0
+    }));
+
+    res.json({ tests: testsWithCounts });
   } catch (err) {
     res.status(500).json({ error: "failed_to_list_tests", message: err.message });
   }
@@ -1132,6 +1232,9 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
       }
     }
 
+    console.log(`DEBUG: Received POST /api/admin/import/upload from ${user.email}`);
+    console.log(`DEBUG: Params: testType=${testType}, testId=${testId}, subject=${subject}, module=${module}`);
+
     // 1. Create Import Job
     const { data: job, error: jobError } = await supabase
       .from("import_jobs")
@@ -1218,7 +1321,7 @@ app.post("/api/admin/import/upload", upload.single('file'), async (req, res) => 
 
             if (candidateError) {
               console.error("Failed to insert candidate to database:", candidateError);
-              // logAiActivity("ERROR", "DB_INSERT_CANDIDATE", `Job ${job.id} | Error: ${JSON.stringify(candidateError)}`); // This function is not defined
+              logAiActivity("ERROR", "DB_INSERT_CANDIDATE", `Job ${job.id} | Error: ${JSON.stringify(candidateError)}`);
             } else {
               successCount++;
             }
@@ -1264,6 +1367,21 @@ app.get("/api/admin/import/jobs", async (req, res) => {
   }
 });
 
+app.get("/api/admin/tests", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { data, error } = await supabase
+      .from("tests")
+      .select("id, title, status")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json({ tests: data });
+  } catch (err) {
+    res.status(500).json({ error: "list_tests_failed", message: err.message });
+  }
+});
+
 app.delete("/api/admin/import/jobs/:id", async (req, res) => {
   try {
     await verifyAdmin(req);
@@ -1291,7 +1409,7 @@ app.get("/api/admin/import/jobs/:id/candidates", async (req, res) => {
     const { id } = req.params;
     const { data, error } = await supabase
       .from("import_candidates")
-      .select("*")
+      .select("*, import_jobs(id, filename, destination_test_id, config)")
       .eq("job_id", id)
       .order("created_at", { ascending: true });
 

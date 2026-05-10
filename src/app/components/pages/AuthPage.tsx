@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Mail, Lock, Loader2, Chrome, ShieldCheck, Sparkles, GraduationCap, Zap, Globe, Cpu } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { authApi } from '../../lib/auth';
 
 type Mode = 'login' | 'register';
 
@@ -8,8 +9,7 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -20,7 +20,7 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   };
 
   const handleEmailAuth = async () => {
-    setEmailLoading(true);
+    setLoading(true);
     setError(null);
     setSuccess(null);
     console.log(`DEBUG: handleEmailAuth started for mode: ${mode}, email: ${email}`);
@@ -32,55 +32,53 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
         });
         if (error) throw error;
         console.log("DEBUG: Sign up successful", data);
-        if (data.user && !data.session) {
-          setSuccess("Registration successful! Please check your email to confirm your account.");
-        } else {
-          onSuccess();
-        }
-      } else if (mode === 'login') {
+        setSuccess('Registration successful! Please check your email for a confirmation link.');
+      } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         console.log("DEBUG: Sign in successful", data);
-        onSuccess();
+        onSuccess(); // Redirect on success
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("DEBUG: handleEmailAuth error:", err);
-      let message = err.message || 'Authentication sequence failed.';
-      if (message.includes('Unexpected token') || message.includes('Failed to fetch') || message.includes('<html>')) {
-        message = "Connection to Auth Server blocked (likely by an Ad-Blocker or VPN). Please disable them for this site.";
-      }
+      const message =
+        err instanceof Error ? err.message : 'Authentication sequence failed. Verify credentials.';
       setError(message);
     } finally {
-      setEmailLoading(false);
+      setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
-    setGoogleLoading(true);
+    setLoading(true);
     setError(null);
     setSuccess(null);
     console.log("DEBUG: handleGoogle started with origin:", window.location.origin);
     try {
+      const redirectUrl = window.location.origin;
+      console.log("DEBUG: Initiating Google OAuth with redirect:", redirectUrl);
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account'
+          }
         },
       });
       if (error) throw error;
       console.log("DEBUG: Google OAuth initiated", data);
-    } catch (err: any) {
+    } catch (err) {
       console.error("DEBUG: handleGoogle error:", err);
-      let message = err.message || 'Google OAuth failed.';
-      if (message.includes('Unexpected token') || message.includes('Failed to fetch') || message.includes('<html>')) {
-        message = "Connection to Auth Server blocked (likely by an Ad-Blocker or VPN). Please disable them for this site.";
-      }
+      const message =
+        err instanceof Error ? err.message : 'Google OAuth failed. Please try again.';
       setError(message);
     } finally {
-      setGoogleLoading(false);
+      setLoading(false);
     }
   };
 
@@ -183,9 +181,9 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
               <button
                 className="w-full h-20 bg-white text-black hover:bg-indigo-400 hover:text-white rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] shadow-xl shadow-black/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 group"
                 onClick={handleEmailAuth}
-                disabled={emailLoading || googleLoading || !email || !password}
+                disabled={loading || !email || !password}
               >
-                {emailLoading ? (
+                {loading ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin" />
                     <span className="animate-pulse">Processing...</span>
@@ -206,19 +204,10 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
               <button
                 className="w-full h-20 border border-white/10 hover:bg-white/5 text-white/80 rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4"
                 onClick={handleGoogle}
-                disabled={emailLoading || googleLoading}
+                disabled={loading}
               >
-                {googleLoading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-                    <span className="animate-pulse">Connecting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Chrome className="w-6 h-6 text-indigo-400" />
-                    Continue with Google
-                  </>
-                )}
+                <Chrome className="w-6 h-6 text-indigo-400" />
+                Continue with Google
               </button>
             </div>
           </div>

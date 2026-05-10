@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Sparkles, GraduationCap, Zap, User as UserIcon, Calendar, Phone } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { authApi, apiFetch } from '../../lib/auth';
 import type { User } from '@supabase/supabase-js';
 
 interface OnboardingPageProps {
@@ -21,25 +21,19 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
     useEffect(() => {
         async function fetchProfile() {
             try {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+                const res = await apiFetch('/api/me/profile');
 
-                if (error && error.code !== 'PGRST116') {
-                    console.error("Error fetching profile during onboarding:", error);
-                }
-
-                if (data) {
-                    if (data.full_name) setFullName(data.full_name);
-                    if (data.phone) setPhone(data.phone);
-                    if (data.graduation_year) setGradYear(data.graduation_year);
-                    if (data.sat_deadline) setSatDeadline(data.sat_deadline);
-                } else {
-                    // Attempt to fetch from user metadata for google auth
-                    const metadataName = user.user_metadata?.full_name;
-                    if (metadataName) setFullName(metadataName);
+                if (res.ok) {
+                    const { profile } = await res.json();
+                    if (profile) {
+                        if (profile.full_name) setFullName(profile.full_name);
+                        if (profile.phone) setPhone(profile.phone);
+                        if (profile.graduation_year) setGradYear(profile.graduation_year);
+                        if (profile.sat_deadline) setSatDeadline(profile.sat_deadline);
+                    } else {
+                        const metadataName = user.user_metadata?.full_name;
+                        if (metadataName) setFullName(metadataName);
+                    }
                 }
             } catch (err) {
                 console.error("Unexpected error fetching profile:", err);
@@ -60,20 +54,19 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
         setError(null);
 
         try {
-            const { error: upsertError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
+            const res = await apiFetch('/api/me/profile', {
+                method: 'POST',
+                body: JSON.stringify({
                     full_name: fullName,
                     phone: phone,
                     graduation_year: gradYear,
                     sat_deadline: satDeadline,
-                    email: user.email,
                     onboarding_complete: true,
                     updated_at: new Date().toISOString()
-                });
+                })
+            });
 
-            if (upsertError) throw upsertError;
+            if (!res.ok) throw new Error((await res.json()).error);
 
             onComplete(); // Successfully saved, signal to App.tsx to remove lock
         } catch (err) {

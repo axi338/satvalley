@@ -50,7 +50,7 @@ export function TeacherDashboard({ onMessageStudent }: { onMessageStudent?: (stu
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+                const token = (await authApi.getSession()).data.session?.access_token;
                 const resp = await fetch('/api/teacher/students', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -73,7 +73,7 @@ export function TeacherDashboard({ onMessageStudent }: { onMessageStudent?: (stu
         if (!newClassName.trim()) return;
         try {
             setIsCreatingClass(true);
-            const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+            const token = (await authApi.getSession()).data.session?.access_token;
             const resp = await fetch('/api/teacher/create-class', {
                 method: 'POST',
                 headers: {
@@ -97,7 +97,7 @@ export function TeacherDashboard({ onMessageStudent }: { onMessageStudent?: (stu
     const handleSelectStudent = async (student: Student) => {
         setSelectedStudent(student);
         try {
-            const token = (await (window as any).supabase.auth.getSession()).data.session?.access_token;
+            const token = (await authApi.getSession()).data.session?.access_token;
             const resp = await fetch(`/api/performance/growth/${student.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

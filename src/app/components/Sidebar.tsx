@@ -5,7 +5,6 @@ interface SidebarProps {
     onNavigate: (page: string) => void;
     currentPage: string;
     user: any;
-    profile?: any;
     onLogout: () => void;
     isVisible: boolean;
     isCollapsed: boolean;
@@ -18,7 +17,6 @@ export function Sidebar({
     onNavigate,
     currentPage,
     user,
-    profile,
     onLogout,
     isVisible,
     isCollapsed,
@@ -29,17 +27,15 @@ export function Sidebar({
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'premium-class', label: 'Premium Class', icon: GraduationCap },
         { id: 'practice', label: 'DSAT Tests', icon: PenTool },
         { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
+        { id: 'classes', label: 'Premium Class', icon: GraduationCap },
         { id: 'review', label: 'Review', icon: History },
-        { id: 'profile', label: 'Profile', icon: User },
+        // { id: 'results', label: 'Hall of Fame', icon: Award },
+        // { id: 'calculator', label: 'SAT Calculator', icon: Radio },
+        // { id: 'olympiad', label: 'SAT Olympiad', icon: GraduationCap },
     ];
 
-    const isTeacher = profile?.is_teacher === true || isAdmin;
-    if (isTeacher) {
-        navItems.splice(1, 0, { id: 'teacher', label: 'Teacher Panel', icon: GraduationCap });
-    }
 
     const adminItems = [
         { id: 'admin', label: 'Admin Panel', icon: User },
@@ -49,9 +45,6 @@ export function Sidebar({
 
     if (!isVisible) return null;
 
-    const avatarUrl = user?.user_metadata?.avatar_url || profile?.avatar_url;
-    const initial = user?.email?.[0].toUpperCase() || 'S';
-
     return (
         <div className={`fixed left-0 top-0 h-screen bg-[#020617] text-slate-400 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col z-[100] border-r border-white/5 ${isCollapsed ? 'w-20' : 'w-64'}`}>
             {/* User Bar */}
@@ -59,30 +52,22 @@ export function Sidebar({
                 {!isCollapsed ? (
                     <div className="flex items-center gap-4 group">
                         <div className="relative">
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt="Avatar" className="w-12 h-12 rounded-2xl object-cover shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300" />
-                            ) : (
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300">
-                                    {initial}
-                                </div>
-                            )}
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300">
+                                {user?.email?.[0].toUpperCase() || 'S'}
+                            </div>
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-indigo-400 border-2 border-[#020617]" />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-white font-black text-sm tracking-tight truncate max-w-[120px]">
-                                {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Scholar'}
+                                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Scholar'}
                             </span>
                             <span className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.2em] opacity-60">SatValley</span>
                         </div>
                     </div>
                 ) : (
-                    avatarUrl ? (
-                        <img src={avatarUrl} alt="Avatar" className="w-12 h-12 rounded-2xl object-cover mx-auto" />
-                    ) : (
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl mx-auto">
-                            {initial}
-                        </div>
-                    )
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl mx-auto">
+                        {user?.email?.[0].toUpperCase() || 'S'}
+                    </div>
                 )}
             </div>
 

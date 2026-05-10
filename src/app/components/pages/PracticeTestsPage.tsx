@@ -7,6 +7,7 @@ import {
   Zap,
   Activity,
   CheckCircle2,
+  UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -279,6 +280,10 @@ export function PracticeTestsPage({ onNavigate, user, profile }: PracticeTestsPa
                       <div className="inline-flex items-center gap-2">
                         <Info className="w-4 h-4" />
                         <span>{t?.questionCount || t?.qcount || "Adaptive"}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2 text-indigo-400 font-bold">
+                        <UserRound className="w-4 h-4" />
+                        <span>{t?.user_count || 0} users</span>
                       </div>
                     </div>
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Shield, Plus, User, Mail, Lock, Key, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { supabase } from '../../lib/supabase';
+import { authApi, apiFetch } from '../../lib/auth';
 
 interface TeacherSignupPageProps {
     onNavigate: (page: string) => void;

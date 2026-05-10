@@ -3,7 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { ChevronRight } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { Sidebar } from './components/Sidebar';
-import { Footer } from './components/Footer';
+import { ResultsMarquee } from './components/ResultsMarquee';
 import { HomePage } from './components/pages/HomePage';
 import { FeaturesPage } from './components/pages/FeaturesPage';
 import { FAQPage } from './components/pages/FAQPage';
@@ -51,23 +51,53 @@ export default function App() {
   }, [currentPage]);
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("DEBUG: Current session check", session);
-      setUser(session?.user ?? null);
-      setAuthReady(true);
-    });
+    const initializeAuth = async () => {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+
+      console.log("DEBUG: Initializing Auth. Code in URL:", !!code);
+
+      try {
+        if (code) {
+          console.log("DEBUG: Exchanging code for session...");
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) console.error("DEBUG: Code exchange error:", error);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log("DEBUG: Initial session check result:", { hasSession: !!session, error: sessionError });
+
+        const newUser = session?.user ?? null;
+        setUser(newUser);
+
+        if (newUser) {
+          console.log("DEBUG: User detected, setting dashboard");
+          setCurrentPage('dashboard');
+        }
+      } catch (err) {
+        console.error("DEBUG: Auth init failed:", err);
+      } finally {
+        setAuthReady(true);
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(`DEBUG: Auth State Changed Event: ${event}`, session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`DEBUG: Auth State Event: ${event}`, {
+        email: session?.user?.email,
+        currentPage
+      });
+
       const newUser = session?.user ?? null;
       setUser(newUser);
 
-      if (event === 'SIGNED_IN') {
-        // Only redirect to dashboard if they are on a "guest" page (home or auth)
-        // This prevents kicking them out of a test session if the session refreshes.
-        setCurrentPage(prev => (prev === 'home' || prev === 'auth') ? 'dashboard' : prev);
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (newUser && (currentPage === 'home' || currentPage === 'auth')) {
+          setCurrentPage('dashboard');
+        }
       } else if (event === 'SIGNED_OUT') {
         setCurrentPage('home');
       }
@@ -77,9 +107,22 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Double check olympiad verification status when user is loaded
+  // Double check olympiad verification status and admin status when user is loaded
   useEffect(() => {
-    if (user && !olympiadVerified) {
+    if (user) {
+      // Admin Check
+      const adminEmails = [
+        'ahrorbek360@gmail.com',
+        'ahldnibrohimov@gmail.com',
+        'ibroximovaxliddin@gmail.com',
+        'gptr3654@gmail.com',
+        'ibroximovaxliddin6.5@gmail.com'
+      ];
+      if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+        setAdminUnlocked(true);
+        sessionStorage.setItem('adminUnlocked', 'true');
+      }
+
       const checkStatus = async () => {
         const { data } = await supabase.from('olympiad_profiles').select('phone_verified').eq('id', user.id).maybeSingle();
         if (data?.phone_verified) {
@@ -88,7 +131,7 @@ export default function App() {
       };
       checkStatus();
     }
-  }, [user, olympiadVerified]);
+  }, [user]);
 
   // Check if profile is complete
   useEffect(() => {
@@ -156,11 +199,9 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    console.log("DEBUG: handleLogout called");
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      console.log("DEBUG: Sign out successful");
     } catch (err) {
       console.error("DEBUG: Sign out failed", err);
     }
@@ -217,6 +258,9 @@ export default function App() {
       case 'profile':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('profile')} />;
         return <ProfilePage user={user} profile={profile} onProfileUpdate={refreshProfile} />;
+      case 'classes':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('classes')} />;
+        return <ClassDashboardPage user={user} profile={null} onNavigate={handleNavigate} />;
       case 'practice':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('practice')} />;
         return <PracticeTestsPage onNavigate={handleNavigate} user={user} profile={profile} />;
@@ -241,14 +285,19 @@ export default function App() {
       case 'teacher-signup':
         return <TeacherSignupPage onNavigate={handleNavigate} />;
       case 'admin':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin')} />;
         return adminUnlocked ? <AdminPage onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-olympiad':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin-olympiad')} />;
         return adminUnlocked ? <OlympiadAdminPage /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-import':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin-import')} />;
         return adminUnlocked ? <ImportDashboard onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-import-new':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin-import-new')} />;
         return adminUnlocked ? <NewImport onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       case 'admin-import-review':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin-import-review')} />;
         return adminUnlocked ? <ImportReview onNavigate={handleNavigate} jobId={currentParams?.jobId} /> : <HomePage onNavigate={handleNavigate} />;
       default:
         return <HomePage onNavigate={handleNavigate} />;
@@ -332,6 +381,7 @@ export default function App() {
       )}
 
       <Toaster />
+      {!isAppMode && !isTestSession && <ResultsMarquee />}
       {!isAppMode && !isTestSession && <Footer onNavigate={handleNavigate} />}
     </div>
   );

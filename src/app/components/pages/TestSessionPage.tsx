@@ -20,6 +20,7 @@ import {
     Grid3X3,
     Book,
     HelpCircle as HelpIcon,
+    Settings,
     Accessibility,
     LogOut,
     Eye as EyeIcon,
@@ -36,7 +37,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FullscreenInterstitial } from '../FullscreenInterstitial';
-import { PracticeIntroScreen } from './PracticeIntroScreen';
 import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -47,7 +47,6 @@ interface TestSessionPageProps {
     testId?: string;
     onNavigate: (page: string, params?: any) => void;
     user: any;
-    profile?: any;
 }
 
 interface Question {
@@ -60,7 +59,6 @@ interface Question {
     imageUrl?: string;
     optionImages?: (string | null)[];
     subject?: 'rw' | 'math';
-    explanation?: string;
 }
 
 interface HighlightRange {
@@ -288,45 +286,45 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
                         <div className="flex flex-col items-center">
                             <div className="w-24 h-24 relative mb-4">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                                    <circle cx="50" cy="50" r="1.5" fill="currentColor" />
-                                    <line x1="50" y1="50" x2="90" y2="50" stroke="currentColor" strokeWidth="1" />
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <circle cx="50" cy="50" r="1.5" fill="black" />
+                                    <line x1="50" y1="50" x2="90" y2="50" stroke="black" strokeWidth="1" />
+                                    <text x="70" y="45" fontSize="12" className="italic" fill="black">r</text>
                                 </svg>
-                                <div className="absolute top-[35%] left-[62%]"><MathText text={"$r$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center space-y-1">
-                                <p className="text-[13px] italic"><MathText text={"$A = \\pi r^2$"} /></p>
-                                <p className="text-[13px] italic"><MathText text={"$C = 2\\pi r$"} /></p>
+                                <p className="text-[13px] italic">A = πr²</p>
+                                <p className="text-[13px] italic">C = 2πr</p>
                             </div>
                         </div>
 
                         {/* Rectangle */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 60" className="w-full h-full text-black">
-                                    <rect x="10" y="5" width="80" height="50" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 60" className="w-full max-h-full text-black">
+                                    <rect x="10" y="5" width="80" height="50" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <text x="50" y="0" fontSize="12" className="italic" textAnchor="middle" alignmentBaseline="hanging" fill="black">ℓ</text>
+                                    <text x="95" y="30" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">w</text>
                                 </svg>
-                                <div className="absolute -top-3 left-[45%]"><MathText text={"$\\ell$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute top-[40%] -right-2"><MathText text={"$w$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
-                                <p className="text-[13px] italic"><MathText text={"$A = \\ell w$"} /></p>
+                                <p className="text-[13px] italic">A = ℓw</p>
                             </div>
                         </div>
 
                         {/* Triangle */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 80" className="w-full h-full text-black">
-                                    <path d="M10 70 L90 70 L50 10 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                                    <line x1="50" y1="10" x2="50" y2="70" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
-                                    <rect x="50" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
+                                    <path d="M10 70 L90 70 L50 10 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <line x1="50" y1="10" x2="50" y2="70" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <rect x="50" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="50" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">b</text>
+                                    <text x="56" y="40" fontSize="12" className="italic" fill="black">h</text>
                                 </svg>
-                                <div className="absolute -bottom-3 left-[48%]"><MathText text={"$b$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute top-[38%] left-[55%]"><MathText text={"$h$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
-                                <p className="text-[13px] italic"><MathText text={"$A = \\frac{1}{2}bh$"} /></p>
+                                <p className="text-[13px] italic">A = ½bh</p>
                             </div>
                         </div>
                     </div>
@@ -335,32 +333,32 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
                     <div className="grid grid-cols-3 gap-8">
                         {/* Pythagorean */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 80" className="w-full h-full text-black">
-                                    <path d="M20 10 L20 70 L80 70 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
+                                    <path d="M20 10 L20 70 L80 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="10" y="40" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">b</text>
+                                    <text x="50" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">a</text>
+                                    <text x="55" y="35" fontSize="12" className="italic" fill="black">c</text>
                                 </svg>
-                                <div className="absolute top-[35%] -left-1"><MathText text={"$a$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute -bottom-3 left-[45%]"><MathText text={"$b$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute top-[30%] right-[15%]"><MathText text={"$c$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
-                                <p className="text-[13px] italic"><MathText text={"$c^2 = a^2 + b^2$"} /></p>
+                                <p className="text-[13px] italic">c² = a² + b²</p>
                             </div>
                         </div>
 
                         {/* 30-60-90 */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 120 80" className="w-full h-full text-black">
-                                    <path d="M20 10 L20 70 L90 70 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 120 80" className="w-full max-h-full text-black">
+                                    <path d="M20 10 L20 70 L90 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="75" y="65" fontSize="10" fill="black">30°</text>
+                                    <text x="25" y="25" fontSize="10" fill="black">60°</text>
+                                    <text x="5" y="40" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">x√3</text>
+                                    <text x="55" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">x</text>
+                                    <text x="60" y="35" fontSize="12" className="italic" fill="black">2x</text>
                                 </svg>
-                                <div className="absolute top-[65%] right-[20%]"><MathText text={"$30^\\circ$"} className="text-[10px] text-black" /></div>
-                                <div className="absolute top-[20%] left-[25%]"><MathText text={"$60^\\circ$"} className="text-[10px] text-black" /></div>
-                                <div className="absolute top-[35%] -left-8"><MathText text={"$x\\sqrt{3}$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute -bottom-3 left-[45%]"><MathText text={"$x$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute top-[30%] right-[10%]"><MathText text={"$2x$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                             <div className="text-center">
                                 <p className="text-[11px] font-bold uppercase tracking-tight font-sans">Special Right Triangles</p>
@@ -369,16 +367,16 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
 
                         {/* 45-45-90 */}
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 relative flex items-center justify-center mb-4">
-                                <svg viewBox="0 0 100 80" className="w-full h-full text-black">
-                                    <path d="M20 20 L20 70 L70 70 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" />
+                            <div className="w-24 h-24 flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 100 80" className="w-full max-h-full text-black">
+                                    <path d="M20 20 L20 70 L70 70 Z" fill="none" stroke="black" strokeWidth="1.5" />
+                                    <rect x="20" y="62" width="8" height="8" fill="none" stroke="black" strokeWidth="1" />
+                                    <text x="55" y="65" fontSize="10" fill="black">45°</text>
+                                    <text x="25" y="35" fontSize="10" fill="black">45°</text>
+                                    <text x="10" y="45" fontSize="12" className="italic" alignmentBaseline="middle" fill="black">s</text>
+                                    <text x="45" y="78" fontSize="12" className="italic" textAnchor="middle" fill="black">s</text>
+                                    <text x="48" y="40" fontSize="12" className="italic" fill="black">s√2</text>
                                 </svg>
-                                <div className="absolute top-[65%] right-[25%]"><MathText text={"$45^\\circ$"} className="text-[10px] text-black" /></div>
-                                <div className="absolute top-[30%] left-[25%]"><MathText text={"$45^\\circ$"} className="text-[10px] text-black" /></div>
-                                <div className="absolute top-[45%] -left-2"><MathText text={"$s$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute -bottom-3 left-[45%]"><MathText text={"$s$"} className="text-sm font-serif italic text-black" /></div>
-                                <div className="absolute top-[35%] right-[2%]"><MathText text={"$s\\sqrt{2}$"} className="text-sm font-serif italic text-black" /></div>
                             </div>
                         </div>
                     </div>
@@ -387,74 +385,74 @@ const DraggableReference = ({ onClose }: { onClose: () => void }) => {
                     <div className="grid grid-cols-5 gap-4">
                         {/* Rectangular Prism */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 relative mb-2">
+                            <div className="w-20 h-20 mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <rect x="5" y="25" width="60" height="40" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <path d="M5 25 L25 5 L85 5 L85 45 L65 65" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <path d="M65 25 L85 5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                                    <rect x="5" y="25" width="60" height="40" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M5 25 L25 5 L85 5 L85 45 L65 65" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M65 25 L85 5" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <text x="35" y="75" fontSize="10" className="italic" textAnchor="middle" fill="black">ℓ</text>
+                                    <text x="75" y="60" fontSize="10" className="italic" fill="black">w</text>
+                                    <text x="0" y="45" fontSize="10" className="italic" fill="black">h</text>
                                 </svg>
-                                <div className="absolute -bottom-3 left-[30%]"><MathText text={"$\\ell$"} className="text-[11px] font-serif italic text-black" /></div>
-                                <div className="absolute top-[52%] right-[-5px]"><MathText text={"$w$"} className="text-[11px] font-serif italic text-black" /></div>
-                                <div className="absolute top-[38%] left-[-10px]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\ell wh$"} /></p>
+                            <p className="text-[12px] italic">V = ℓwh</p>
                         </div>
 
                         {/* Cylinder */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 relative mb-2">
+                            <div className="w-20 h-20 mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <ellipse cx="50" cy="20" rx="30" ry="10" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <path d="M20 20 L20 80 A30 10 0 0 0 80 80 L80 20" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 2" />
-                                    <line x1="50" y1="20" x2="80" y2="20" stroke="currentColor" strokeWidth="1" strokeDasharray="2 1" />
+                                    <ellipse cx="50" cy="20" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M20 20 L20 80 A30 10 0 0 0 80 80 L80 20" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" strokeDasharray="3 2" />
+                                    <line x1="50" y1="20" x2="80" y2="20" stroke="black" strokeWidth="1" strokeDasharray="2 1" />
+                                    <text x="65" y="17" fontSize="10" className="italic" fill="black">r</text>
+                                    <text x="10" y="55" fontSize="10" className="italic" fill="black">h</text>
                                 </svg>
-                                <div className="absolute top-[5px] left-[65%]"><MathText text={"$r$"} className="text-[11px] font-serif italic text-black" /></div>
-                                <div className="absolute top-[45%] left-[-5px]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\pi r^2 h$"} /></p>
+                            <p className="text-[12px] italic">V = πr²h</p>
                         </div>
 
                         {/* Sphere */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 relative mb-2">
+                            <div className="w-20 h-20 mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <ellipse cx="50" cy="50" rx="40" ry="12" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
-                                    <line x1="50" y1="50" x2="90" y2="50" stroke="currentColor" strokeWidth="1" strokeDasharray="2 1" />
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <ellipse cx="50" cy="50" rx="40" ry="12" fill="none" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <line x1="50" y1="50" x2="90" y2="50" stroke="black" strokeWidth="1" strokeDasharray="2 1" />
+                                    <text x="70" y="47" fontSize="10" className="italic" fill="black">r</text>
                                 </svg>
-                                <div className="absolute top-[42%] left-[62%]"><MathText text={"$r$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\frac{4}{3}\\pi r^3$"} /></p>
+                            <p className="text-[12px] italic">V = ⁴/₃πr³</p>
                         </div>
 
                         {/* Cone */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 relative mb-2">
+                            <div className="w-20 h-20 mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <path d="M20 80 L50 10 L80 80" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <line x1="50" y1="10" x2="50" y2="80" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
+                                    <ellipse cx="50" cy="80" rx="30" ry="10" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M20 80 L50 10 L80 80" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <line x1="50" y1="10" x2="50" y2="80" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <text x="54" y="45" fontSize="10" className="italic" fill="black">h</text>
+                                    <text x="65" y="88" fontSize="10" className="italic" fill="black">r</text>
                                 </svg>
-                                <div className="absolute top-[40%] left-[58%]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
-                                <div className="absolute bottom-[2px] right-[28%]"><MathText text={"$r$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\frac{1}{3}\\pi r^2 h$"} /></p>
+                            <p className="text-[12px] italic">V = ¹/₃πr²h</p>
                         </div>
 
                         {/* Pyramid */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 relative mb-2">
+                            <div className="w-20 h-20 mb-2">
                                 <svg viewBox="0 0 100 100" className="w-full h-full text-black">
-                                    <path d="M10 80 L50 90 L90 80 L50 10 Z" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <path d="M50 10 L50 90" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                                    <path d="M10 80 L90 80" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
+                                    <path d="M10 80 L50 90 L90 80 L50 10 Z" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M50 10 L50 90" fill="none" stroke="black" strokeWidth="1.2" />
+                                    <path d="M10 80 L90 80" fill="none" stroke="black" strokeWidth="1" strokeDasharray="3 2" />
+                                    <text x="30" y="92" fontSize="10" className="italic" fill="black">ℓ</text>
+                                    <text x="75" y="92" fontSize="10" className="italic" fill="black">w</text>
+                                    <text x="54" y="50" fontSize="10" className="italic" fill="black">h</text>
                                 </svg>
-                                <div className="absolute bottom-[-10px] left-[25%]"><MathText text={"$\\ell$"} className="text-[11px] font-serif italic text-black" /></div>
-                                <div className="absolute bottom-[-5px] right-[15%]"><MathText text={"$w$"} className="text-[11px] font-serif italic text-black" /></div>
-                                <div className="absolute top-[42%] left-[58%]"><MathText text={"$h$"} className="text-[11px] font-serif italic text-black" /></div>
                             </div>
-                            <p className="text-[12px] italic mt-2"><MathText text={"$V = \\frac{1}{3}\\ell wh$"} /></p>
+                            <p className="text-[12px] italic">V = ¹/₃ℓwh</p>
                         </div>
                     </div>
 
@@ -552,16 +550,14 @@ const PassageViewer = memo(({
     isHighlighterActive,
     onAddHighlight,
     onRemoveHighlight,
-    onSelectionChange,
-    theme
+    onSelectionChange
 }: {
     text: string,
     highlights: HighlightRange[],
     isHighlighterActive: boolean,
     onAddHighlight: (range: HighlightRange) => void,
     onRemoveHighlight: (index: number) => void,
-    onSelectionChange: (selection: { start: number, end: number, text: string } | null) => void,
-    theme: string
+    onSelectionChange: (selection: { start: number, end: number, text: string } | null) => void
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -581,12 +577,12 @@ const PassageViewer = memo(({
         sorted.forEach((h, idx) => {
             if (h.start < lastIndex) return;
 
-            result.push(<MathText key={`text-${idx}`} text={text.substring(lastIndex, h.start)} className="inline" />);
+            result.push(<span key={`text-${idx}`}>{text.substring(lastIndex, h.start)}</span>);
 
             result.push(
                 <mark
                     key={`mark-${idx}`}
-                    className={`${colorClasses[h.color || 'yellow']} ${theme === 'dark' ? 'text-slate-900' : 'text-inherit'} rounded-sm py-0.5 cursor-pointer transition-colors px-0.5`}
+                    className={`${colorClasses[h.color || 'yellow']} text-inherit rounded-sm py-0.5 cursor-pointer transition-colors px-0.5`}
                     onClick={(e) => {
                         if (isHighlighterActive) {
                             e.stopPropagation();
@@ -594,14 +590,14 @@ const PassageViewer = memo(({
                         }
                     }}
                 >
-                    <MathText text={text.substring(h.start, h.end)} className="inline" />
+                    {text.substring(h.start, h.end)}
                 </mark>
             );
 
             lastIndex = h.end;
         });
 
-        result.push(<MathText key="text-end" text={text.substring(lastIndex)} className="inline" />);
+        result.push(<span key="text-end">{text.substring(lastIndex)}</span>);
         return result;
     }, [text, highlights, isHighlighterActive, onRemoveHighlight]);
 
@@ -635,7 +631,7 @@ const PassageViewer = memo(({
         <div
             ref={containerRef}
             onMouseUp={handleMouseUp}
-            className={`font-serif text-[18px] leading-8 whitespace-pre-wrap selection:bg-indigo-500/30 ${theme === 'dark' ? 'text-white' : 'text-[#1e293b]'}`}
+            className="font-serif text-[18px] leading-8 text-slate-900 whitespace-pre-wrap selection:bg-indigo-100 selection:text-indigo-900"
         >
             {renderedContent}
         </div>
@@ -761,45 +757,43 @@ const ReviewScreen = ({
     flags,
     onNavigateToQuestion,
     onSubmit,
-    stageTitle,
-    theme
+    stageTitle
 }: {
     questions: Question[],
     answers: Record<string, string>,
     flags: Set<string | number>,
     onNavigateToQuestion: (idx: number) => void,
     onSubmit: () => void,
-    stageTitle: string,
-    theme: string
+    stageTitle: string
 }) => {
     return (
-        <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-[#F0F2F5]'} pb-24 relative overflow-y-auto items-center justify-center`}>
+        <div className="flex flex-col min-h-screen bg-[#F0F2F5] pb-24 relative overflow-y-auto items-center justify-center">
             <div className="flex flex-col items-center max-w-[500px] w-full my-auto">
-                <div className={`${theme === 'dark' ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-slate-200'} rounded-[10px] shadow-sm border w-full overflow-hidden animate-in zoom-in-95 duration-500`}>
+                <div className="bg-white rounded-[10px] shadow-sm border border-slate-200 w-full overflow-hidden animate-in zoom-in-95 duration-500">
                     <div className="p-5 flex items-start justify-center">
-                        <h3 className={`text-[17px] font-bold ${theme === 'dark' ? 'text-white' : 'text-[#141A29]'} text-center flex-1 leading-[1.3] px-4`}>
+                        <h3 className="text-[17px] font-bold text-[#141A29] text-center flex-1 leading-[1.3] px-4">
                             {stageTitle}: {stageTitle.includes('Section 1') ? 'Reading and Writing' : 'Math'}<br />Questions
                         </h3>
                     </div>
 
-                    <div className={`h-px ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'} w-full`} />
+                    <div className="h-px bg-slate-200 w-full" />
 
                     <div className="flex items-center justify-center gap-6 py-5">
                         <div className="flex items-center gap-2">
-                            <MapPin className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-800'}`} strokeWidth={2} />
-                            <span className={`text-[14px] font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Current</span>
+                            <MapPin className="w-4 h-4 text-slate-800" strokeWidth={2} />
+                            <span className="text-[14px] font-medium text-slate-600">Current</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className={`w-[18px] h-[18px] border-[1.5px] border-dashed ${theme === 'dark' ? 'border-slate-500' : 'border-[#A0A5B1]'} rounded-full`} />
-                            <span className={`text-[14px] font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Unanswered</span>
+                            <div className="w-[18px] h-[18px] border-[1.5px] border-dashed border-[#A0A5B1] rounded-full" />
+                            <span className="text-[14px] font-medium text-slate-600">Unanswered</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Bookmark className="w-[14px] h-[14px] text-[#DC2626] fill-[#DC2626]" />
-                            <span className={`text-[14px] font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>For Review</span>
+                            <span className="text-[14px] font-medium text-slate-600">For Review</span>
                         </div>
                     </div>
 
-                    <div className={`h-px ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'} w-full`} />
+                    <div className="h-px bg-slate-200 w-full" />
 
                     <div className="p-6 pb-2">
                         <div className="grid grid-cols-10 gap-x-2 gap-y-6">
@@ -815,13 +809,13 @@ const ReviewScreen = ({
                                                 w-[32px] h-[32px] rounded-[4px] flex items-center justify-center font-bold text-[14px] 
                                                 transition-all hover:scale-105 active:scale-95
                                                 ${isAnswered
-                                                    ? (theme === 'dark' ? 'bg-blue-900/40 text-blue-300 border border-blue-500/50' : 'bg-[#E1E5F2] text-[#3B5998]')
-                                                    : (theme === 'dark' ? 'bg-transparent text-slate-300 border-[1.5px] border-dashed border-slate-600' : 'bg-white text-slate-800 border-[1.5px] border-dashed border-slate-700')}
+                                                    ? 'bg-[#E1E5F2] text-[#3B5998] border border-transparent'
+                                                    : 'bg-white text-slate-800 border-[1.5px] border-dashed border-slate-700'}
                                             `}
                                         >
                                             {idx + 1}
                                             {isFlagged && (
-                                                <div className={`absolute -top-1 -right-1 ${theme === 'dark' ? 'bg-[#1E293B]' : 'bg-white'} rounded-full p-[1px]`}>
+                                                <div className="absolute -top-1 -right-1 bg-white rounded-full p-[1px]">
                                                     <Bookmark className="w-2.5 h-2.5 text-[#DC2626] fill-[#DC2626]" />
                                                 </div>
                                             )}
@@ -835,7 +829,7 @@ const ReviewScreen = ({
                     <div className="p-8 pb-10 flex justify-center mt-2">
                         <button
                             onClick={onSubmit}
-                            className={`h-[44px] px-8 rounded-full border ${theme === 'dark' ? 'border-blue-500 text-blue-400 hover:bg-blue-500/10' : 'border-[#345BAE] text-[#345BAE] hover:bg-blue-50'} font-bold text-[15px] transition-colors flex items-center gap-2`}
+                            className="h-[44px] px-8 rounded-full border border-[#345BAE] text-[#345BAE] font-bold text-[15px] hover:bg-blue-50 transition-colors flex items-center gap-2"
                         >
                             Next <ChevronRight className="w-4 h-4" />
                         </button>
@@ -846,7 +840,7 @@ const ReviewScreen = ({
     );
 };
 
-export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessionPageProps) {
+export function TestSessionPage({ testId, onNavigate, user }: TestSessionPageProps) {
     const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
     const [violationCount, setViolationCount] = useState(0);
 
@@ -938,7 +932,6 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     const [isDraggingSplit, setIsDraggingSplit] = useState(false);
     const [selectionRect, setSelectionRect] = useState<{ x: number, y: number } | null>(null);
     const [currentSelection, setCurrentSelection] = useState<{ start: number, end: number, text: string } | null>(null);
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
     // Desmos calculator ref
     const calculatorRef = useRef<DesmosPanelRef>(null);
@@ -948,7 +941,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     }, [activeHighlightColor]);
 
     const { isFullscreen, requestFullscreen } = useAntiCheat({
-        enabled: screen === 'test',
+        enabled: isOlympiadMode && screen === 'test',
         onViolation: handleViolation
     });
 
@@ -960,23 +953,16 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
             try {
                 // Access Control Check for All Tests (Practice & Olympiad) - Only one attempt allowed
                 if (user?.email) {
-                    try {
-                        const { data: { session } = {} } = await supabase.auth.getSession();
-                        const statusRes = await fetch(`${apiBase}/api/olympiad/status?testId=${testId}&userEmail=${encodeURIComponent(user.email)}`, {
-                            headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
-                        });
+                    const { data: { session } = {} } = await supabase.auth.getSession();
+                    const statusRes = await fetch(`${apiBase}/api/olympiad/status?testId=${testId}&userEmail=${encodeURIComponent(user.email)}`, {
+                        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
+                    });
+                    const statusData = await statusRes.json();
 
-                        if (statusRes.ok) {
-                            const statusData = await statusRes.json();
-                            if (statusData.completed && !statusData.isAdmin) {
-                                console.log("Student has already completed this test, allowing retake (Unlimited mode).");
-                            }
-                        } else {
-                            console.warn(`Status check failed with status ${statusRes.status}. Continuing with test load.`);
-                        }
-                    } catch (statusError) {
-                        console.error("Status check fetch failed:", statusError);
-                        // Continue loading questions anyway
+                    if (statusData.completed && !statusData.isAdmin) {
+                        // For Olympiad tests, we might want to keep the restriction.
+                        // But the user asked for "without limits", so we'll bypass this for practice tests.
+                        console.log("Student has already completed this test, allowing retake (Unlimited mode).");
                     }
                 }
 
@@ -993,8 +979,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 const validQuestions = (data.questions || []).map((q: any) => ({
                     ...q,
                     imageUrl: q.image_url,
-                    optionImages: q.option_images,
-                    explanation: q.explanation
+                    optionImages: q.option_images
                 })).filter((q: any) => q && typeof q.text === 'string');
 
                 setQuestions(validQuestions);
@@ -1207,7 +1192,6 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userEmail: user?.email,
-                    userId: user?.id,
                     testId,
                     score: finalScore,
                     responses: finalData,
@@ -1217,31 +1201,13 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 })
             });
 
-            const contentType = res.headers.get("content-type");
             if (!res.ok) {
-                let errMessage = "Failed to transmit results to Node.";
-                if (contentType && contentType.includes("application/json")) {
-                    const errData = await res.json();
-                    errMessage = errData.message || errMessage;
-                } else {
-                    const text = await res.text();
-                    errMessage = "Server returned an error (non-JSON).";
-                    console.error("Non-JSON error response:", text.substring(0, 200));
-                }
-                throw new Error(errMessage);
-            }
-
-            if (!contentType || !contentType.includes("application/json")) {
-                const text = await res.text();
-                throw new Error(`Expected JSON response but got ${contentType}.`);
+                const errData = await res.json();
+                throw new Error(errData.message || "Failed to transmit results to Node.");
             }
 
             const data = await res.json();
             const resultId = data.result?.id;
-
-            if (document.fullscreenElement && document.exitFullscreen) {
-                document.exitFullscreen();
-            }
 
             onNavigate('review', { resultId });
         } catch (e: any) {
@@ -1294,6 +1260,21 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
         };
     }, [isDraggingSplit]);
 
+    const [colorMode, setColorMode] = useState<'light' | 'reverse'>('light');
+    const [activeModal, setActiveModal] = useState<'none' | 'settings' | 'help' | 'exit'>('none');
+
+    useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveModal('none');
+        };
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, []);
+
+    const handleSaveAndExit = () => {
+        onNavigate('dashboard');
+    };
+
     if (loading) return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
@@ -1301,43 +1282,29 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     );
 
     if (screen === 'intro') {
-        if (isOlympiadMode) {
-            return (
-                <FullscreenInterstitial
-                    onStart={() => {
-                        setHasEnteredFullscreen(true);
-                        setScreen('test');
-                        requestFullscreen();
-                    }}
-                />
-            );
-        } else {
-            return (
-                <PracticeIntroScreen
-                    onBack={() => onNavigate('dashboard')}
-                    onNext={() => {
-                        setHasEnteredFullscreen(true);
-                        setScreen('test');
-                        requestFullscreen();
-                    }}
-                />
-            );
-        }
+        return (
+            <FullscreenInterstitial
+                onStart={() => {
+                    setHasEnteredFullscreen(true);
+                    setScreen('test');
+                }}
+            />
+        );
     }
 
     if (stage === 'break') return <BreakScreen timeLeft={timeLeft} formatTime={formatTime} onSkip={() => setStage('math-m1')} />;
 
     if (screen === 'review') return (
-        <div className={`fixed inset-0 ${theme === 'dark' ? 'dark bg-[#0F172A] text-white' : 'bg-[#F2F4F7]'} flex flex-col z-50 overflow-hidden`}>
-            <header className={`h-20 ${theme === 'dark' ? 'bg-[#0F172A] border-white/10' : 'bg-white border-slate-200'} border-b flex items-center justify-between px-8 shrink-0 relative z-30 shadow-sm`}>
+        <div className={`fixed inset-0 bg-[#F2F4F7] flex flex-col z-50 overflow-hidden ${colorMode === 'reverse' ? 'color-reverse' : ''}`}>
+            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 relative z-30 shadow-sm">
                 <div className="flex items-center gap-6">
-                    <span className={`text-sm font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tight italic`}>SATVALLEY NODE</span>
-                    <div className={`h-6 w-px ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`} />
-                    <span className={`text-xs font-black ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'} uppercase tracking-widest`}>Retrospective Phase</span>
+                    <span className="text-sm font-black text-slate-900 tracking-tight italic">SATVALLEY NODE</span>
+                    <div className="h-6 w-px bg-slate-200" />
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Retrospective Phase</span>
                 </div>
 
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <span className={`font-mono text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'} tracking-tighter`}>
+                    <span className="font-mono text-xl font-black text-slate-900 tracking-tighter">
                         {formatTime(timeLeft)}
                     </span>
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time Remaining</span>
@@ -1345,7 +1312,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
 
                 <button
                     onClick={() => setScreen('test')}
-                    className={`h-11 px-8 border-2 ${theme === 'dark' ? 'border-white text-white hover:bg-white/5' : 'border-slate-900 text-slate-900 hover:bg-slate-50'} font-black rounded-xl transition-all flex items-center gap-2`}
+                    className="h-11 px-8 border-2 border-slate-900 text-slate-900 font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
                 >
                     <ChevronLeft className="w-5 h-5" />
                     Back to Section
@@ -1361,7 +1328,6 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 stageTitle={stage === 'rw-m1' ? 'Reading and Writing Module 1' :
                     stage === 'rw-m2' ? 'Reading and Writing Module 2' :
                         stage === 'math-m1' ? 'Math Module 1' : 'Math Module 2'}
-                theme={theme}
             />
         </div>
     );
@@ -1386,7 +1352,12 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
     const currentQ = questions[currentIndex];
 
     return (
-        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#0F172A] text-white' : 'bg-white text-slate-900'} flex flex-col z-50 overflow-hidden font-sans select-none`}>
+        <div className={`fixed inset-0 bg-white flex flex-col z-50 overflow-hidden font-sans select-none ${colorMode === 'reverse' ? 'color-reverse font-medium' : ''}`}>
+            {/* Modals */}
+            <AnimatePresence>
+                {/* ... existing modals ... */}
+            </AnimatePresence>
+
             {/* Soft Warning Toast */}
             {lastWarning && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-300">
@@ -1396,9 +1367,9 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     </div>
                 </div>
             )}
-            <header className={`h-[64px] ${theme === 'dark' ? 'bg-[#0F172A] border-b border-white/10' : 'bg-white'} flex items-center justify-between px-6 shrink-0 relative z-40`}>
+            <header className="h-[64px] bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 relative z-40 transition-colors">
                 <div className="flex flex-col">
-                    <h1 className={`text-[17px] font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1e293b]'} leading-tight`}>
+                    <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
                         {stage === 'rw-m1' ? 'Section 1, Module 1: Reading and Writing' :
                             stage === 'rw-m2' ? 'Section 1, Module 2: Reading and Writing' :
                                 stage === 'math-m1' ? 'Section 2, Module 1: Math' : 'Section 2, Module 2: Math'}
@@ -1410,65 +1381,99 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                         Directions <ChevronDown className={`w-3 h-3 transition-transform ${showDirections ? 'rotate-180' : ''}`} />
                     </button>
                 </div>
-
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
-                    <span className={`font-bold text-[24px] tracking-tight ${timeLeft < 300 ? 'text-rose-600' : theme === 'dark' ? 'text-white' : 'text-[#1e293b]'}`}>
-                        {showTimer ? formatTime(timeLeft) : ''}
-                    </span>
-                    <button
-                        onClick={() => setShowTimer(!showTimer)}
-                        className={`px-4 py-1 border rounded font-bold text-[13px] transition-colors ${theme === 'dark' ? 'border-slate-600 text-slate-300 hover:bg-white/5' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
-                    >
-                        {showTimer ? 'Hide' : 'Show'}
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-6">
-                    {stage.startsWith('math') ? (
-                        <>
-                            <button onClick={() => calculatorRef.current?.open()} className={`flex flex-col items-center gap-1 group ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-800 hover:text-blue-600'}`}>
-                                <Calculator className="w-5 h-5 transition-colors" />
-                                <span className="text-[11px] font-bold uppercase tracking-wider">Calculator</span>
-                            </button>
-                            <button onClick={() => setShowReference(true)} className={`flex flex-col items-center gap-1 group ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-800 hover:text-blue-600'}`}>
-                                <Book className="w-5 h-5 transition-colors" />
-                                <span className="text-[11px] font-bold uppercase tracking-wider">Reference</span>
-                            </button>
-                        </>
-                    ) : (
-                        <button onClick={() => setIsHighlighterActive(!isHighlighterActive)} className={`flex flex-col items-center gap-1 group transition-colors ${isHighlighterActive ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600') : (theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-800 hover:text-blue-600')}`}>
-                            <PenLine className="w-5 h-5" />
-                            <span className="text-[11px] font-bold uppercase tracking-wider">Annotate</span>
-                        </button>
-                    )}
-
-                    <div className={`w-px h-8 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'}`} />
-
-                    <button onClick={() => setShowMoreMenu(!showMoreMenu)} className={`flex flex-col items-center gap-1 group transition-colors ${theme === 'dark' ? 'text-white hover:text-white' : 'text-slate-800 hover:text-blue-600'}`}>
-                        <MoreVertical className="w-5 h-5 transition-colors" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">More</span>
-                    </button>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setActiveModal('settings')} className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"><Settings className="w-5 h-5" /></button>
+                    <button onClick={() => setActiveModal('help')} className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"><HelpIcon className="w-5 h-5" /></button>
+                    <button onClick={() => setActiveModal('exit')} className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100">Exit Test</button>
                 </div>
             </header>
 
-            <div className="bluebook-practice-bar">
-                This is a practice test
-            </div>
+            <AnimatePresence>
+                {activeModal === 'settings' && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal('none')} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-200">
+                            <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                                <Settings className="w-6 h-6 text-indigo-500" />
+                                Accessibility Settings
+                            </h2>
+                            <div className="space-y-6">
+                                <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-4">Color Mode</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => setColorMode('light')} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${colorMode === 'light' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                                            <div className="w-full h-8 bg-white border border-slate-200 rounded shadow-sm" />
+                                            <span className="text-xs font-bold">Standard</span>
+                                        </button>
+                                        <button onClick={() => setColorMode('reverse')} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${colorMode === 'reverse' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-[#1e293b] text-slate-600 hover:border-slate-400'}`}>
+                                            <div className="w-full h-8 bg-black border border-white/20 rounded shadow-sm" />
+                                            <span className="text-xs font-bold font-black">Reverse Contrast</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setActiveModal('none')} className="w-full mt-8 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors">Done</button>
+                        </motion.div>
+                    </div>
+                )}
 
+                {activeModal === 'help' && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal('none')} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden">
+                            <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                                <HelpIcon className="w-6 h-6 text-indigo-500" />
+                                Support & Instructions
+                            </h2>
+                            <div className="space-y-6 max-h-[60vh] overflow-y-auto bluebook-scroll pr-4">
+                                <section>
+                                    <h3 className="font-bold text-slate-900 mb-2">Test Navigation</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">Use the 'Next' and 'Back' buttons to move between questions. You can also click the bottom navigation bar to jump to any question in the module.</p>
+                                </section>
+                                <section>
+                                    <h3 className="font-bold text-slate-900 mb-2">Accommodations</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">The 'More' menu provides access to the <strong>Line Reader</strong> and <strong>Contrast Settings</strong> to assist during your exam.</p>
+                                </section>
+                                <section>
+                                    <h3 className="font-bold text-slate-900 mb-2">Technical Assistance</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">If the application becomes unresponsive, your progress is automatically saved to the cloud. Simply refresh the page to resume.</p>
+                                </section>
+                            </div>
+                            <button onClick={() => setActiveModal('none')} className="w-full mt-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-500 transition-colors">Return to Test</button>
+                        </motion.div>
+                    </div>
+                )}
 
-
-
+                {activeModal === 'exit' && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal('none')} className="absolute inset-0 bg-rose-900/40 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 text-center">
+                            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <LogOut className="w-8 h-8 text-rose-600" />
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-900 mb-2 italic">Save and Exit</h2>
+                            <p className="text-sm text-slate-500 mb-8 font-medium">Are you sure you want to pause your test? Your current progress will be preserved.</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setActiveModal('none')} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                                <button onClick={handleSaveAndExit} className="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-500 transition-colors">Exit Test</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {showDirections && (
-                <div className={`fixed inset-x-0 top-[64px] border-b p-8 text-[15px] animate-in slide-in-from-top-2 z-50 shadow-lg ${theme === 'dark' ? 'bg-[#0F172A] border-white/10 text-white' : 'bg-[#F6F8FA] border-slate-200 text-slate-700'}`}>
+                <div className="fixed inset-x-0 top-[64px] bg-[#F6F8FA] border-b border-slate-200 p-8 text-[15px] text-slate-700 animate-in slide-in-from-top-2 z-50 shadow-lg">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className={`text-[20px] font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Directions</h2>
+                        <h3 className="font-bold text-slate-900 mb-4 text-lg">Directions</h3>
                         <p className="leading-relaxed">
-                            The following passage corresponds to the question on the right. Read the passage carefully and choose the best answer to the question based on what is stated or implied in the passage.
+                            {stage.startsWith('rw')
+                                ? "The questions in this section address a number of important reading and writing skills. Each question includes one or more passages, which may include a table or graph. Read each passage and question carefully, and then choose the best answer to the question based on the passage(s). All questions in this section are multiple-choice with four answer choices. Each question has a single best answer."
+                                : "The questions in this section address a number of important math skills. All questions in this section are multiple-choice with four answer choices. Each question has a single best answer."}
                         </p>
                         <button
                             onClick={() => setShowDirections(false)}
-                            className={`mt-6 px-6 py-2 font-bold rounded-lg transition-colors ${theme === 'dark' ? 'bg-white text-slate-900 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                            className="mt-6 px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors"
                         >
                             Close
                         </button>
@@ -1485,21 +1490,21 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 <DraggableReference onClose={() => setShowReference(false)} />
             )}
 
-            <main className={`flex-1 flex flex-col overflow-hidden relative ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'}`}>
+            <main className="flex-1 flex flex-col overflow-hidden bg-white relative">
 
 
                 {/* Question Bar */}
-                <div className={`h-[48px] flex flex-col justify-end px-8 shrink-0 relative z-10 pt-2 pb-0 ${theme === 'dark' ? 'bg-[#0F172A] border-b border-t border-slate-800' : 'bg-slate-100/50'}`}>
+                <div className="h-[48px] bg-slate-100/50 flex flex-col justify-end px-8 shrink-0 relative z-10 pt-2 pb-0">
                     <div className="flex items-center justify-between w-full h-full pb-1">
                         <div className="flex items-center gap-4 h-full">
-                            <div className="bg-[#111111] font-bold text-[18px] w-8 h-8 flex items-center justify-center font-serif leading-none shrink-0 self-end mb-0.5" style={{ color: '#ffffff' }}>
+                            <div className="bg-[#111111] text-white font-bold text-[18px] w-8 h-8 flex items-center justify-center font-serif leading-none shrink-0 self-end mb-0.5">
                                 {currentIndex + 1}
                             </div>
                             <button
                                 onClick={toggleFlag}
-                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : (theme === 'dark' ? 'text-white hover:text-white' : 'text-[#333333] hover:text-black')}`}
+                                className={`flex items-center gap-2 px-2 py-1 transition-colors text-[14px] font-medium self-end mb-1 ${flags.has(currentQ?.id || 0) ? 'text-[#0077c8]' : 'text-slate-900 hover:text-black'}`}
                             >
-                                <Bookmark className={`w-4 h-5 ${flags.has(currentQ?.id || 0) ? 'fill-[#0077c8] text-[#0077c8]' : (theme === 'dark' ? 'text-slate-400' : 'text-[#666666]')}`} strokeWidth={1.5} />
+                                <Bookmark className={`w-4 h-5 ${flags.has(currentQ?.id || 0) ? 'fill-[#0077c8] text-[#0077c8]' : 'text-[#666666]'}`} strokeWidth={1.5} />
                                 <span className={flags.has(currentQ?.id || 0) ? 'font-bold' : ''}>Mark for Review</span>
                             </button>
                         </div>
@@ -1507,7 +1512,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                         <div className="flex items-center gap-4 self-end mb-1">
                             <button
                                 onClick={() => setIsStrikethroughActive(!isStrikethroughActive)}
-                                className={`flex items-center justify-center w-[42px] h-[28px] rounded border transition-all ${isStrikethroughActive ? (theme === 'dark' ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-200 border-slate-400 text-slate-900') : (theme === 'dark' ? 'bg-[#1E293B] border-slate-600 text-white hover:border-slate-400' : 'bg-white border-slate-400 text-slate-800 hover:border-slate-500')}`}
+                                className={`flex items-center justify-center w-[42px] h-[28px] rounded border transition-all ${isStrikethroughActive ? 'bg-slate-200 border-slate-400 text-slate-900' : 'bg-white border-slate-400 text-slate-800 hover:border-slate-500'}`}
                                 title="Cross-out"
                             >
                                 <div className="relative flex items-center justify-center">
@@ -1520,7 +1525,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     {/* Dashed line */}
                     <div className="flex h-[2px] w-full gap-[4px] mt-auto">
                         {Array.from({ length: 40 }).map((_, i) => (
-                            <div key={i} className={`h-full flex-1 ${i % 7 === 0 ? 'bg-[#FFD700]' : i % 5 === 0 ? 'bg-[#0077c8]' : (theme === 'dark' ? 'bg-slate-700' : 'bg-[#666666]')}`} />
+                            <div key={i} className={`h-full flex-1 ${i % 7 === 0 ? 'bg-[#FFD700]' : i % 5 === 0 ? 'bg-[#0077c8]' : 'bg-[#666666]'}`} />
                         ))}
                     </div>
                 </div>
@@ -1533,11 +1538,11 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     {(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && (
                         <>
                             <div
-                                className={`flex flex-col relative group/pane overflow-hidden ${theme === 'dark' ? 'bg-[#0F172A] border-r border-slate-800' : 'bg-white border-r border-slate-300'}`}
+                                className="border-r border-slate-300 bg-white flex flex-col relative group/pane overflow-hidden"
                                 style={{ width: `${splitWidth}%` }}
                             >
                                 <div
-                                    className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll select-text cursor-text relative ${theme === 'dark' ? 'text-white' : ''}`}
+                                    className="flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll select-text cursor-text relative"
                                     onMouseUp={(e) => {
                                         const selection = window.getSelection();
                                         if (selection && !selection.isCollapsed) {
@@ -1549,20 +1554,8 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                         }
                                     }}
                                 >
-                                    {currentQ?.imageUrl && <div className={`mt-8 mb-8 rounded-lg overflow-hidden border ${theme === 'dark' ? 'border-slate-800 bg-[#1E293B]' : 'border-slate-200 bg-slate-50'}`}><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question Image" className="w-full h-auto" /></div>}
-                                    {(currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? (
-                                        <div className={`font-serif whitespace-pre-wrap pr-4 ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>
-                                            <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
-                                            <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
-                                                <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
-                                                <li>You can enter up to 5 characters for a <strong>positive</strong> answer and up to 6 characters (including the negative sign) for a <strong>negative</strong> answer.</li>
-                                                <li>If your answer is a <strong>fraction</strong> that doesn't fit in the provided space, enter the decimal equivalent.</li>
-                                                <li>If your answer is a <strong>decimal</strong> that doesn't fit in the provided space, enter it by truncating or rounding at the fourth digit.</li>
-                                                <li>If your answer is a <strong>mixed number</strong> (such as <MathText text={"$3\\frac{1}{2}$"} className="inline font-serif font-medium" />), enter it as an improper fraction (<MathText text={"$7/2$"} className="inline font-serif font-medium" />) or its decimal equivalent (3.5).</li>
-                                                <li>Don't enter <strong>symbols</strong> such as a percent sign, comma, or dollar sign.</li>
-                                            </ul>
-                                        </div>
-                                    ) : currentQ?.passage ? (
+                                    {currentQ?.imageUrl && <div className="mt-8 mb-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question Image" className="w-full h-auto" /></div>}
+                                    {currentQ?.passage ? (
                                         <PassageViewer
                                             text={currentQ.passage}
                                             highlights={currentQ?.id ? (highlights[currentQ.id] || []) : []}
@@ -1570,10 +1563,20 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                             onAddHighlight={(range) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: [...(prev[currentQ.id] || []), range] }))}
                                             onRemoveHighlight={(idx) => currentQ?.id && setHighlights(prev => ({ ...prev, [currentQ.id]: (prev[currentQ.id] || []).filter((_, i) => i !== idx) }))}
                                             onSelectionChange={(sel) => setCurrentSelection(sel)}
-                                            theme={theme}
                                         />
-                                    ) : null}
-                                    {/* end of left panel logic */}
+                                    ) : (
+                                        <div className="font-serif text-slate-900 whitespace-pre-wrap pr-4">
+                                            <h3 className="font-bold text-[20px] mb-6">Student-produced response directions</h3>
+                                            <ul className="list-disc pl-5 space-y-4 text-[15px] leading-relaxed">
+                                                <li>If you find <strong>more than one correct answer</strong>, enter only one answer.</li>
+                                                <li>You can enter up to 5 characters for a <strong>positive</strong> answer and up to 6 characters (including the negative sign) for a <strong>negative</strong> answer.</li>
+                                                <li>If your answer is a <strong>fraction</strong> that doesn't fit in the provided space, enter the decimal equivalent.</li>
+                                                <li>If your answer is a <strong>decimal</strong> that doesn't fit in the provided space, enter it by truncating or rounding at the fourth digit.</li>
+                                                <li>If your answer is a <strong>mixed number</strong> (such as 3 1/2), enter it as an improper fraction (7/2) or its decimal equivalent (3.5).</li>
+                                                <li>Don't enter <strong>symbols</strong> such as a percent sign, comma, or dollar sign.</li>
+                                            </ul>
+                                        </div>
+                                    )}
 
                                 </div>
                                 {showLineReader && <LineReader onClose={() => setShowLineReader(false)} />}
@@ -1619,19 +1622,13 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     )}
 
                     <div
-                        className={`flex flex-col relative group/pane-right overflow-hidden ${theme === 'dark' ? 'bg-[#0F172A]' : 'bg-white'}`}
+                        className="bg-white flex flex-col relative group/pane-right overflow-hidden"
                         style={{ width: (currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? `${100 - splitWidth}%` : '100%' }}
                     >
                         <div className={`flex-1 overflow-y-auto p-12 pb-32 bluebook-scroll ${!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <div className="mb-10 space-y-6">
-                                {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className={`mb-6 rounded-lg overflow-hidden border max-w-2xl mx-auto ${theme === 'dark' ? 'border-slate-800 bg-[#1E293B]' : 'border-slate-200 bg-slate-50'}`}><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
-
-                                {((currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.passage) && (
-                                    <div className={`text-[18px] leading-[1.6] font-medium mb-6 ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>
-                                        <MathText text={currentQ.passage} className="block" />
-                                    </div>
-                                )}
-                                <p className={`text-[18px] leading-[1.6] font-medium ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}><MathText text={currentQ?.text || ''} className="block" /></p>
+                                {!(currentQ?.passage || currentQ?.type === 'numeric' || currentQ?.type === 'spr' || (!currentQ?.options?.length && stage.startsWith('math'))) && currentQ?.imageUrl && <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 max-w-2xl mx-auto"><img src={currentQ.imageUrl.startsWith('http') ? currentQ.imageUrl : `${apiBase}${currentQ.imageUrl}`} alt="Question" className="w-full h-auto" /></div>}
+                                <p className="text-[18px] leading-[1.6] text-slate-900 font-medium"><MathText text={currentQ?.text} className="block" /></p>
                             </div>
 
                             <div className="space-y-4">
@@ -1647,16 +1644,16 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                                 onClick={() => {
                                                     setAnswers(p => ({ ...p, [currentQ.id]: letter }));
                                                 }}
-                                                className={`bluebook-option-button flex-1 ${isSelected ? (theme === 'dark' ? 'selected !text-white !border-blue-600 !bg-blue-900/40' : 'selected text-blue-900') : (theme === 'dark' ? '!border-slate-700 !bg-slate-800/50 hover:!bg-slate-800 !text-white' : '')} ${isStruck ? 'struck hover:border-slate-300' : ''}`}
+                                                className={`bluebook-option-button flex-1 ${isSelected ? 'selected text-blue-900' : ''} ${isStruck ? 'struck' : ''}`}
                                             >
-                                                <div className={`bluebook-option-letter ${theme === 'dark' ? (!isSelected ? '!border-slate-600 !bg-slate-900 !text-white font-bold' : '!border-blue-500 !text-white font-black !bg-blue-600') : ''}`}>{letter}</div>
+                                                <div className="bluebook-option-letter">{letter}</div>
                                                 <div className="flex-1 flex flex-col gap-2">
-                                                    <span className={`text-[16px] leading-relaxed font-bold ${isStruck ? 'line-through text-slate-500' : (theme === 'dark' ? 'text-white' : 'text-slate-800')}`}>
+                                                    <span className={`text-[16px] leading-relaxed text-slate-800 font-medium ${isStruck ? 'line-through text-slate-400' : ''}`}>
                                                         <MathText text={opt} />
                                                     </span>
                                                     {currentQ.optionImages?.[idx] && (
-                                                        <div className={`mt-2 rounded border overflow-hidden max-w-sm ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-                                                            <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className={`w-full h-auto ${theme === 'dark' ? 'invert opacity-90' : ''}`} />
+                                                        <div className="mt-2 rounded border border-slate-200 overflow-hidden bg-white max-w-sm">
+                                                            <img src={currentQ.optionImages[idx].startsWith('http') ? currentQ.optionImages[idx] : `${apiBase}${currentQ.optionImages[idx]}`} alt={`Option ${letter}`} className="w-full h-auto" />
                                                         </div>
                                                     )}
                                                 </div>
@@ -1664,7 +1661,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
 
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleStrike(letter); }}
-                                                className={`bluebook-eliminate-circle ${theme === 'dark' ? '!text-slate-400 !bg-slate-900 !border-slate-600 hover:!border-slate-400 hover:!text-slate-200' : ''} ${isStruck ? (theme === 'dark' ? 'active !bg-slate-800 !border-slate-700 !text-slate-500' : 'active') : 'opacity-0 group-hover/opt-row:opacity-100'}`}
+                                                className={`bluebook-eliminate-circle ${isStruck ? 'active' : 'opacity-0 group-hover/opt-row:opacity-100'}`}
                                                 title="Eliminate"
                                             >
                                                 <span>{letter}</span>
@@ -1679,18 +1676,17 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                                         animate={{ opacity: 1, y: 0 }}
                                         className="mt-8 space-y-8"
                                     >
-                                        <div className="w-[124px]">
+                                        <div className="w-[120px]">
                                             <Input
                                                 value={currentQ?.id ? (answers[currentQ.id] || '') : ''}
                                                 onChange={(e) => currentQ?.id && setAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
-                                                maxLength={6}
-                                                className={`h-[44px] text-[18px] font-bold border focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-3 tracking-widest text-center ${theme === 'dark' ? 'bg-[#1E293B] text-white border-slate-600' : 'bg-white text-[#111827] border-slate-900'}`}
+                                                className="h-[52px] text-[20px] bg-white text-slate-900 font-medium border border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-md transition-all px-4 tracking-wider"
                                             />
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`font-black text-[18px] ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>Answer Preview:</div>
-                                            <div className={`text-[20px] tracking-wider min-h-[30px] font-serif pt-1 ${theme === 'dark' ? 'text-white' : 'text-[#111827]'}`}>
-                                                <MathText text={currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''} />
+                                        <div>
+                                            <div className="font-bold text-[18px] text-slate-900 mb-2">Answer Preview:</div>
+                                            <div className="text-[20px] text-slate-900 tracking-wider min-h-[30px]">
+                                                {currentQ?.id && answers[currentQ.id] ? answers[currentQ.id] : ''}
                                             </div>
                                         </div>
                                     </motion.div>
@@ -1702,39 +1698,32 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
             </main>
 
             {showMoreMenu && (
-                <div className={`fixed top-[60px] right-6 border shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 ${theme === 'dark' ? 'bg-[#1E293B] border-slate-700 text-slate-200' : 'bg-white border-slate-200'}`}>
+                <div className="fixed top-[60px] right-6 bg-white border border-slate-200 shadow-2xl rounded-xl z-50 p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 text-slate-800">
                     <button
                         onClick={() => { setShowLineReader(true); setShowMoreMenu(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
                     >
-                        <Accessibility className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
+                        <Accessibility className="w-4 h-4 text-slate-500" />
                         <span>Line Reader</span>
                     </button>
-
                     <button
-                        onClick={() => {
-                            setTheme(theme === 'light' ? 'dark' : 'light');
-                            setShowMoreMenu(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
+                        onClick={() => { setActiveModal('settings'); setShowMoreMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
                     >
-                        {theme === 'light' ? <EyeOff className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} /> : <Eye className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />}
-                        <span>{theme === 'light' ? 'Dark Theme' : 'Light Mode'}</span>
+                        <Settings className="w-4 h-4 text-slate-500" />
+                        <span>Settings</span>
                     </button>
                     <button
-                        onClick={() => { setShowMoreMenu(false); alert("Help dialog would open here."); }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-50 text-slate-700'}`}
+                        onClick={() => { setActiveModal('help'); setShowMoreMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-slate-700 transition-colors"
                     >
-                        <HelpIcon className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`} />
+                        <HelpIcon className="w-4 h-4 text-slate-500" />
                         <span>Help</span>
                     </button>
-                    <div className={`h-px my-1 mx-2 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-100'}`} />
+                    <div className="h-px bg-slate-100 my-1 mx-2" />
                     <button
-                        onClick={() => {
-                            setShowMoreMenu(false);
-                            onNavigate('dashboard');
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[14px] font-bold transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-rose-400' : 'hover:bg-slate-50 text-rose-600'}`}
+                        onClick={() => { setActiveModal('exit'); setShowMoreMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-lg text-[14px] font-bold text-rose-600 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
                         <span>Save and Exit</span>
@@ -1742,16 +1731,16 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 </div>
             )}
 
-            <footer className={`h-[72px] flex items-center justify-between px-6 shrink-0 z-40 ${theme === 'dark' ? 'bg-[#0F172A] border-t border-white/10' : 'bg-white border-t border-slate-200'}`}>
+            <footer className="h-[72px] bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 z-40 transition-colors">
                 <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${theme === 'dark' ? 'bg-[#1E293B] border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                        <span className={`font-black text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-500'}`}>
-                            {(olympiadProfile?.full_name || profile?.full_name || user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+                        <span className="text-slate-500 font-bold text-sm">
+                            {(olympiadProfile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
                         </span>
                     </div>
                     <div className="flex flex-col">
-                        <span className={`text-[14px] font-black tracking-tight leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                            {olympiadProfile?.full_name || profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                        <span className="text-[14px] font-black text-slate-900 tracking-tight leading-none">
+                            {olympiadProfile?.full_name || user?.email?.split('@')[0] || 'User'}
                         </span>
                     </div>
                 </div>
@@ -1760,7 +1749,7 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                 <div className="absolute left-1/2 -translate-x-1/2">
                     <button
                         onClick={() => setShowNavModal(true)}
-                        className={`bluebook-nav-button ${theme === 'dark' ? '!bg-slate-800 !text-slate-200 !border-slate-700 hover:!bg-slate-700' : ''}`}
+                        className="bluebook-nav-button"
                     >
                         <span>Question {currentIndex + 1} of {questions.length}</span>
                         <ChevronDown className="w-4 h-4 ml-2 rotate-180" />
@@ -1771,13 +1760,13 @@ export function TestSessionPage({ testId, onNavigate, user, profile }: TestSessi
                     <button
                         disabled={currentIndex === 0}
                         onClick={handleBack}
-                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all focus:outline-none focus:ring-0 ${currentIndex === 0 ? "bg-[#111827] text-white" : (theme === 'dark' ? 'bg-transparent text-slate-200 hover:bg-white/5 border-slate-600' : 'bg-transparent text-black')}`}
+                        className={`h-10 px-6 rounded-lg font-bold text-[14px] border border-slate-300 transition-all focus:outline-none focus:ring-0 ${currentIndex === 0 ? "bg-[#111827] text-white" : "bg-transparent text-black"}`}
                     >
                         Back
                     </button>
                     <button
                         onClick={handleNext}
-                        className={`h-10 px-8 rounded-lg text-white font-bold text-[14px] transition-all ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-[#111827] hover:bg-slate-800'}`}
+                        className="h-10 px-8 rounded-lg bg-[#111827] text-white font-bold text-[14px] hover:bg-slate-800 transition-all"
                     >
                         {currentIndex === questions.length - 1 ? 'Review' : 'Next'}
                     </button>

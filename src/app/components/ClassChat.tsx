@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { addMessage, setMessages } from '../store/messageSlice';
 import { io } from 'socket.io-client';
 import { Send, User as UserIcon, MessageSquare, Users as UsersIcon } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { authApi, apiFetch } from '../lib/auth';
 
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000');
 
@@ -26,7 +26,7 @@ export function ClassChat({ user, profile, initialSelectedUserId }: { user: any;
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const token = (await supabase.auth.getSession()).data.session?.access_token;
+                const token = (await authApi.getSession()).data.session?.access_token;
                 const resp = await fetch('/api/messages', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -39,7 +39,7 @@ export function ClassChat({ user, profile, initialSelectedUserId }: { user: any;
         const fetchStudents = async () => {
             if (!profile?.is_admin && !profile?.raw_app_metadata?.admin) return;
             try {
-                const token = (await supabase.auth.getSession()).data.session?.access_token;
+                const token = (await authApi.getSession()).data.session?.access_token;
                 const resp = await fetch('/api/teacher/students', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -77,7 +77,7 @@ export function ClassChat({ user, profile, initialSelectedUserId }: { user: any;
         if (!input.trim()) return;
 
         try {
-            const token = (await supabase.auth.getSession()).data.session?.access_token;
+            const token = (await authApi.getSession()).data.session?.access_token;
             const body = {
                 message_text: input,
                 is_group_chat: chatMode === 'group',
