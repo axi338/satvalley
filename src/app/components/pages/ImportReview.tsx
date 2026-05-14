@@ -224,7 +224,42 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
         }
     };
 
+    const handleApproveAll = async () => {
+        if (!jobId || actionLoading) return;
+
+        const confirmApprove = window.confirm(`This will approve all ${total - approvedCount - rejectedCount} remaining questions. Continue?`);
+        if (!confirmApprove) return;
+
+        setActionLoading(true);
+        const toastId = toast.loading('Approving all questions...');
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`/api/admin/import/jobs/${jobId}/approve-all`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`,
+                }
+            });
+
+            if (!response.ok) throw new Error('Bulk approval failed');
+            const data = await response.json();
+
+            toast.success(data.message || 'All questions approved!', { id: toastId });
+
+            // Refresh candidates to show completion screen
+            await fetchCandidates();
+        } catch (err) {
+            console.error('Bulk approval error:', err);
+            toast.error('Failed to approve all questions', { id: toastId });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const handleSaveRawEdit = () => {
+
         const newCandidates = [...candidates];
         newCandidates[currentIndex].raw_text = editedRawText;
         setCandidates(newCandidates);
@@ -395,6 +430,16 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
 
                 {/* Right: progress + stats */}
                 <div className="flex items-center gap-6 w-1/4 justify-end">
+                    {total - approvedCount - rejectedCount > 0 && (
+                        <button
+                            onClick={handleApproveAll}
+                            disabled={actionLoading}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all border border-emerald-500/30 disabled:opacity-50"
+                        >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Approve All</span>
+                        </button>
+                    )}
                     <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">{approvedCount} Approved</span>
                     <span className="text-[10px] text-rose-400 font-black uppercase tracking-widest">{rejectedCount} Rejected</span>
                 </div>
@@ -467,7 +512,7 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                 </div>
 
                 {/* RIGHT PANEL: Structured Question (SAT style) */}
-                <div className="w-1/2 bg-white flex flex-col overflow-hidden">
+                <div className="w-1/2 bg-white text-slate-900 flex flex-col overflow-hidden">
                     {/* Panel header — mirrors test session toolbar */}
                     <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 shrink-0 bg-[#001E3C]">
                         <div className="flex items-center gap-2">

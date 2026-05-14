@@ -925,6 +925,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
     const [showDirections, setShowDirections] = useState(false);
     const [showReference, setShowReference] = useState(false);
     const [showNavModal, setShowNavModal] = useState(false);
+    const [activeModules, setActiveModules] = useState<string[]>(['rw-m1', 'rw-m2', 'math-m1', 'math-m2']);
     const [testDenoms, setTestDenoms] = useState({ math: 22, rw: 27 });
     const [olympiadProfile, setOlympiadProfile] = useState<{ full_name?: string; phone?: string } | null>(null);
     const [showLineReader, setShowLineReader] = useState(false);
@@ -1029,11 +1030,9 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         return lower.includes('reading') || lower.includes('writing') || lower.includes('rw');
                     });
 
-                    // Set denominators from admin config
-                    setTestDenoms({
-                        math: parseInt(currentTest.mathq) || 22,
-                        rw: (parseInt(currentTest.readingq) || 0) + (parseInt(currentTest.writingq) || 0) || 27
-                    });
+                    // Set active modules from test config if available
+                    const enabledConfigs = currentTest.active_modules || ['rw-m1', 'rw-m2', 'math-m1', 'math-m2'];
+                    setActiveModules(enabledConfigs);
 
                     if (currentTest.is_olympiad) {
                         setStage('math-m1');
@@ -1063,7 +1062,11 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                         setTimeLeft(1920);
                     } else {
                         setTestType('full');
-                        // Default stage is rw-m1
+                        // Determine initial stage based on enabled modules
+                        if (enabledConfigs.includes('rw-m1')) setStage('rw-m1');
+                        else if (enabledConfigs.includes('rw-m2')) setStage('rw-m2');
+                        else if (enabledConfigs.includes('math-m1')) setStage('math-m1');
+                        else if (enabledConfigs.includes('math-m2')) setStage('math-m2');
                     }
                 }
             } catch (e) { console.error(e); }
@@ -1137,20 +1140,41 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
         setAllResponses(newTotalResponses);
 
         if (stage === 'rw-m1') {
-            setM2Difficulty('hard');
-            setStage('rw-m2');
-        } else if (stage === 'rw-m2') {
-            if (testType === 'rw') {
-                submitFinal(newTotalResponses, currentTotalTime);
-            } else {
+            if (activeModules.includes('rw-m2')) {
+                setM2Difficulty('hard');
+                setStage('rw-m2');
+            } else if (activeModules.includes('math-m1')) {
                 setStage('break');
                 setTimeLeft(600);
+            } else if (activeModules.includes('math-m2')) {
+                // Rare case but support it
+                setStage('break');
+                setTimeLeft(600);
+            } else {
+                submitFinal(newTotalResponses, currentTotalTime);
+            }
+        } else if (stage === 'rw-m2') {
+            if (activeModules.includes('math-m1') || activeModules.includes('math-m2')) {
+                setStage('break');
+                setTimeLeft(600);
+            } else {
+                submitFinal(newTotalResponses, currentTotalTime);
             }
         } else if (stage === 'break') {
-            setStage('math-m1');
+            if (activeModules.includes('math-m1')) {
+                setStage('math-m1');
+            } else if (activeModules.includes('math-m2')) {
+                setStage('math-m2');
+            } else {
+                submitFinal(newTotalResponses, currentTotalTime);
+            }
         } else if (stage === 'math-m1') {
-            setM2Difficulty('hard');
-            setStage('math-m2');
+            if (activeModules.includes('math-m2')) {
+                setM2Difficulty('hard');
+                setStage('math-m2');
+            } else {
+                submitFinal(newTotalResponses, currentTotalTime);
+            }
         } else {
             submitFinal(newTotalResponses, currentTotalTime);
         }

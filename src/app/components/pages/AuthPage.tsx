@@ -7,8 +7,10 @@ type Mode = 'login' | 'register';
 
 export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   const [mode, setMode] = useState<Mode>('login');
+  const [step, setStep] = useState<'auth' | 'verify'>('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -26,15 +28,16 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
     console.log(`DEBUG: handleEmailAuth started for mode: ${mode}, email: ${email}`);
     try {
       if (mode === 'register') {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await authApi.signUp({
           email,
           password,
         });
         if (error) throw error;
         console.log("DEBUG: Sign up successful", data);
-        setSuccess('Registration successful! Please check your email for a confirmation link.');
+        setSuccess('Registration successful! Please enter the 6-digit code sent to your email.');
+        setStep('verify');
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await authApi.signInWithPassword({
           email,
           password,
         });
@@ -47,6 +50,27 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
       const message =
         err instanceof Error ? err.message : 'Authentication sequence failed. Verify credentials.';
       setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const { data, error } = await authApi.verifyOtp({
+        email,
+        token: otp,
+        type: 'signup'
+      });
+      if (error) throw error;
+      console.log("DEBUG: Verification successful", data);
+      onSuccess();
+    } catch (err) {
+      console.error("DEBUG: handleVerify error:", err);
+      setError(err instanceof Error ? err.message : 'Verification failed. Please check your code.');
     } finally {
       setLoading(false);
     }
@@ -134,83 +158,137 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
             </h2>
           </div>
 
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em]">Email Address</label>
-                <Mail className="w-4 h-4 text-indigo-200/20" />
+          {step === 'auth' ? (
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em]">Email Address</label>
+                  <Mail className="w-4 h-4 text-indigo-200/20" />
+                </div>
+                <input
+                  type="email"
+                  placeholder="student@satvalley.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl focus:border-indigo-500 focus:bg-white/10 outline-none px-6 font-bold text-white transition-all placeholder:text-white/20"
+                />
               </div>
-              <input
-                type="email"
-                placeholder="student@satvalley.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl focus:border-indigo-500 focus:bg-white/10 outline-none px-6 font-bold text-white transition-all placeholder:text-white/20"
-              />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em]">Password</label>
+                  <Lock className="w-4 h-4 text-indigo-200/20" />
+                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl focus:border-indigo-500 focus:bg-white/10 outline-none px-6 font-bold text-white transition-all placeholder:text-white/20"
+                />
+              </div>
+
+              {error && (
+                <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 rounded-xl px-5 py-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                  <Zap className="w-4 h-4 fill-current" />
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-5 py-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                  <Sparkles className="w-4 h-4 fill-current" />
+                  {success}
+                </div>
+              )}
+
+              <div className="pt-6 space-y-6">
+                <button
+                  className="w-full h-20 bg-white text-black hover:bg-indigo-400 hover:text-white rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] shadow-xl shadow-black/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 group"
+                  onClick={handleEmailAuth}
+                  disabled={loading || !email || !password}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span className="animate-pulse">Processing...</span>
+                    </>
+                  ) : mode === 'login' ? (
+                    <>
+                      Sign In
+                      <Zap className="w-5 h-5 fill-current text-indigo-600 group-hover:text-white transition-colors" />
+                    </>
+                  ) : (
+                    <>
+                      Register
+                      <Globe className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  className="w-full h-20 border border-white/10 hover:bg-white/5 text-white/80 rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4"
+                  onClick={handleGoogle}
+                  disabled={loading}
+                >
+                  <Chrome className="w-6 h-6 text-indigo-400" />
+                  Continue with Google
+                </button>
+              </div>
             </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em]">Password</label>
-                <Lock className="w-4 h-4 text-indigo-200/20" />
+          ) : (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[10px] font-black text-indigo-200/40 uppercase tracking-[0.4em]">Confirmation Code</label>
+                  <ShieldCheck className="w-4 h-4 text-indigo-200/20" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                  className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl focus:border-indigo-500 focus:bg-white/10 outline-none px-6 font-bold text-white text-center text-3xl tracking-[0.5em] transition-all placeholder:text-white/20"
+                />
+                <p className="text-[10px] text-indigo-200/30 text-center font-bold uppercase tracking-widest mt-4">
+                  Enter the 6-digit code sent to <span className="text-indigo-400">{email}</span>
+                </p>
               </div>
-              <input
-                type="password"
-                placeholder="••••••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl focus:border-indigo-500 focus:bg-white/10 outline-none px-6 font-bold text-white transition-all placeholder:text-white/20"
-              />
-            </div>
 
-            {error && (
-              <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 rounded-xl px-5 py-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                <Zap className="w-4 h-4 fill-current" />
-                {error}
-              </div>
-            )}
+              {error && (
+                <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 rounded-xl px-5 py-4 flex items-center gap-3">
+                  <Zap className="w-4 h-4 fill-current" />
+                  {error}
+                </div>
+              )}
 
-            {success && (
-              <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-5 py-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                <Sparkles className="w-4 h-4 fill-current" />
-                {success}
-              </div>
-            )}
-
-            <div className="pt-6 space-y-6">
-              <button
-                className="w-full h-20 bg-white text-black hover:bg-indigo-400 hover:text-white rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] shadow-xl shadow-black/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 group"
-                onClick={handleEmailAuth}
-                disabled={loading || !email || !password}
-              >
-                {loading ? (
-                  <>
+              <div className="pt-6 space-y-4">
+                <button
+                  className="w-full h-20 bg-indigo-500 text-white hover:bg-indigo-400 rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] shadow-xl shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4"
+                  onClick={handleVerify}
+                  disabled={loading || otp.length < 6}
+                >
+                  {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    <span className="animate-pulse">Processing...</span>
-                  </>
-                ) : mode === 'login' ? (
-                  <>
-                    Sign In
-                    <Zap className="w-5 h-5 fill-current text-indigo-600 group-hover:text-white transition-colors" />
-                  </>
-                ) : (
-                  <>
-                    Register
-                    <Globe className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" />
-                  </>
-                )}
-              </button>
+                  ) : (
+                    <>
+                      Verify Code
+                      <ShieldCheck className="w-5 h-5 text-white" />
+                    </>
+                  )}
+                </button>
 
-              <button
-                className="w-full h-20 border border-white/10 hover:bg-white/5 text-white/80 rounded-[2rem] text-sm font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4"
-                onClick={handleGoogle}
-                disabled={loading}
-              >
-                <Chrome className="w-6 h-6 text-indigo-400" />
-                Continue with Google
-              </button>
+                <button
+                  className="w-full text-[10px] font-black text-indigo-300/40 hover:text-indigo-300 uppercase tracking-widest transition-colors py-4"
+                  onClick={() => setStep('auth')}
+                  disabled={loading}
+                >
+                  Back to registration
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="text-[10px] font-black text-indigo-200/30 uppercase tracking-[0.4em] text-center pt-10 border-t border-indigo-500/10">
             {mode === 'login' ? "Don't have an account?" : 'Already a member?'}{' '}

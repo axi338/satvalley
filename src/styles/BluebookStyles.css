@@ -17,7 +17,7 @@
   --bb-yellow: #FFF5A1;
   --bb-blue: #D1E9FF;
   --bb-pink: #FFD1E8;
-  
+
   /* Reverse Contrast (Dark Mode) Tokens */
   --reverse-bg: #000000;
   --reverse-text: #ffffff;
@@ -27,6 +27,11 @@
 
 /* Color Mode Overrides */
 .color-reverse {
+  background-color: var(--reverse-bg) !important;
+  color: var(--reverse-text) !important;
+}
+
+.color-reverse {
   --bluebook-bg-light: var(--reverse-bg);
   --bluebook-text-slate: var(--reverse-text);
   --bluebook-border: var(--reverse-border);
@@ -34,39 +39,88 @@
   --bluebook-footer-bg: #000000;
 }
 
-.color-reverse .bg-white { background-color: var(--reverse-bg) !important; }
-.color-reverse .text-slate-900 { color: var(--reverse-text) !important; }
-.color-reverse .text-[#111827] { color: var(--reverse-text) !important; }
-.color-reverse .text-slate-800 { color: #e2e8f0 !important; }
-.color-reverse .text-slate-700 { color: #cbd5e1 !important; }
-.color-reverse .border-slate-200 { border-color: var(--reverse-border) !important; }
-.color-reverse .border-slate-300 { border-color: var(--reverse-border) !important; }
-.color-reverse .bg-slate-50 { background-color: #0f172a !important; }
-.color-reverse .bg-slate-100 { background-color: #1e293b !important; }
-.color-reverse .bg-slate-100\/50 { background-color: rgba(30, 41, 59, 0.5) !important; }
+.color-reverse.bg-white,
+.color-reverse .bg-white {
+  background-color: var(--reverse-bg) !important;
+}
+
+.color-reverse.bg-[#F2F4F7],
+.color-reverse .bg-[#F2F4F7] {
+  background-color: var(--reverse-bg) !important;
+}
+
+.color-reverse.text-slate-900,
+.color-reverse .text-slate-900 {
+  color: var(--reverse-text) !important;
+}
+
+.color-reverse.text-[#111827],
+.color-reverse .text-[#111827] {
+  color: var(--reverse-text) !important;
+}
+
+.color-reverse.text-slate-800,
+.color-reverse .text-slate-800 {
+  color: #e2e8f0 !important;
+}
+
+.color-reverse.text-slate-700,
+.color-reverse .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+.color-reverse.border-slate-200,
+.color-reverse .border-slate-200 {
+  border-color: var(--reverse-border) !important;
+}
+
+.color-reverse.border-slate-300,
+.color-reverse .border-slate-300 {
+  border-color: var(--reverse-border) !important;
+}
+
+.color-reverse.bg-slate-50,
+.color-reverse .bg-slate-50 {
+  background-color: #0f172a !important;
+}
+
+.color-reverse.bg-slate-100,
+.color-reverse .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+.color-reverse.bg-slate-100\/50,
+.color-reverse .bg-slate-100\/50 {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
 
 /* Apply specific overrides for Bluebook components in Reverse Contrast */
 .color-reverse .bluebook-option-button {
   background-color: #0c0f17;
   border-color: #334155;
 }
+
 .color-reverse .bluebook-option-letter {
   background-color: #0f172a;
   color: white;
   border-color: #475569;
 }
+
 .color-reverse .bluebook-option-button.selected {
   border-color: white;
   background-color: #1e293b;
 }
+
 .color-reverse .bluebook-option-button.selected .bluebook-option-letter {
   background-color: white;
   color: black;
 }
+
 .color-reverse .bluebook-nav-button {
   background-color: #ffffff;
   color: #000000;
 }
+
 .color-reverse .bluebook-eliminate-circle {
   background-color: #0f172a;
 }

@@ -65,7 +65,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [studentQuote, setStudentQuote] = useState(''); // Renamed from studentNote
   const [isOlympiad, setIsOlympiad] = useState(false);
   const [olympiadEndDate, setOlympiadEndDate] = useState('');
-  const [tests, setTests] = useState<Array<{ id: string; title: string; difficulty: string; mathq?: string; readingq?: string; writingq?: string; is_olympiad?: boolean; olympiad_end_date?: string }>>([]);
+  const [activeModules, setActiveModules] = useState<string[]>(['rw-m1', 'rw-m2', 'math-m1', 'math-m2']);
+  const [tests, setTests] = useState<Array<{ id: string; title: string; difficulty: string; mathq?: string; readingq?: string; writingq?: string; is_olympiad?: boolean; olympiad_end_date?: string; active_modules?: string[] }>>([]);
   const [questions, setQuestions] = useState<Array<any>>([]);
   const [results, setResults] = useState<Array<any>>([]);
   const [selectedTestId, setSelectedTestId] = useState('');
@@ -268,7 +269,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       readingq,
       writingq,
       is_olympiad: isOlympiad,
-      olympiad_end_date: olympiadEndDate || undefined
+      olympiad_end_date: olympiadEndDate || undefined,
+      active_modules: activeModules
     };
 
     if (editingTestId) {
@@ -307,6 +309,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setWritingq('0');
     setIsOlympiad(false);
     setOlympiadEndDate('');
+    setActiveModules(['rw-m1', 'rw-m2', 'math-m1', 'math-m2']);
     setEditingTestId(null);
   };
 
@@ -320,6 +323,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setWritingq(t.writingq || '0');
     setIsOlympiad(t.is_olympiad || false);
     setOlympiadEndDate(t.olympiad_end_date ? t.olympiad_end_date.split('T')[0] : '');
+    setActiveModules(t.active_modules || ['rw-m1', 'rw-m2', 'math-m1', 'math-m2']);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -966,7 +970,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                   <Textarea value={testDescription} onChange={e => setTestDescription(e.target.value)} className="bg-white/5 border-white/10 min-h-24 text-white" />
                 </div>
                 <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <label className="flex items-center gap-2 text-sm text-indigo-200 cursor-pointer">
                       <input
                         type="checkbox"
@@ -976,7 +980,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                       />
                       Mark as SAT Olympiad Test
                     </label>
-                    <p className="text-[10px] text-indigo-200/40 uppercase tracking-widest pl-6">This test will appear in the Olympiad section.</p>
+                    <p className="text-[10px] text-indigo-200/40 uppercase tracking-widest pl-1">This test will appear in the Olympiad section.</p>
                   </div>
                   {isOlympiad && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-left-2 transition-all">
@@ -989,6 +993,34 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                       />
                     </div>
                   )}
+
+                  <div className="col-span-full border-t border-indigo-500/10 pt-4 mt-2">
+                    <label className="text-xs font-black text-indigo-400 uppercase tracking-widest block mb-3">Active Modules</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { id: 'rw-m1', label: 'RW Module 1' },
+                        { id: 'rw-m2', label: 'RW Module 2' },
+                        { id: 'math-m1', label: 'Math Module 1' },
+                        { id: 'math-m2', label: 'Math Module 2' }
+                      ].map(m => (
+                        <label key={m.id} className="flex items-center gap-2 text-xs text-white cursor-pointer hover:text-indigo-300 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={activeModules.includes(m.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setActiveModules([...activeModules, m.id]);
+                              } else {
+                                setActiveModules(activeModules.filter(x => x !== m.id));
+                              }
+                            }}
+                            className="w-3.5 h-3.5 rounded border-white/10 bg-white/10 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          {m.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-4">
                   <Button onClick={handleAddTest} className="bg-primary text-primary-foreground">

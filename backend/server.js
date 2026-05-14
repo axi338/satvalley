@@ -30,6 +30,8 @@ const logCrash = (type, err) => {
   const msg = `[${new Date().toISOString()}] ${type}: ${err.message}\n${err.stack}\n\n`;
   console.error(msg); // Print to console still
   try {
+    const logDir = path.dirname(path.join(process.cwd(), 'crash.log'));
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(path.join(process.cwd(), 'crash.log'), msg);
   } catch (e) {
     console.error("Failed to write to crash.log", e);
@@ -58,6 +60,42 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
     persistSession: false
   }
 });
+
+// Automated Cleanup: Mark any 'in-progress' jobs as failed on startup
+// because they were likely interrupted by a server restart/crash.
+const cleanupStuckJobs = async () => {
+  try {
+    console.log('[STARTUP] Checking for stuck import jobs...');
+    const { data: stuckJobs, error: fetchError } = await supabase
+      .from('import_jobs')
+      .select('id, filename')
+      .in('status', ['extracting', 'candidate_split', 'normalizing']);
+
+    if (fetchError) throw fetchError;
+
+    if (stuckJobs && stuckJobs.length > 0) {
+      console.log(`[STARTUP] Found ${stuckJobs.length} stuck jobs. Resetting...`);
+      for (const job of stuckJobs) {
+        await supabase
+          .from('import_jobs')
+          .update({
+            status: 'failed',
+            error_message: 'Job was interrupted due to server restart. Please try again.'
+          })
+          .eq('id', job.id);
+        console.log(`[STARTUP] Reset job: ${job.filename}`);
+      }
+    } else {
+      console.log('[STARTUP] No stuck jobs found.');
+    }
+  } catch (err) {
+    console.error('[STARTUP] Error in cleanupStuckJobs:', err.message);
+  }
+};
+
+// Execute cleanup immediately on startup
+cleanupStuckJobs();
+
 
 // Separate client for verifying user JWTs
 // supabase.auth.getUser(token) works correctly when called via the service role client
@@ -172,6 +210,41 @@ app.post("/api/auth/google", async (req, res) => {
   }
 });
 
+app.post("/api/auth/otp", async (req, res) => {
+  try {
+    const { email, options } = req.body;
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: options || {}
+    });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/auth/verify-otp", async (req, res) => {
+  try {
+    const { email, token, type } = req.body;
+    if (!email || !token) return res.status(400).json({ error: "Email and token required" });
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: type || 'signup'
+    });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.post("/api/auth/logout", async (req, res) => {
   try {
     const { error } = await supabase.auth.signOut();
@@ -238,9 +311,16 @@ const verifyAdmin = async (req) => {
     const isAdmin = user.app_metadata?.admin === true || allowList.includes(email) || profile?.is_admin === true;
 
     if (isAdmin) {
+      console.log(`[DEBUG verifyAdmin] Admin access GRANTED for ${email}`);
       return user;
     }
-    console.warn(`[DEBUG verifyAdmin] Admin access denied for ${email}`);
+
+    console.warn(`[DEBUG verifyAdmin] Admin access DENIED for ${email}`);
+    console.warn(` - user.app_metadata.admin: ${user.app_metadata?.admin}`);
+    console.warn(` - email in allowList: ${allowList.includes(email)}`);
+    console.warn(` - profile.is_admin: ${profile?.is_admin}`);
+    console.warn(` - allowList contents: [${allowList}]`);
+
     throw Object.assign(new Error("Not an admin"), { status: 403 });
   } catch (err) {
     console.error(`[DEBUG verifyAdmin] Exception: ${err.message}`);
@@ -256,12 +336,26 @@ const verifyAdmin = async (req) => {
 const recalculateTestCounts = async (testId) => {
   if (!testId) return;
   try {
-    // 1. Get all linked questions
+    // 1. Get test info and linked questions
+    const { data: testData, error: testError } = await supabase
+      .from("tests")
+      .select("active_modules")
+      .eq("id", testId)
+      .single();
+
+    if (testError) {
+      console.error(`Error fetching test config:`, testError);
+      return;
+    }
+
+    const activeModules = testData.active_modules || ['rw-m1', 'rw-m2', 'math-m1', 'math-m2'];
+
     const { data: linkedQuestions, error: linkError } = await supabase
       .from("test_questions")
       .select(`
         questions (
-          subject
+          subject,
+          module
         )
       `)
       .eq("test_id", testId);
@@ -273,7 +367,17 @@ const recalculateTestCounts = async (testId) => {
 
     const questions = linkedQuestions
       .map(l => l.questions)
-      .filter(q => q);
+      .filter(q => q)
+      .filter(q => {
+        const mod = q.module || 'm1';
+        if (['reading', 'writing', 'rw'].includes(q.subject)) {
+          return activeModules.includes(`rw-${mod.startsWith('m2') ? 'm2' : 'm1'}`);
+        }
+        if (q.subject === 'math') {
+          return activeModules.includes(`math-${mod.startsWith('m2') ? 'm2' : 'm1'}`);
+        }
+        return true;
+      });
 
     const mathQuestions = questions.filter(q => q.subject === 'math');
     const rwQuestions = questions.filter(q => ['reading', 'writing', 'rw'].includes(q.subject));
@@ -289,7 +393,18 @@ const recalculateTestCounts = async (testId) => {
     if (rwQuestions.length > 0) newSections.push(`Reading & Writing: ${rwQuestions.length}Q (M1:${m1_rw}, M2:${m2_rw})`);
     if (newSections.length === 0) newSections.push('Empty: 0Q');
 
-    // 3. Update test
+    // 3. Calculate duration
+    let duration = 0;
+    if (activeModules.includes('rw-m1')) duration += 32;
+    if (activeModules.includes('rw-m2')) duration += 32;
+    if (activeModules.includes('math-m1')) duration += 35;
+    if (activeModules.includes('math-m2')) duration += 35;
+
+    const hasRW = activeModules.some(m => m.startsWith('rw'));
+    const hasMath = activeModules.some(m => m.startsWith('math'));
+    if (hasRW && hasMath) duration += 10; // Break
+
+    // 4. Update test
     await supabase
       .from("tests")
       .update({
@@ -297,6 +412,7 @@ const recalculateTestCounts = async (testId) => {
         mathq: String(mathQuestions.length),
         readingq: String(rwQuestions.length),
         writingq: "0",
+        duration: String(duration * 60), // Store in seconds
         updated_at: new Date().toISOString()
       })
       .eq("id", testId);
@@ -418,7 +534,7 @@ app.get("/api/tests", async (req, res) => {
 app.post("/api/tests", async (req, res) => {
   try {
     await verifyAdmin(req);
-    const { title, difficulty, description, sections, mathq, readingq, writingq, is_olympiad, olympiad_end_date } = req.body || {};
+    const { title, difficulty, description, sections, mathq, readingq, writingq, is_olympiad, olympiad_end_date, active_modules } = req.body || {};
     if (!title) return res.status(400).json({ error: "title_required" });
 
     const { data, error } = await supabase
@@ -434,6 +550,7 @@ app.post("/api/tests", async (req, res) => {
         is_olympiad: is_olympiad || false,
         olympiad_end_date: olympiad_end_date || null,
         olympiad_start_date: req.body.olympiad_start_date || new Date().toISOString(),
+        active_modules: active_modules || ['rw-m1', 'rw-m2', 'math-m1', 'math-m2'],
         status: 'draft' // Default to draft
       })
       .select()
@@ -1381,6 +1498,39 @@ app.get("/api/admin/import/jobs", async (req, res) => {
   }
 });
 
+// Manual Reset: Allows admins to manually trigger the cleanup of stuck jobs
+app.post("/api/admin/import/reset-pipeline", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    console.log('[MANUAL RESET] Admin requested pipeline reset');
+
+    const { data: stuckJobs, error: fetchError } = await supabase
+      .from('import_jobs')
+      .select('id, filename')
+      .in('status', ['extracting', 'candidate_split', 'normalizing']);
+
+    if (fetchError) throw fetchError;
+
+    if (stuckJobs && stuckJobs.length > 0) {
+      for (const job of stuckJobs) {
+        await supabase
+          .from('import_jobs')
+          .update({
+            status: 'failed',
+            error_message: 'Job was manually reset by an administrator.'
+          })
+          .eq('id', job.id);
+      }
+      res.json({ success: true, message: `Reset ${stuckJobs.length} stuck jobs.` });
+    } else {
+      res.json({ success: true, message: "No stuck jobs found." });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "reset_pipeline_failed", message: err.message });
+  }
+});
+
+
 app.get("/api/admin/tests", async (req, res) => {
   try {
     await verifyAdmin(req);
@@ -1440,7 +1590,13 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
     const timestamp = new Date().toISOString();
     const line = `[${timestamp}] ${msg}\n`;
     console.log(msg);
-    fs.appendFileSync(logFile, line);
+    try {
+      const logDir = path.dirname(logFile);
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      fs.appendFileSync(logFile, line);
+    } catch (e) {
+      console.error("Failed to write to backend_debug.log", e);
+    }
   };
 
   try {
@@ -1592,6 +1748,53 @@ app.post("/api/admin/import/candidates/:id/approve", async (req, res) => {
     });
   }
 });
+
+app.post("/api/admin/import/jobs/:jobId/approve-all", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    await verifyAdmin(req);
+
+    console.log(`DEBUG: Calling RPC approve_all_import_candidates for job ${jobId}`);
+
+    // Call the SQL RPC function for high-performance bulk processing
+    const { data, error: rpcError } = await supabase.rpc('approve_all_import_candidates', {
+      p_job_id: jobId
+    });
+
+    if (rpcError) {
+      console.error(`DEBUG: Bulk approval RPC error:`, rpcError);
+      throw rpcError;
+    }
+
+    // Refresh test counts if needed
+    const { data: job } = await supabase
+      .from('import_jobs')
+      .select('destination_test_id')
+      .eq('id', jobId)
+      .single();
+
+    if (job?.destination_test_id) {
+      await recalculateTestCounts(job.destination_test_id);
+    }
+
+    console.log(`DEBUG: Bulk approval successful. Count: ${data.approved_count}`);
+
+    res.json({
+      success: true,
+      count: data.approved_count,
+      message: `Successfully approved ${data.approved_count} questions.`
+    });
+
+  } catch (err) {
+    console.error(`DEBUG: Bulk approval error: ${err.message}`);
+    res.status(500).json({
+      error: "bulk_approval_failed",
+      message: err.message
+    });
+  }
+});
+
+
 
 app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
   try {

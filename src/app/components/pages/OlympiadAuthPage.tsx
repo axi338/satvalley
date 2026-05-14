@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { authApi } from '../../lib/auth';
 import { Trophy, Loader2, Phone, Zap, Mail } from 'lucide-react';
 import { countryCodes } from '../../data/countryCodes';
 
@@ -72,7 +73,7 @@ export function OlympiadAuthPage({ onSuccess }: OlympiadAuthPageProps) {
         if (!email) return alert("Email required");
         setLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithOtp({
+            const { error } = await authApi.signInWithOtp({
                 email,
                 options: {
                     emailRedirectTo: window.location.origin,
