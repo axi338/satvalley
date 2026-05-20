@@ -75,6 +75,16 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
 
     if (!text || typeof text !== 'string') return null;
 
+    const renderTextWithBold = (content: string) => {
+        const boldParts = content.split(/(\*\*[\s\S]*?\*\*)/g);
+        return boldParts.map((part, idx) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={idx} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>;
+            }
+            return <React.Fragment key={idx}>{part}</React.Fragment>;
+        });
+    };
+
     return (
         <span className={`math-wrapper whitespace-pre-wrap ${className}`}>
             {segments.map((segment, idx) => {
@@ -83,8 +93,8 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                 } else if (segment.type === 'inlineMath') {
                     return <InlineMath key={idx} math={segment.content} />;
                 }
-                // Regular Text
-                return <React.Fragment key={idx}>{segment.content}</React.Fragment>;
+                // Regular Text with Bold support
+                return <React.Fragment key={idx}>{renderTextWithBold(segment.content)}</React.Fragment>;
             })}
         </span>
     );

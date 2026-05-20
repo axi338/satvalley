@@ -219,6 +219,7 @@ RULES:
     - For Math: Show the formula used and the intermediate steps of the calculation.
     - Use LaTeX for ALL mathematical notation within the explanation.
     - Aim for a tone that is helpful, encouraging, and clear.
+14. TEXT BOLDING: Identify specific focus words or phrases in the question stem or passage that are central to the task (e.g., vocabulary tested in context, or the focal point of a grammar question) and wrap them in double asterisks for bolding (e.g., **resilient**). This helps mimic the official SAT style.
 `;
 
     try {

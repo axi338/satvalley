@@ -632,7 +632,7 @@ app.get("/api/questions", async (req, res) => {
       // Apply additional filters if provided
       if (module && module !== "undefined" && module !== "") {
         questions = questions.filter(q => {
-          // Allow 'm2' questions to show up for 'm2-easy' or 'm2-hard' requests
+          if (module === 'm2' && q.module?.startsWith('m2')) return true;
           if (module.startsWith('m2') && q.module === 'm2') return true;
           return q.module === module;
         });
@@ -648,13 +648,16 @@ app.get("/api/questions", async (req, res) => {
     let query = supabase.from("questions").select("*");
 
     if (module && module !== "undefined" && module !== "") {
-      query = query.eq("module", module);
+      if (module === 'm2') {
+        query = query.ilike("module", "m2%");
+      } else {
+        query = query.eq("module", module);
+      }
     }
     if (subject && subject !== "undefined" && subject !== "") {
       query = query.eq("subject", subject);
     }
-
-    const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(5000);
 
     if (error) throw error;
     res.json({ questions: data });
@@ -1794,6 +1797,68 @@ app.post("/api/admin/import/jobs/:jobId/approve-all", async (req, res) => {
   }
 });
 
+app.post("/api/admin/import/jobs/:jobId/reject-all", async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    await verifyAdmin(req);
+
+    console.log(`DEBUG: Bulk rejection for job ${jobId}`);
+
+    // Get all candidates for this job that have questions
+    const { data: candidates, error: fetchError } = await supabase
+      .from('import_candidates')
+      .select('id, question_id, import_jobs(destination_test_id)')
+      .eq('job_id', jobId);
+
+    if (fetchError) throw fetchError;
+
+    const questionIds = [];
+    const candidateIds = [];
+    const testIds = new Set();
+
+    for (const cand of candidates) {
+      if (cand.question_id) questionIds.push(cand.question_id);
+      candidateIds.push(cand.id);
+
+      const destId = cand.import_jobs?.destination_test_id ||
+        (Array.isArray(cand.import_jobs) ? cand.import_jobs[0]?.destination_test_id : null);
+      if (destId) testIds.add(destId);
+    }
+
+    // 1. Delete all associated questions (cascades to test_questions)
+    if (questionIds.length > 0) {
+      const { error: delError } = await supabase.from('questions').delete().in('id', questionIds);
+      if (delError) console.error("DEBUG: Bulk delete error:", delError);
+    }
+
+    // 2. Mark all candidates as rejected
+    if (candidateIds.length > 0) {
+      const { error: updError } = await supabase.from('import_candidates').update({ status: 'rejected' }).in('id', candidateIds);
+      if (updError) console.error("DEBUG: Bulk update error:", updError);
+    }
+
+    let rejectedCount = candidateIds.length;
+
+    // Recalculate test counts
+    for (const testId of testIds) {
+      await recalculateTestCounts(testId);
+    }
+
+    res.json({
+      success: true,
+      count: rejectedCount,
+      message: `Successfully rejected ${rejectedCount} questions.`
+    });
+
+  } catch (err) {
+    console.error(`DEBUG: Bulk rejection error: ${err.message}`);
+    res.status(500).json({
+      error: "bulk_rejection_failed",
+      message: err.message
+    });
+  }
+});
+
 
 
 app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
@@ -1801,16 +1866,37 @@ app.post("/api/admin/import/candidates/:id/reject", async (req, res) => {
     await verifyAdmin(req);
     const { id } = req.params;
 
-    // Get candidate to find job_id
+    // Get candidate to find job_id and question_id
     const { data: candidate } = await supabase
       .from("import_candidates")
-      .select("job_id")
+      .select("job_id, question_id, import_jobs(destination_test_id)")
       .eq("id", id)
       .single();
 
+    // 1. Update candidate status
     await supabase.from("import_candidates").update({ status: 'rejected' }).eq("id", id);
 
-    // Check if job is complete
+    // 2. If it was already approved and has a question_id, delete it
+    // This will cascade to test_questions automatically due to DB constraints
+    if (candidate?.question_id) {
+      console.log(`DEBUG: Deleting question ${candidate.question_id} due to candidate rejection`);
+      const { error: deleteError } = await supabase
+        .from("questions")
+        .delete()
+        .eq("id", candidate.question_id);
+
+      if (deleteError) {
+        console.error(`DEBUG: Error deleting question:`, deleteError);
+      }
+
+      // Trigger recalculation of test counts
+      const testId = candidate.import_jobs?.destination_test_id;
+      if (testId) {
+        await recalculateTestCounts(testId);
+      }
+    }
+
+    // 3. Check if job is complete
     if (candidate?.job_id) {
       const { count, error: countError } = await supabase
         .from("import_candidates")

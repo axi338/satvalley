@@ -96,8 +96,8 @@ export default function App() {
       setUser(newUser);
 
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (newUser && (currentPage === 'home' || currentPage === 'auth')) {
-          setCurrentPage('dashboard');
+        if (newUser) {
+          setCurrentPage(prevPage => (prevPage === 'home' || prevPage === 'auth') ? 'dashboard' : prevPage);
         }
       } else if (event === 'SIGNED_OUT') {
         setCurrentPage('home');

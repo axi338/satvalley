@@ -258,6 +258,40 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
         }
     };
 
+    const handleRejectAll = async () => {
+        if (!jobId || actionLoading) return;
+
+        const confirmReject = window.confirm(`This will REJECT ALL questions in this job and DELETE them from the test. Continue?`);
+        if (!confirmReject) return;
+
+        setActionLoading(true);
+        const toastId = toast.loading('Rejecting all questions...');
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`/api/admin/import/jobs/${jobId}/reject-all`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`,
+                }
+            });
+
+            if (!response.ok) throw new Error('Bulk rejection failed');
+            const data = await response.json();
+
+            toast.success(data.message || 'All questions rejected!', { id: toastId });
+
+            // Refresh candidates to show completion screen
+            await fetchCandidates();
+        } catch (err) {
+            console.error('Bulk rejection error:', err);
+            toast.error('Failed to reject all questions', { id: toastId });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const handleSaveRawEdit = () => {
 
         const newCandidates = [...candidates];
@@ -394,6 +428,14 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
                         <Sparkles className="w-5 h-5" />
                         Process Another File
                     </button>
+                    <button
+                        onClick={handleRejectAll}
+                        disabled={actionLoading}
+                        className="px-10 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all w-full sm:w-auto flex items-center gap-3"
+                    >
+                        <X className="w-5 h-5" />
+                        Undo & Reject All
+                    </button>
                 </div>
             </motion.div>
         );
@@ -430,16 +472,28 @@ export const ImportReview = ({ jobId, onNavigate }: ImportReviewProps) => {
 
                 {/* Right: progress + stats */}
                 <div className="flex items-center gap-6 w-1/4 justify-end">
-                    {total - approvedCount - rejectedCount > 0 && (
-                        <button
-                            onClick={handleApproveAll}
-                            disabled={actionLoading}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all border border-emerald-500/30 disabled:opacity-50"
-                        >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Approve All</span>
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {total > 0 && (
+                            <button
+                                onClick={handleRejectAll}
+                                disabled={actionLoading}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-all border border-rose-500/30 disabled:opacity-50"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Reject All</span>
+                            </button>
+                        )}
+                        {total - approvedCount - rejectedCount > 0 && (
+                            <button
+                                onClick={handleApproveAll}
+                                disabled={actionLoading}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all border border-emerald-500/30 disabled:opacity-50"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Approve All</span>
+                            </button>
+                        )}
+                    </div>
                     <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">{approvedCount} Approved</span>
                     <span className="text-[10px] text-rose-400 font-black uppercase tracking-widest">{rejectedCount} Rejected</span>
                 </div>

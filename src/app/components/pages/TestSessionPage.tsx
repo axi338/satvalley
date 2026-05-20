@@ -967,7 +967,7 @@ export function TestSessionPage({ testId, onNavigate, user }: TestSessionPagePro
                     }
                 }
 
-                const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : `m2-${m2Difficulty || 'hard'}`;
+                const modPart = stage === 'rw-m1' || stage === 'math-m1' ? 'm1' : 'm2';
                 const subject = stage.startsWith('rw') ? 'rw' : 'math';
                 const url = `${apiBase}/api/questions?testId=${testId}&module=${modPart}&subject=${subject}`;
                 const res = await fetch(url, { signal: controller.signal });

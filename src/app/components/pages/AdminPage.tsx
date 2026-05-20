@@ -95,6 +95,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [questionFilterTestId, setQuestionFilterTestId] = useState<string>('');
   const [questionFilterSubject, setQuestionFilterSubject] = useState<string>('');
   const [questionFilterModule, setQuestionFilterModule] = useState<string>('');
+  const [questionSearchKeyword, setQuestionSearchKeyword] = useState<string>('');
   const [flash, setFlash] = useState<string | null>(null);
   const [users, setUsers] = useState<Array<{ uid: string; email: string; lastLogin?: string }> | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
@@ -653,8 +654,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <label className="text-sm text-muted-foreground">Module</label>
           <select value={moduleType} onChange={e => setModuleType(e.target.value as any)} className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white">
             <option value="m1">Module 1</option>
-            <option value="m2-easy">Module 2 (Easy)</option>
-            <option value="m2-hard">Module 2 (Hard)</option>
+            <option value="m2">Module 2</option>
           </select>
         </div>
       </div>
@@ -1110,7 +1110,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                       <div className="text-[10px] uppercase font-bold text-indigo-500/60 mb-1">Module Balance</div>
                       <div className="text-3xl font-black text-white">{stats.m1}<span className="text-sm font-normal text-muted-foreground mx-1">/</span>{stats.m2}</div>
                       <div className="mt-2 text-[10px] text-muted-foreground">
-                        M1 Total vs M2 (Hard+Easy)
+                        M1 Total vs M2 Total
                       </div>
                     </div>
                   </div>
@@ -1133,14 +1133,23 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         {questions.filter(q =>
                           (!questionFilterTestId || q.testId === questionFilterTestId) &&
                           (!questionFilterSubject || q.subject === questionFilterSubject) &&
-                          (!questionFilterModule || q.module === questionFilterModule)
+                          (!questionFilterModule || q.module === questionFilterModule) &&
+                          (!questionSearchKeyword || (q.text && q.text.toLowerCase().includes(questionSearchKeyword.toLowerCase())) || (q.passage && q.passage.toLowerCase().includes(questionSearchKeyword.toLowerCase())))
                         ).length} Questions
                       </span>
                     </h3>
-                    <select value={questionFilterTestId} onChange={e => setQuestionFilterTestId(e.target.value)} className="h-10 bg-white/5 border border-white/10 rounded-lg px-4 text-sm text-white min-w-[200px]">
-                      <option value="">All Tests</option>
-                      {tests.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                    </select>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        value={questionSearchKeyword}
+                        onChange={e => setQuestionSearchKeyword(e.target.value)}
+                        placeholder="Search keyword..."
+                        className="h-10 bg-white/5 border border-white/10 rounded-lg px-4 text-sm text-white min-w-[200px]"
+                      />
+                      <select value={questionFilterTestId} onChange={e => setQuestionFilterTestId(e.target.value)} className="h-10 bg-white/5 border border-white/10 rounded-lg px-4 text-sm text-white min-w-[200px]">
+                        <option value="">All Tests</option>
+                        {tests.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl">
@@ -1172,8 +1181,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         {[
                           { id: '', label: 'All' },
                           { id: 'm1', label: 'M1' },
-                          { id: 'm2-hard', label: 'M2-H' },
-                          { id: 'm2-easy', label: 'M2-E' }
+                          { id: 'm2', label: 'M2' }
                         ].map(m => (
                           <button
                             key={m.id}
@@ -1194,7 +1202,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                   {questions
                     .filter(q => !questionFilterTestId || q.testId === questionFilterTestId)
                     .filter(q => !questionFilterSubject || q.subject === questionFilterSubject)
-                    .filter(q => !questionFilterModule || q.module === questionFilterModule)
+                    .filter(q => !questionFilterModule || (questionFilterModule === 'm2' ? q.module?.startsWith('m2') : q.module === questionFilterModule))
+                    .filter(q => !questionSearchKeyword || (q.text && q.text.toLowerCase().includes(questionSearchKeyword.toLowerCase())) || (q.passage && q.passage.toLowerCase().includes(questionSearchKeyword.toLowerCase())))
                     .map((q, index) => {
                       const isEditingThis = editingQuestionId === q.id;
 

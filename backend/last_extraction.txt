@@ -1,615 +1,475 @@
 ---QUESTION_START---
-Module 1:
-1. The following text is from Lilliam Rivera's 2020 novel Never Look Back. The text describes the arrival of the narrator's neighbor Penelope and her cousin.
-
-Penelope turns to the car and holds the door open. A girl about our age steps out. She has a thick curtain of long, coily hair that practically engulfs her. I've never seen her before. Penelope hugs the girl, and they walk into the building.
-
-As used in the text, what does the word "practically" most nearly mean?
-A) Cheerfully
-B) Doubtfully
-C) Almost
-D) Never
-CORRECT ANSWER: C
-
----QUESTION_START---
-2. The Apollo Moon landings (1969-1972) brought charged particle detectors and equipment too heavy for liftoff to the Moon and produced large amounts of data, much of which was stored on outdated technologies. A data-transfer project is making the data available again, thereby ______ the Apollo data's usefulness, as the data are used to study the long-term effects of being on the Moon.
-
-Which choice completes the text with the most logical and precise word or phrase?
-A) renewing
-B) persisting
-C) exceeding
-D) installing
-CORRECT ANSWER: A
-
----QUESTION_START---
-3. As with other river deltas, the Krishna River delta is ______: it is a constantly evolving network of channels and strips of land that change in size and shape as the river deposits new sedimentary particles where the river meets the waters of the Bay of Bengal.
-
-Which choice completes the text with the most logical and precise word or phrase?
-A) immutable
-B) sustainable
-C) unrivaled
-D) dynamic
-CORRECT ANSWER: D
-
----QUESTION_START---
-4. Postcranial skeletal pneumaticity (PSP) refers to the presence of extensions of an animal's lungs and air sacs inside its bones. Though such structures do not typically fossilize, they are believed to have been present in Tyrannosaurus, Sauroposeidon, and other Cretaceous theropods and sauropods. To ______ PSP from fossils, researchers look for indicators such as large foramina (holes in bones).
-
-Which choice completes the text with the most logical and precise word or phrase?
-A) infer
-B) acquire
-C) isolate
-D) preserve
-CORRECT ANSWER: A
-
----QUESTION_START---
-5. Economists have long observed that firms in related industries tend to cluster in the same area, as is the case in Birmingham, UK, where many initial iron and steel processing firms as well as iron and steel tube manufacturers are located. The factors causing such clustering are _____: what drives firms in certain industries to cluster may not be especially relevant among other industries.
-
-Which choice completes the text with the most logical and precise word or phrase?
-A) unknown
-B) variable
-C) focused
-D) impressive
-CORRECT ANSWER: B
-
----QUESTION_START---
-6. A microgenre is a specialized genre consisting of a comparatively small number of stylistically similar artists. The microgenre of electronic music known as hyperpop emerged in the 2010s, with American musician Laura Les as an early exponent. Her combination of dense synthesizer arrangements and metallic percussion with vocals electronically shifted in pitch above her natural range exemplifies the hyperpop sound. More recently, British recording artist Charli XCX has contributed to that sound by incorporating pop melodies into it.
-
-Which choice best describes the function of the underlined sentence?
-A) It identifies an artist who has contributed a new stylistic element to the hyperpop sound.
-B) It criticizes a later hyperpop artist for being too similar to an earlier hyperpop artist.
-C) It praises a particular hyperpop artist for consistently evolving through the years.
-D) It asserts that the hyperpop sound hasn't changed, even though new artists have adopted it.
-CORRECT ANSWER: A
-
----QUESTION_START---
-7. The following text is adapted from George Eliot's 1857 short story The Sad Fortunes of the Rev. Amos Barton. Mr. Ely is a clergyman in the town of Milby.
-
-By the laity of Milby and its neighbourhood [Mr. Ely] was regarded as a man of quite remarkable powers and learning, who must make a considerable sensation in London pulpits and drawing-rooms on his occasional visit to the metropolis; and by his brother clergy he was regarded as a discreet and agreeable fellow. Mr. Ely never got into a warm discussion; he suggested what might be thought, but rarely said what he thought himself; he never let either men or women see that he was laughing at them, and he never gave any one an opportunity of laughing at him.
-
-Which choice best describes the overall structure of the text?
-A) It implies that Mr. Ely's neighbors are more naïve in their estimation of him than people in London are and then explains why his neighbors have been so easily misled.
-B) It stresses the discrepancy between Mr. Ely's public and private conduct and then alludes to his motivation for hiding his true personality.
-C) It conveys how Mr. Ely initially established a positive reputation among his colleagues and then recounts the events that led them to alter their regard.
-D) It presents the favorable opinion of Mr. Ely that other people hold and then describes the behaviors of Mr. Ely that enable him to maintain that favorable opinion.
-CORRECT ANSWER: D
-
----QUESTION_START---
-8. Historians point to the rule of the Piast dynasty as crucial to the formation of the Polish state. But some differentiate between members of the dynasty like Otto Bolesławowic, who ruled as duke in 1032 CE, and less well-documented figures like Siemowit, who is said to have ruled in the 9th century but whose historical actuality is disputed. Siemowit appears in the Gesta principum Polonorum, an authentic chronicle of medieval Polish history written in the 12th century. But the chronicle's documentation of Siemowit relies on oral tradition, unlike its records of later rulers.
-
-Which choice best describes the main purpose of the text?
-A) It favorably compares the reign of Siemowit with the reign of Otto Bolesławowic.
-B) It describes a process that was used to authenticate a particular Polish medieval text.
-C) It presents evidence in support of a particular claim about Otto Bolesławowic.
-D) It explains why historians differ in their treatment of an aspect of Polish history.
-CORRECT ANSWER: D
-
----QUESTION_START---
-9. Women like Grace Murray Hopper made important early contributions to the history of US cryptology, a field concerned with secure data communication and storage. Hopper was a US naval admiral and computer scientist who coined the term "debugging" and invented the first compiler program for translating computer code. In this way, Hopper and others like her helped make it possible for more women—such as Dr. Loyce Pailen, who currently works in and teaches cybersecurity—to enter the field of cryptology.
-
-Which choice best states the main idea of the text?
-A) Cryptology should be taught more often in schools to encourage more women to enter the field.
-B) Women such as Grace Murray Hopper and Dr. Loyce Pailen have contributed to the field of cryptology.
-C) Cryptology is a field that focuses primarily on securely managing data.
-D) Grace Murray Hopper and Dr. Loyce Pailen worked together on an important project in the field of cryptology.
-CORRECT ANSWER: B
-
----QUESTION_START---
-10. Scientists have known for a long time that several primates other than humans use tools. For example, in Thailand, they have observed crab-eating macaques using stone tools to open nuts and oysters. However, according to recent research, nonprimate animals employ objects as tools as well. Dolphins use sponges to protect their noses from scratches when foraging on the seafloor, and greater vasa parrots use date pits to grind seashells into calcium powder.
-
-What does the text most strongly suggest about the crab-eating macaques in Thailand?
-A) They are only one of several primate species to use tools.
-B) They use other tools besides stone tools.
-C) They are more adept at tools than dolphins are.
-D) They have used tools for much longer than other primates have.
-CORRECT ANSWER: A
-
----QUESTION_START---
-11. Susette Castañeda-Rico and colleagues relied on historical DNA (hDNA)—genomic data incidentally preserved in specimens housed in collections such as those at the American Museum of Natural History—to investigate the evolutionary trajectory of Peromyscus mekisturus (a rodent species). Although this approach can yield many insights about the biological past, it remains a relatively underutilized resource in part because hDNA is often to some extent degraded, a situation not easily remediable with current methodological paradigms and with extant DNA extraction and analysis technologies.
-
-Which choice best states the main idea of the text?
-A) While hDNA has yielded many revelations about evolutionary history, it is relatively underused due to a shortage of specimens from the appropriate time periods.
-B) While hDNA has potential for enhancing scientists' understanding of the evolutionary past, the difficulty of deriving viable data from it at present has limited its use.
-C) While some scientists have embraced the use of hDNA, others have expressed concerns about the reliability of the data produced by hDNA studies.
-D) While hDNA has recently attracted the attention of some scientists, other sources of genomic data are likely to become more widely utilized in the future.
-CORRECT ANSWER: B
-
----QUESTION_START---
-12. Total Areas of Five Hawaiian Home Lands
-
-| Home land    | Area (square miles) |
-| :----------- | :------------------ |
-| Kahikinui    | 37.26               |
-| Kalamaula    | 7.95                |
-| Kawaihae     | 15.99               |
-| Waimea       | 23.57               |
-| Makuu        | 3.44                |
-
-Hawaiian home lands are areas of public land in the state of Hawaii that have been reserved for use by the Kānaka Maoli, or the Native Hawaiian people. The largest of the home lands, Homuula-Upper Piihonua, covers nearly 100 square miles on the island of Hawai'i. Most of the home lands are much smaller. For example, the total area of Kalamaula is 7.95 square miles, and the total area of Makuu is ______.
-
-Which choice most effectively uses data from the table to complete the example?
-A) 3.44 square miles.
-B) 37.26 square miles.
-C) 15.99 square miles.
-D) 23.57 square miles.
-CORRECT ANSWER: A
-
----QUESTION_START---
-13. The Age of Innocence is a 1920 novel by Edith Wharton set in 1870s New York City. In the novel, Newland Archer attends an opera. The narrator describes Newland's tendency to follow the social conventions dictated by other men of New York City society who are in the audience: ______.
-
-Which quotation from The Age of Innocence best illustrates the claim?
-A) "Though there was already talk...of a new Opera House which should compete in costliness and splendour with those of the great European capitals, the world of fashion was still content to reassemble every winter in the shabby red and gold boxes of the sociable old Academy [of Music]"
-B) "It surprised [Newland] that life should be going on in the old way when his own reactions to it had so completely changed."
-C) "Newland Archer felt himself distinctly the superior of these chosen specimens of old New York gentility; he had probably read more, thought more, and even seen a good deal more of the world, than any other man of the number."
-D) "Singly [the men around Newland] betrayed their inferiority; but grouped together they represented 'New York,' and the habit of masculine solidarity made him accept their doctrine on all the issues called moral."
-CORRECT ANSWER: D
-
----QUESTION_START---
-14. Quasars—such as CTA 102, located in the Pegasus constellation—are extremely luminous galactic nuclei powered by supermassive black holes. Quasars range in age, with approximately 200 of them known to have developed within the first billion years of the formation of the universe. Cosmologists have long wondered how any quasars could have formed so early in the universe's evolution given that conditions are believed to have been ill-suited to their creation, which suggests that ______.
-
-Which choice most logically completes the text?
-A) CTA 102 is thought to have formed less than a billion years after the beginnings of the universe.
-B) some aspect of the scientific understanding of quasar formation or the early universe may be incomplete.
-C) CTA 102 is likely less massive than quasars that formed more than a billion years after the beginnings of the universe.
-D) quasars that formed in the early universe are likely not as luminous as those that formed later.
-CORRECT ANSWER: B
-
----QUESTION_START---
-15. Central Vermont's Orange County is among the most rural counties in the United States: the US Census Bureau classified it as 97.2% rural in 2010. Researchers studying populations of counties like Orange often struggle to recruit and retain participants. Melissa Valerio and colleagues tested whether a method called snowball sampling could improve recruitment and retention. Working in two rural counties, the researchers identified a small number of people who had the characteristics desired for a proposed study and asked them to recruit additional participants from their social networks. Valerio and colleagues found that participants recruited via snowball sampling showed a much higher retention rate than did people recruited by strangers, suggesting that ______.
-
-Which choice most logically completes the text?
-A) being recruited to participate in a study by someone with whom one is socially connected may impart a feeling of obligation to persist with participation in the study.
-B) snowball sampling is more likely to improve retention rates among rural participants than among nonrural participants.
-C) people with relatively small social networks are inherently less likely to be recruited to participate in a study via snowball sampling than are people with relatively large social networks.
-D) social networks can become large enough that two people can share a network but nevertheless regard each other as strangers.
-CORRECT ANSWER: A
-
----QUESTION_START---
-16. Infanta Catalina Michaela of Austria (1585) is one of dozens of remaining works by Sofonisba Anguissola. Currently, her painting ______ at the Prado Museum in Madrid, where visitors can view the Italian Renaissance artist's work on display.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A) hung
-B) hangs
-C) was hanging
-D) will have hung
-CORRECT ANSWER: B
-
----QUESTION_START---
-17. Although the epic poem Raghuvamsa dates back to the 4th century, ______ compelling narrative still captivates readers today.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A) they're
-B) its
-C) their
-D) it's
-CORRECT ANSWER: B
-
----QUESTION_START---
-18. Rumsen Ohlone artist Linda Yamane's mastery of traditional weaving techniques is apparent in her expertly crafted baskets, which typically are woven from willow (a strong and flexible material) and ______ colorful beading.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A) featured
-B) had featured
-C) were featuring
-D) feature
-CORRECT ANSWER: D
-
----QUESTION_START---
-19. The declination, or celestial latitude, of the Aurigid meteor shower's radiant—the point in the sky from which, to a terrestrial observer, the shower's meteors appear to ______, its radiant is located 39 degrees north of the celestial equator, in close proximity to the constellation Auriga.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A) emanate, is 39 degrees—
-B) emanate—is 39 degrees,
-C) emanate is 39 degrees;
-D) emanate, is 39 degrees,
-CORRECT ANSWER: B
-
----QUESTION_START---
-20. To appreciate what scholars believe to be the allegorical intent of Munch's 19th-century painting ______ to embody the existential anxiety that can occur when facing the unknown—a viewer must become familiar with the painting's symbolic elements.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A) The Scream, namely
-B) The Scream, namely—
-C) The Scream—namely,
-D) The Scream, namely,
-CORRECT ANSWER: C
-
----QUESTION_START---
-21. In Spain, citizens must be at least 18 years old to vote in their country's elections. ______ citizens in Brazil need only be 16 years old to cast their vote.
-
-Which choice completes the text with the most logical transition?
-A) By contrast,
-B) For example,
-C) Firstly,
-D) Therefore,
-CORRECT ANSWER: A
-
----QUESTION_START---
-22. In contrast to first-past-the-post electoral processes, the proportional representation system by which Sweden's Parliament is elected begins with citizens casting their votes not for specific candidates but for political parties. ______ once the votes have been tabulated, each party is awarded a number of seats proportional to the number of votes it received.
-
-Which choice completes the text with the most logical transition?
-A) However,
-B) Then,
-C) In other words,
-D) Conversely,
-CORRECT ANSWER: B
-
----QUESTION_START---
-23. The timing of geyser eruptions in Yellowstone National Park is highly dependent on the individual geyser. For instance, Castle Geyser, in Yellowstone's Upper Geyser Basin, erupts at regular intervals, 10 to 12 hours apart. ______ predicting Castle Geyser's next eruption with some accuracy is feasible.
-
-Which choice completes the text with the most logical transition?
-A) Conversely,
-B) Nevertheless,
-C) Additionally,
-D) Consequently,
-CORRECT ANSWER: D
-
----QUESTION_START---
-24. While researching a topic, a student has taken the following notes:
-*   The Great Salt Lake in Utah is one of the world's saltiest bodies of water.
-*   The northern portion of the lake has a higher concentration of salt than the southern portion.
-*   Aquatic insects called *Ephydra cinerea* live in the southern portion.
-*   Bacteria called *Nodularia* live in the southern portion.
-
-The student wants to emphasize a difference between *Ephydra cinerea* and *Nodularia*. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) *Ephydra cinerea* and *Nodularia* are different types of organisms: *Ephydra cinerea* are aquatic insects, whereas *Nodularia* are bacteria.
-B) The northern portion of the Great Salt Lake has a higher concentration of salt than does the southern portion.
-C) *Ephydra cinerea* and *Nodularia* both live in the Great Salt Lake's southern portion.
-D) *Ephydra cinerea* are aquatic insects that live in the southern portion of the Great Salt Lake.
-CORRECT ANSWER: A
-
----QUESTION_START---
-25. While researching a topic, a student has taken the following notes:
-*   Elizabeth Catlett (1915–2012) was a celebrated African American artist.
-*   She is best known for creating sculptures and prints that explore the Black experience.
-*   *Star Gazer* is a 1997 sculpture by Catlett.
-*   *Dancing* is a 1990 print by Catlett.
-
-The student wants to provide an example of one of Catlett's sculptures. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) The print *Dancing* was created by celebrated artist Elizabeth Catlett in 1990.
-B) Artist Elizabeth Catlett is best known for creating sculptures and prints that explore the Black experience.
-C) The sculpture *Star Gazer* was created by celebrated artist Elizabeth Catlett in 1997.
-D) Elizabeth Catlett, a celebrated artist, was born in 1915.
-CORRECT ANSWER: C
-
----QUESTION_START---
-26. While researching a topic, a student has taken the following notes:
-*   Artist James Jebusa Shannon of the US won a Carnegie Prize gold medal in 1897.
-*   The Carnegie Prize is an international art competition.
-*   It is administered by the Carnegie Museum of Art in Pittsburgh, Pennsylvania.
-*   Shannon's winning artwork was a painting entitled *Miss Kitty*.
-
-The student wants to identify the painting for which Shannon won a Carnegie Prize gold medal. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) The Carnegie Museum of Art awarded Shannon a gold medal in 1897.
-B) The Carnegie Prize is an international art competition administered by the Carnegie Museum of Art in Pittsburgh, Pennsylvania.
-C) In 1897, an artist from the US won a Carnegie Prize gold medal for a painting.
-D) Shannon won a Carnegie Prize gold medal for the painting *Miss Kitty*.
-CORRECT ANSWER: D
-
----QUESTION_START---
-27. While researching a topic, a student has taken the following notes:
-*   Onomatopoeia are words that imitate the sounds they represent.
-*   Onomatopoeias used to represent the same sound often vary from language to language.
-*   This variation is due in part to differences in how languages are structured.
-*   "Pēng pēng" is a Mandarin Chinese onomatopoeia that represents the sound of a heartbeat.
-*   "Dup dap dup dap" is a Malay onomatopoeia that represents the sound of a heartbeat.
-*   The term "onomatopoeia" combines the Greek words for "name" (*onoma*) and "to make" (*poiein*).
-
-The student wants to provide a specific example of onomatopoeia. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) The languages of Mandarin Chinese and Malay use different words to represent the sound of a heartbeat.
-B) Differences in how languages are structured can cause variations in the words used in different languages to represent the same sound.
-C) The term "onomatopoeia," which refers to words that imitate the sound they represent, combines the Greek words for "name" and "to make."
-D) The Malay word "dup dap dup dap" both imitates and represents the sound of a heartbeat.
-CORRECT ANSWER: D
-
----QUESTION_START---
 Module 2:
-1. Maryam Hosseini and colleagues trained a computer program to identify sidewalks in aerial images of Boston and used it on images of Washington, DC. Its performance on the images of Washington, DC, was ______ that on images of Boston; the accuracy was nearly the same for both, and the program could consistently distinguish whether the sidewalks were made of cobblestone or brick.
-
+1.
+Today, the mobile application Instagram is thought of exclusively as a photo- and video-
+sharing program, but image-sharing was originally the app's main purpose, which was to
+allow users to indicate their locations to other users in real time. Only once it became clear
+how popular the secondary feature of image-sharing was did the company shift to making
+that the app's centerpiece.
 Which choice completes the text with the most logical and precise word or phrase?
-A) uncertain about
-B) similar to
-C) unique from
-D) supportive toward
-CORRECT ANSWER: B
-
+A subordinate to
+B duplicated in
+C extracted by
+D intrinsic to
+[Page: 1]
+CORRECT ANSWER: [A]
 ---QUESTION_START---
-2. The following text is from Jhumpa Lahiri's 2003 novel The Namesake. Gogol, a child, is at a beach in Massachusetts with his father.
-
-He watches his father raise a kite within minutes into the wind, so high that Gogol must tip his head back in order to see, a rippling speck against the sky. The wind whips around their ears, turning their faces cold.
-
-As used in the text, what does the word "raise" most nearly mean?
-A) Strengthen
-B) Lift
-C) Celebrate
-D) Group
-CORRECT ANSWER: B
-
----QUESTION_START---
-3. Domesticated thousands of years ago in South America, the potato deviates structurally from the wild plant it is descended from. Summer squash differs even more from its own ancestor, which had a hard rind and bitter flesh. Indigenous people in eastern North America selectively bred the crop until it ______ the soft rind and mild-tasting flesh that now characterize it.
-
+2.
+The Beirut Stock Exchange in Beirut, Lebanon, connects companies operating in Lebanon with
+potential investors. This is a valuable service since the time and expense necessary to find
+individual investors might otherwise be for these companies: many of the companies
+could not operate if they had to do everything necessary to find investors for themselves.
 Which choice completes the text with the most logical and precise word or phrase?
-A) inspired
-B) acquired
-C) surrendered
-D) retrieved
-CORRECT ANSWER: B
-
+A distinctive
+B misconstrued
+C prohibitive
+D beneficial
+[Page: 1]
+CORRECT ANSWER: [C]
 ---QUESTION_START---
-4. The HMS Conqueror is just one of approximately three million known historical shipwrecks spread throughout the world's oceans, and their impact on underwater life and ecosystems is of great interest to researchers. Rachel Mugge and colleagues were particularly curious about the effects of wooden shipwrecks on three different seafloor microbial communities: bacteria, archaea, and fungi. The researchers studied two wooden shipwrecks in the Gulf of Mexico by placing pieces of pine and oak between zero and 200 meters away from each shipwreck to collect samples of microbes. They found that wood type had a much more significant influence on bacterial community composition than on archaeal or fungal community composition.
-
-Which choice best states the main purpose of the text?
-A) To argue that wooden shipwrecks affect fish more than they do microbial communities.
-B) To describe how the first shipwreck in the Gulf of Mexico was discovered.
-C) To detail the composition of the HMS Conqueror.
-D) To provide an overview of a study about the effects of wooden shipwrecks on seafloor microbial communities.
-CORRECT ANSWER: D
-
+3.
+A casual description of Scherezade García's 2019 mural Blame It on the Bean: The Power of
+Coffee can make the work seem -a painting that is housed in a coffee shop and that
+depicts three women drinking coffee may not sound particularly ambitious-but in fact the
+work is a complex, dynamic meditation on gender and the legacy of colonialism that
+demands serious attention.
+Which choice completes the text with the most logical and precise word or phrase?
+A incongruous
+B shrewd
+C pretentious
+D unassuming
+[Page: 2]
+CORRECT ANSWER: [D]
 ---QUESTION_START---
-5. In the US, the Trademark Act of 1946 allows companies to own trademarks, which are words or images that represent specific products. "Kleenex," for example, refers to products made specifically by Kimberly-Clark, the company that owns the trademark. However, the Trademark Act of 1946 also allows a trademark to be taken away if it ceases to be specific. For example, "cellophane" was once a trademark for a particular brand of food wrapping material. Over time, though, people started using "cellophane" to refer to many different brands. Because the word had become generic, a court decided that it could no longer be owned as a trademark.
-
-Which choice best describes the function of the underlined sentence in the text as a whole?
-A) It concludes the text's argument about how the Trademark Act of 1946 can be improved.
-B) It completes the text's comparison of trademark laws in the US to laws in other countries.
-C) It adds to the text's description of products made by Kimberly-Clark.
-D) It begins the text's discussion of the fact that trademarks can be taken away.
-CORRECT ANSWER: D
-
+4.
+Some robots such as Actroid (developed in 2003) and Auriga (developed in 2011) are
+designed to resemble humans so that people will find it easier to interact with them. To that
+end, certain features such as bipedal locomotion can help to people's feelings of
+comfort, but a robot that looks too human can fall into the "uncanny valley," meaning that its
+appearance unintentionally unsettles those who encounter it.
+Which choice completes the text with the most logical and precise word or phrase?
+A mitigate
+B constrict
+C repudiate
+D buttress
+[Page: 2]
+CORRECT ANSWER: [D]
 ---QUESTION_START---
-6. Text 1
-From the extinct giant ground sloth to the living pygmy three-toed sloth, sloths are among the most appealing animals native to the Americas. But scientists still have a lot to learn about them. Unlike their ancient ground-dwelling relations, today's sloths spend most of their time high up in trees. The sloths' inaccessibility has made it hard for scientists to study them.
-
+5.
+The Cygne is just one of approximately three million known historical shipwrecks spread
+throughout the world's oceans, and their impact on sea life and underwater ecosystems is of
+great interest to researchers. Leila Hamdan and colleagues were particularly curious about the
+effects of wooden shipwrecks on seafloor microbial communities. The researchers studied
+two wooden shipwrecks in the Gulf of Mexico by placing pieces of pine and oak between zero
+and 200 meters away from each shipwreck to collect samples of three kinds of microbes:
+bacteria, archaea, and fungi. They found that across the three microbial communities, peak
+diversity and richness was observed on pine and oak samples placed approximately 125
+meters from the shipwrecks.
+Which choice best describes the overall structure of the text?
+A It states the number of known shipwrecks, describes the historical significance of
+one of those shipwrecks, and then comments on the various microbes found at the
+shipwreck site.
+B It introduces a study of microbial communities near shipwrecks that has received
+significant scholarly attention, summarizes the results of that study, and then
+describes a research team's reaction to the study.
+C It names a famous historical shipwreck, describes the type of wood used to build
+that ship, and then explains how that wood type influences underwater microbial
+communities.
+D It notes a general scientific interest in shipwrecks' ecological effects, describes a
+specific study related to that interest, and then states one of the study's findings.
+[Page: 3]
+CORRECT ANSWER: [D]
+---QUESTION_START---
+6.
+The following text is from Lady Gregory's 1904 play Spreading the News. Mrs. Tarpey, Bartley,
+and Mrs. Fallon have been buying and selling goods at the local fair.
+MRS. TARPEY: Good morrow, Bartley Fallon; good morrow, Mrs. Fallon. Well, Bartley, you'll
+find no cause for complaining to-day; they are all saying it was a good fair.
+BARTLEY: (Raising his voice.) It was not a good fair, Mrs. Tarpey. It was a scattered sort of a
+fair. If we didn't expect more, we got less. That's the way with me always; whatever I have to
+sell goes down and whatever I have to buy goes up. If there's ever any misfortune coming to
+this world, it's on myself it pitches, like a flock of crows on seed potatoes.
+Which choice best describes the function of the underlined portion in the text as a whole?
+A It discusses an event that Mrs. Tarpey believes is unlikely to occur.
+B It presents a vivid image to emphasize a claim that Bartley makes.
+C It mounts a counterargument to a claim that Bartley made about the fair.
+D It describes a scene that Bartley witnessed at the fair.
+[Page: 4]
+CORRECT ANSWER: [B]
+---QUESTION_START---
+7.
+Community science, which involves professional scientists collaborating with amateur science
+enthusiasts to study a topic, is often an effective and engaging way to conduct research. It
+can allow people to assist with conservation efforts, spark youth interest in science, and
+increase the amount of data researchers can collect. This approach was essential to the
+success of a study by biologist Abbigail Merrill and colleagues of how butterfly color relates
+to flower choice, which included findings from hundreds of students and community
+members in northwestern Arkansas.
+Which choice best describes the overall structure of the text?
+A It introduces the topic of a scientific study, describes the study's importance, and
+then presents the study's results.
+B It argues for a new approach to scientific research, comments on the public's
+opinion about the approach, and then describes how that approach was applied in
+a certain study.
+C It describes the development of a type of scientific collaboration, shows how that
+type of collaboration has been used in a particular field of study, and then suggests
+future collaborative projects.
+D It identifies a particular approach to research, lists some benefits of that approach,
+and then mentions a study in which that approach was used.
+[Page: 5]
+CORRECT ANSWER: [D]
+---QUESTION_START---
+8.
+Text 1
+In separate studies, Marine Fernandez and colleagues and Hualiang Zhang and colleagues
+examined whether plants transfer nutrients to one another using a common mycorrhizal
+network (CMN)-a lattice of fungal strands in the soil. Fernandez and colleagues excluded all
+pathways other than the CMN by using barriers to keep the plants' root systems separate
+while allowing mycorrhizal strands through-a crucial step Zhang and colleagues' study did
+not take.
 Text 2
-By using a backpack monitor, biologist Rebecca Cliffe and colleagues can at last discover the previously hidden activities of sloths. Such monitors can provide information to correct misconceptions. It was long believed that sloths are slow because of laziness. But, in fact, sloths have low metabolism, which makes them slow.
-
-The author of Text 1 and the author of Text 2 both discuss which topic?
-A) Scientists' efforts to understand sloths
-B) Changes in sloths' habitats
-C) How extinct sloths compare with living sloths
-D) The benefits of putting monitoring devices on sloths
-CORRECT ANSWER: A
-
+Fernandez and colleagues took the necessary precaution of separating the plants' root
+systems (thereby excluding root-to-root transmission). However, any barrier used must allow
+the thread-like hyphae of a CMN to pass through, and this permeability would also allow
+liquids through. Thus, the researchers' experimental design cannot ensure that any nutrient
+transfer observed can be attributed to a CMN and not to some other pathway.
+Based on the texts, the author of Text 1 and the author of Text 2 would most likely give the
+same answer to which question?
+A Is there an available barrier material that can block roots and liquids while allowing
+fungal strands through?
+B Did Zhang and colleagues' study effectively exclude any nutrient pathway other
+than a CMN?
+C Are the barriers used in Fernandez and colleagues' study sufficient to ensure that
+nutrient transfer could only occur via a CMN?
+D Do plants that transfer nutrients through a root-to-root pathway also transmit
+nutrients via a CMN?
+[Page: 6]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-7. Rocky Ridge Farmhouse in Mansfield, Missouri, is the house where Laura Ingalls Wilder lived for nearly twenty years and wrote her novel Little House on the Prairie. Now the house is a museum dedicated to Wilder's life and writings. It's likely obvious why fans of Wilder's works would choose to visit the museum. However, its curators also want to appeal to visitors who aren't already familiar with Wilder. Guided tours and special events, such as outdoor plays based on Wilder's books, are therefore important, since they help visitors find enjoyment in Wilder's works.
-
-Based on the text, what is a benefit of visiting Rocky Ridge Farmhouse?
-A) It is superior to most museums dedicated to Wilder's life.
-B) It helps visitors to appreciate Wilder's works.
-C) It includes exhibits on several important American writers.
-D) It is near other museums dedicated to local history.
-CORRECT ANSWER: B
-
+9.
+Using the Stratospheric Observatory for Infrared Astronomy (SOFIA), a team of astronomers
+mapped out the magnetic field of G47, one of the Milky Way's galactic bones (dense clouds
+of gas and dust that run through the middle of the arm of a spiral galaxy). Surprisingly, the
+map revealed a magnetic field with no clear pattern or direction. The researchers had
+expected the magnetic field to be similar to the more uniform fields seen in galactic bones in
+other arms of the Milky Way.
+According to the text, what was surprising about the researchers' mapping of the magnetic
+field of galactic bone G47?
+A It implied that previous mappings of the magnetic field were inaccurate.
+B It produced magnetic field measurements similar to those for other galactic bones.
+C It revealed a magnetic field that wasn't uniform.
+D It showed a weaker magnetic field than expected.
+[Page: 7]
+CORRECT ANSWER: [C]
 ---QUESTION_START---
-8. Volcanoes in Ecuador
-
-| Name of volcano | Year of last eruption | Volcano type   |
-| :-------------- | :------------------ | :-------------- |
-| Imbabura        | 5550 BCE            | compound        |
-| Chacana         | 1773 CE             | caldera         |
-| Chimborazo      | 550 BCE             | stratovolcano   |
-| Fernandina      | 2020 CE             | shield          |
-
-A student is researching volcanoes in Ecuador. The student claims that all volcanoes in Ecuador are shield volcanoes.
-
-Which choice best describes information from the table that weakens the student's claim?
-A) Chacana and Chimborazo are both shield volcanoes.
-B) Different volcano types have different years of last eruption.
-C) Fernandina is the only shield volcano among the four Ecuadoran volcanoes shown in the table.
-D) None of the four Ecuadoran volcanoes shown in the table are shield volcanoes.
-CORRECT ANSWER: C
-
+10.
+The following text is from Anthony Trollope's 1855 novel The Warden. The narrator is
+describing a rectory, the residence of a clergyperson.
+There was an air of heaviness about the rooms which might have been avoided without any
+sacrifice of propriety; colours might have been better chosen and lights more perfectly
+diffused; but perhaps in doing so the thorough clerical aspect of the whole might have been
+somewhat marred; at any rate, it was not without ample consideration that those thick, dark,
+costly carpets were put down; those embossed, but sombre [wallpapers] hung up; those
+heavy curtains draped so as to half exclude the light of the sun.
+What does the text most strongly suggest about the rooms in the rectory?
+A They are meant to feel comfortable but are in reality uninviting.
+B They have been furnished with the intention of maintaining a sense of
+appropriateness.
+C They are decorated in a style that strikes the narrator as too extravagant.
+D They have many decorations the narrator finds good looking but they are not
+particularly practical.
+[Page: 8]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-9. Home Video Game Systems of the 1970s and 1980s
-
-| System                   | Manufacturer | Approximate number of units sold worldwide |
-| :----------------------- | :----------- | :----------------------------------------- |
-| Atari 2600               | Atari        | 18,450,000                                 |
-| Sega SG-1000/Master System | Sega         | 3,935,000                                  |
-| Apple II                 | Apple Inc.   | 4,487,000                                  |
-| Amiga                    | Commodore    | 1,600,000                                  |
-
-A student is researching the Amiga and other important gaming systems that were part of the global rise of the home video game industry during the 1970s and 1980s. The student is surprised to find that the Amiga sold relatively few units worldwide, with only about ______.
-
-Which choice most effectively uses data from the table to complete the statement?
-A) 1,600,000 units sold compared to the approximately 18,450,000 units sold of the Atari 2600.
-B) 3,935,000 units sold compared to the approximately 4,487,000 units sold of the Apple II.
-C) 3,935,000 units sold compared to the approximately 4,487,000 units sold of the Atari 2600.
-D) 1,600,000 units sold compared to the approximately 18,450,000 units sold of the Sega SG-1000/Master System.
-CORRECT ANSWER: A
-
+11.
+The following text is from Nathaniel Hawthorne's 1830 short story Sir William Phips.
+Few of the personages of past times (except such as have gained renown in fireside legends
+as well as in written history) are anything but mere names to their successors. They seldom
+stand up in our Imaginations like men. The knowledge, communicated by the historian and
+biographer, is analogous to that which we acquire of a country by the map-minute, perhaps,
+and accurate, and available for all necessary purposes, but cold and naked, and wholly
+destitute of the mimic charm produced by landscape painting.
+Which choice best states the main idea of the text?
+A Historians and biographers should write about little-known people as well as
+famous people.
+B The lives of historical figures are usually documented as a collection of facts, rather
+than as a representation of their personalities.
+C Historians should record fictional stories told about famous figures as well as
+stories that are strictly truthful.
+D Paintings may be more beautiful than maps, but maps are more useful than
+paintings.
+[Page: 9]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-10. *Memoirs of Elleanor Eldridge* is an 1838 historical account by Elleanor Eldridge and Frances Harriet Whipple Green. In the book, the authors assert that all people naturally have an emotional attachment to where they live, writing, ______.
-
-Which quotation from *Memoirs of Elleanor Eldridge* most effectively illustrates the claim?
-A) "How careful ought we to be to speak nothing but the truth, even in regard to the most trifling circumstances; and not only so, but to be well assured that what we suppose to be true, is truth, before we receive it as such."
-B) "Home is home, to the lowly as well as the great; and no rank, or color, destroys its sacred character, its power to the mind, and the affections."
-C) "Blessed are the slumbers of the innocent! They are kindlier than balm, and they refresh and gladden the spirit of childhood, like ministerings from a better world."
-D) "To give some idea of the high esteem in which the subject of the following narrative is held, and the strong interest her misfortunes have excited, a few, from the great number of recommendations in her possession, are selected."
-CORRECT ANSWER: B
-
+12.
+In what is now Minnesota, the Shakopee Mdewakanton Sioux Community operates the
+Hoéokata Ti, a cultural center. Relying on traditional knowledge to guide the design of
+exhibits, this institution presents Dakota history and culture to the tribe's citizens. The Turtle
+Mountain Band of Chippewa, a tribe in North Dakota, employs a similar strategy in its own
+cultural center. Both centers contrast with museums that aren't Indigenous-led: when
+displaying Indigenous artifacts, such museums tend to anticipate mainly non-Indigenous
+audiences and rely on Euro-centric strategies for designing exhibits.
+The text best supports which conclusion about the cultural center operated by the Turtle
+Mountain Band of Chippewa?
+A Its exhibits are likely intended to reconcile Indigenous perspectives with Euro-
+centric perspectives.
+B Its exhibits likely rely on the traditional knowledge of multiple tribes.
+C Its ability to present history and culture to tribal citizens is limited by its physical
+size.
+D Its exhibits are likely designed for the benefit of audiences consisting mainly of
+tribal citizens.
+[Page: 10]
+CORRECT ANSWER: [D]
 ---QUESTION_START---
-11. Biologist Rosanna Alegado believes that we might learn how multicellular organisms developed from single-celled ones if we understand why the single-celled organism *Salpingoeca rosetta*, the oldest living relative of animals, sometimes forms colonies of cells. Alegado and colleagues reviewed data from many studies about how *S. rosetta* responds when exposed to another type of single-celled organism, bacteria, including William C. Nierman's work with *Caulobacter crescentus* bacteria and Josefa Antón's work with *Salinibacter ruber* bacteria. Alegado and colleagues concluded that neither *C. crescentus* nor *S. ruber* are likely to have played a significant role in the development of multicellular organisms.
-
-Which finding, if true, would most directly support Alegado and colleagues' conclusion?
-A) *S. rosetta* tended to form colonies when exposed to *S. ruber*, but not when exposed to *C. crescentus*.
-B) *S. rosetta* tended to form colonies when exposed to *C. crescentus*, but not when exposed to *S. ruber*.
-C) *S. rosetta* did not tend to form colonies when exposed to either *C. crescentus* or *S. ruber*.
-D) *S. rosetta* tended to form colonies when exposed to *C. crescentus* and when exposed to *S. ruber*.
-CORRECT ANSWER: C
-
+13.
+The bird species Saltator grossus (the slate-colored grosbeak), which weighs about 45 grams,
+and Microbates collaris (the collared gnatwren), which weighs about 10 grams, share territory
+in French Guiana with Thamnomanes caesius (the cinereous antshrike), which emits a loud
+alarm call when it detects predators. Biologist Ari Martinez and colleagues, who studied the
+ecological community these species share, hypothesized that since there is an inverse
+relationship between body size and vulnerability to predation, there will also be an inverse
+relationship between body size and sensitivity to predator warning signals from neighboring
+species.
+Which finding, if true, would most directly support Martinez and colleagues' hypothesis?
+A When Martinez and colleagues played T. caesius alarm calls, only bird species
+larger than S. grossus displayed predator-avoidance behavior.
+B M. collaris displayed predator-avoidance behavior when Martinez and colleagues
+played T. caesius alarm calls as well as when the researchers played control sounds
+of random noise.
+C Many bird species smaller than S. grossus displayed predator-avoidance behavior
+in response to T. caesius alarm calls played by Martinez and colleagues, but none
+smaller than M. collaris did.
+D M. collaris displayed predator-avoidance behavior in response to T. caesius alarm
+calls played by Martinez and colleagues, whereas S. grossus did not.
+[Page: 11]
+CORRECT ANSWER: [D]
 ---QUESTION_START---
-12. Humans are overwhelmingly right-hand dominant (85–90%) and can thus be said to exhibit strong population-level right handedness (PLRH). Among studies of nonhuman primates, Margaret E. Redshaw's 1993 study of captive gorillas purported to show PLRH, while William C. McGrew and colleagues' 1999 study of wild chimpanzees did not. Overall, the studies claiming PLRH in nonhuman primates find much lower incidences of right-handedness than humans exhibit, but it's worth noting that studies of captive primates tend to show significantly greater incidences of right-handedness than studies of wild primates do, therefore raising the possibility that ______.
-
+14.
+Scholars cite Mr. President, the 1946 novel by Guatemalan author Miguel Ángel Asturias, as a
+foundational text of magical realism, the Latin American style of fiction in which antirealistic
+plot devices-often borrowed from the spiritual and narrative traditions of Indigenous and
+colonial societies in the Americas-are deployed in an otherwise realistic mode of
+representation typical of the modern novel. This style has exerted a decisive influence on
+authors around the world, including Olga Tokarczuk, whose 1996 novel Primeval and Other
+Times resembles classic magical realist novels in its juxtaposition of literary realism with
+folklore namely, that of Poland.
+Which quotation from a literary scholar would most directly support the claim in the
+underlined portion of the text?
+A "Like many works in the Latin American magical realist tradition, Primeval and
+Other Times is indebted to antirealistic elements in the folklore of Poland."
+B "While Primeval and Other Times alternates between realistic and antirealistic
+modes of representation, details suggesting the influence of Polish folklore
+nevertheless occur throughout the novel."
+C "Although Polish folklore clearly informs the style and occasionally antirealistic plot
+of Primeval and Other Times, the novel also shows the inarguable influence of the
+magical realist tradition of Latin America."
+D "The logic of the realistic plot of Primeval and Other Times is repeatedly and
+productively disrupted by the presence of imagery and situations drawn from
+Polish folklore."
+[Page: 12]
+CORRECT ANSWER: [D]
+---QUESTION_START---
+15.
+The Bronze Age in Britain lasted from around 2500 BCE to approximately 700 BCE. Collections
+of metal items (called hoards) from all periods of the Bronze Age have been found in Britain,
+including the Arreton Down hoard of artifacts from the 17th century BCE, unearthed around
+1735, and the much later Hollingbourne hoard of artifacts from the 10th century BCE,
+unearthed around 2003. Sometime in the Middle Bronze Age (approximately from the 14th
+century BCE to the 10th century BCE), metalsmiths in Britain began to develop swords for the
+first time. This fact helps explain why, whereas evidence of sword production was found in
 Which choice most logically completes the text?
-A) the number of individuals in the study of wild chimpanzees is insufficient to preclude the claim that nonhuman primates exhibit PLRH.
-B) the apparent discrepancy between the studies' results may be partly attributable to the 1993 study using different criteria when assessing hand dominance than were used in the 1999 study.
-C) the number of individuals in the study of captive gorillas is insufficient for a robust claim regarding evidence of PLRH.
-D) the greater exposure to humans among the captive gorillas induced them to acquire more right-handed behaviors.
-CORRECT ANSWER: D
-
+A both the Arreton Down hoard and the Hollingbourne hoard, only the latter
+included evidence of more refined sword production.
+B hoards discovered before 2003, no such evidence was found in hoards that were
+discovered later.
+C the Arreton Down hoard, no intact swords were found among the items in the
+hoard.
+D the Hollingbourne hoard, no such evidence was found in the Arreton Down hoard.
+[Page: 13]
+CORRECT ANSWER: [D]
 ---QUESTION_START---
-13. All stainless steel contains varying amounts of iron, carbon, and corrosion-inhibiting chromium. However, ferritic stainless steel, often used for induction cookers, contains a higher percentage of chromium (at least 10.5%) than does austenitic stainless steel and a higher concentration of iron, which is responsible for its magnetic properties. Unlike ferritic stainless steel, austenitic stainless steel has a face-centered cubic crystalline structure resulting from the addition of nickel to the alloy. Austenitic stainless steel has two subtypes: the 300 series, often used for aerospace tubing, and the 200 series, which has less nickel and more manganese than the 300 series and is used for home water tanks. Thus, stainless steel used to manufacture ______.
-
+16.
+Mongolia, which, according to international indices, has relatively strong democratic
+institutions and low intranational income inequality, experienced an inflation rate of 4.30% in
+2017, whereas Cameroon, which shows the opposite pattern on such indices, had an inflation
+rate of only 0.64% that year. Such comparisons have engendered speculation that by diluting
+control over the economy, democratic institutions inhibit states' ability to counteract
+inflationary pressures. To test this possibility systematically, Raj Desai et al. examined
+democratic strength, intranational inequality, and inflation in more than 100 countries, finding
+that democratic strength, if associated with low inequality, restrains inflationary pressures,
+suggesting that
 Which choice most logically completes the text?
-A) aerospace tubing will have similar magnetic properties to stainless steel used to manufacture induction cookers.
-B) both aerospace tubing and dishwashers will have a face-centered cubic crystalline structure, but stainless steel used to manufacture aerospace tubing will have less nickel than stainless steel used to manufacture dishwashers will.
-C) aerospace tubing will have a concentration of manganese greater than 10.5%, while stainless steel used to manufacture dishwashers will not.
-D) aerospace tubing will have less manganese in its composition than stainless steel used to manufacture dishwashers will.
-CORRECT ANSWER: D
-
+A it would be a mistake to treat the relative inflation rates of Mongolia and
+Cameroon as indicative of an inherent shortcoming in democratic institutions with
+regard to control over inflation.
+B speculations about the relative inability of democratic institutions to counteract
+inflation are based on measures that tend to exaggerate the levels of inflation in
+strongly democratic countries such as Mongolia.
+C the factors that contributed to Mongolia's elevated inflation rate relative to
+Cameroon's have less to do with the countries' political institutions than with the
+countries' levels of income inequality.
+D the difference between Mongolia and Cameroon with regard to democratic
+institution strength may have been greater in 2017 than was represented by
+international indices.
+[Page: 14]
+CORRECT ANSWER: [A]
 ---QUESTION_START---
-14. Indonesia joined the international police organization Interpol in 1952. As a member, Indonesia is required ______ other Interpol countries with access to its law enforcement databases.
-
+17.
+During the decades-long movement to codify the rights of Latinos in the US, certain events
+were pivotal: the founding of veteran rights group the American GI Forum in Mendez v.
+Westminster court decision in 1946, which affirmed the rights of Latino students, is another
+such event.
 Which choice completes the text so that it conforms to the conventions of Standard English?
-A) provided
-B) to provide
-C) providing
-D) provides
-CORRECT ANSWER: B
-
+A 1948, for one. The
+B 1948. For one, the
+C 1948, for one, the
+D 1948 for one, the
+[Page: 15]
+CORRECT ANSWER: [A]
 ---QUESTION_START---
-15. South Carolina politician Robert C. De Large was one of the nearly two thousand African Americans who won a public office between the years 1865 and 1877, which would ______ citizens in Brazil need only be 16 years old to cast their vote.
-
+18.
+Sociologist Alton Okinaka sits on the review board tasked with adding new sites to the
+Hawai'i Register of Historic Places, which includes Menehune Fishpond, a historic Hawaiian
+fishpond, and the Wailuku School, built in 1904. Okinaka doesn't make such decisions single-
+handedly, historical designations must be approved by a group of nine other experts.
 Which choice completes the text so that it conforms to the conventions of Standard English?
-A) come to be known as the Reconstruction era.
-B) come to be known as the Reconstruction era.
-C) it come to be known as the Reconstruction era.
-D) it come to be known as the Reconstruction era?
-CORRECT ANSWER: B
-
+A however. All
+B however all
+C however and all
+D however, all
+[Page: 15]
+CORRECT ANSWER: [A]
 ---QUESTION_START---
-16. Museo de Arte Dr. Pío López Martínez is an art museum in Cayey, Puerto Rico. It's one of more than eighty museums in the US territory. Puerto Rico's ______ showcase everything from the territory's art to its architecture to its coffee.
-
+19.
+Photographer Máiria Švarbová has reached audiences well beyond her home country of
+Slovakia. In 2016, her work was featured at an international photography festival in the
+exhibited photographs, with their vivid pastel colors, overexposed tones, and mirror like
+symmetry, captivated audiences.
 Which choice completes the text so that it conforms to the conventions of Standard English?
-A) museums
-B) museums—
-C) museums,
-D) museums:
-CORRECT ANSWER: A
-
+A Italy, for example;
+B Italy, for example,
+C Italy; for example,
+D Italy, for example
+[Page: 16]
+CORRECT ANSWER: [A]
 ---QUESTION_START---
-17. At Playhouse West in Los Angeles, California, students can learn the world-famous Meisner technique. This technique emphasizes reacting naturally to one's environment in a scene and ______ actors to focus less on their own movement and speech.
-
+20.
+Recently unearthed Neronian tools in France dating to 54,000 years ago and attributed to
+Homo sapiens may provide evidence that interactions between Neanderthals and modern
+humans occurred 10,000 years earlier than was previously finding that, if true, would
+overturn current theories about H. sapiens migration during the Upper Paleolithic.
 Which choice completes the text so that it conforms to the conventions of Standard English?
-A) encourages
-B) have encouraged
-C) are encouraging
-D) encourage
-CORRECT ANSWER: A
-
+A supposed a
+B supposed. A
+C supposed, a
+D supposed; a
+[Page: 16]
+CORRECT ANSWER: [C]
 ---QUESTION_START---
-18. During the American Civil War, thousands of women joined the war effort as ______. them was African American nurse Ann Bradford Stokes, who was later commended for her dedication to serving the medical needs of countless soldiers.
-
+21.
+Though he's performed on many respected albums, including Loud Jazz by John Scofield,
+drummer Dennis Chambers may be best known for his time as house drummer for the hip-
+hop label Sugar Hill Records. He did not play drums on the label's classic song "Rapper's
+he joined the label after the song's release.
 Which choice completes the text so that it conforms to the conventions of Standard English?
-A) nurses, among
-B) nurses among
-C) nurses. Among
-D) nurses, and, among
-CORRECT ANSWER: C
-
+A Delight." However,
+B Delight," however;
+C Delight," however,
+D Delight" however
+[Page: 17]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-19. When attempting to determine a fault's seismic history, geophysicists like Dr. Estella Atekwana at the University of Delaware rely in part on data about the fault's physical dimensions and geological features. For example, data from the US Geological Survey show the ______ and most recent deformation (less than 15 thousand years ago) of the Malibu Coast fault in Ventura County, California.
-
-Which choice completes the text so that it conforms to the conventions of Standard English?
-A) length, (62 km); slip rate, (between 0.2 and 1.0 mm/yr);
-B) length, (62 km), slip rate, (between 0.2 and 1.0 mm/yr),
-C) length (62 km), slip rate (between 0.2 and 1.0 mm/yr),
-D) length (62 km) slip rate (between 0.2 and 1.0 mm/yr)
-CORRECT ANSWER: C
-
----QUESTION_START---
-20. During the last Ice Age, glaciers covered what is now Finnmark, Norway. As these massive ice forms moved across the region, they bore down on Earth's crust and, ______ left a deep, narrow 70 km inlet, or fjord, carved into the coastal landscape. Today, this spectacular cliff-sided body of water is known as Tanafjord.
-
+22.
+Scientists were able to isolate a relatively pure sample of neon in 1898, the same year they
+first discovered the element's existence. The isolation process took longer for erbium,
+which was isolated in its pure form 91 years after scientists first discovered it.
 Which choice completes the text with the most logical transition?
-A) in general,
-B) for example,
-C) as a result,
-D) in contrast,
-CORRECT ANSWER: C
-
+A For instance,
+B By contrast,
+C Thus,
+D Similarly,
+[Page: 17]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-21. In October 2011, professional skateboarder Elliot Sloan performed a trick called a 900. ______ he launched off a ramp, rotated 900 degrees in midair, and landed back on the ramp atop his board. As impressive as that may sound, a few skateboarders, including Jonathan Schwan, have even landed a 1080!
-
+23.
+The method used in 1920 by the US Geological Survey to calculate the geographic center of
+Wyoming, involving a cardboard cutout of the state and a piece of string, seems rudimentary
+today. the center found in a 2015 study using far more advanced technology differed
+from the original by just a few miles, proving the original method to be relatively accurate.
 Which choice completes the text with the most logical transition?
-A) Nevertheless,
-B) On the other hand,
-C) Previously,
-D) In other words,
-CORRECT ANSWER: D
-
+A For example,
+B That said,
+C As such,
+D In other words,
+[Page: 18]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-22. The geologic principle of cross-cutting relationships states that an intrusion is younger than the rocks through which it cuts. ______ geochemists analyzing a given rock formation can ascertain that an igneous intrusion that bisects a layer of 393.3-million-year-old Eifelian rock but not the 254.1-million-year-old Changhsingian rock above it is younger than the former but older than the latter.
-
+24.
+With many elements, like neon, scientists were able to isolate a relatively pure sample of the
+substance shortly after discovering its existence-but this wasn't the case with all elements.
+the isolation process took years. The element erbium, for instance, was discovered in
+1843 but not isolated until 1934.
 Which choice completes the text with the most logical transition?
-A) Accordingly,
-B) That being said,
-C) To this end,
-D) Moreover,
-CORRECT ANSWER: A
-
+A However,
+B Thus,
+C Sometimes,
+D Moreover,
+[Page: 18]
+CORRECT ANSWER: [C]
 ---QUESTION_START---
-23. On May 19, 1965, the president of South Korea, Chung Hee Park, was recognized with a ticker-tape parade in New York City. This was just one of a number of diplomacy-related parades over the years. ______ between 1886 and 2022, there were seventy-three ticker-tape parades held in New York to honor foreign heads of state.
-
+25.
+Though Middle English was widely spoken in fourteenth-century England, the English
+language was rarely employed in literature until poet Geoffrey Chaucer helped pioneer its
+literary use. his manuscripts contain the first documented uses of over 2,000 English
+words-like the word "digestion" in his 1395 poem The Squire's Tale-which led a
+contemporary to dub him "the first finder of our fair language."
 Which choice completes the text with the most logical transition?
-A) Nevertheless,
-B) In other words,
-C) In sum,
-D) Hence,
-CORRECT ANSWER: C
-
+A That being said,
+B Indeed,
+C Besides,
+D However,
+[Page: 19]
+CORRECT ANSWER: [B]
 ---QUESTION_START---
-24. While researching a topic, a student has taken the following notes:
-*   Each of Neptune's fourteen moons takes a different amount of time to orbit Neptune.
-*   The moon Despina completes an orbit of Neptune in 0.33 Earth days on average.
-*   German mathematician and astronomer Johannes Kepler (1571–1630) developed three laws of planetary motion that describe the orbits of planets in a solar system.
-*   Kepler's laws also apply to the orbits of natural satellites (e.g., moons).
-
-The student wants to specify how long Despina's orbit of Neptune takes. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) Among Neptune's fourteen moons is Despina, which completes its orbit of the planet in 0.33 Earth days on average.
-B) Despina's orbit of Neptune can be described using Kepler's three laws of planetary motion.
-C) It takes Despina three Earth days to orbit Neptune, a number that can be deduced from Kepler's laws of planetary motion.
-D) Kepler's three laws of planetary motion describe the orbits of planets in a solar system, including Despina's orbit, which takes 0.33 Earth days on average.
-CORRECT ANSWER: A
-
+26.
+While researching a topic, a student has taken the following notes:
+• Merle Oberon (1911-1979) was an actress born in Mumbai (then known as Bombay), India.
+• She was of Indian, Maori, and Irish heritage.
+• She was the first Indian-born actress to be nominated for an Academy Award.
+• Early in her career, she played many nameless, uncredited roles, such as her role in Strange
+Evidence (1933).
+• Later, she played many named, credited roles, such as Jill Baker in That Uncertain Feeling
+(1941).
+Which choice most effectively uses information from the given sentences to specify Merle
+Oberon's role in That Uncertain Feeling (1941)?
+A Merle Oberon was an Indian-born actress who performed in many films, including
+Strange Evidence (1933) and That Uncertain Feeling (1941).
+B Merle Oberon's story begins in Mumbai (then known as Bombay), India, in 1911.
+C In 1941, Indian-born actress Merle Oberon played the role of Jill Baker in the film
+That Uncertain Feeling.
+D Though she would go on to receive credit in many films, Merle Oberon started her
+career playing uncredited, nameless roles in films such as Strange Evidence (1933).
+[Page: 20]
+CORRECT ANSWER: [C]
 ---QUESTION_START---
-25. While researching a topic, a student has taken the following notes:
-*   An isthmus is a strip of land that connects two larger pieces of land across an expanse of water.
-*   It is also known as a land bridge. The Isthmus of Panama is located in Central America.
-*   It connects North America to South America. The Isthmus of Ierapetra is located in the Mediterranean Sea.
-*   It connects the Siteia municipality to the rest of the island of Crete.
-
-The student wants to emphasize a difference between the Isthmus of Panama and the Isthmus of Ierapetra. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) The Isthmus of Ierapetra is an isthmus, or land bridge.
-B) The Isthmus of Panama is located in Central America, while the Isthmus of Ierapetra is located in the Mediterranean Sea.
-C) There is an isthmus, or land bridge, located in Central America.
-D) An isthmus, or land bridge, is a strip of land that connects two larger pieces of land across an expanse of water.
-CORRECT ANSWER: B
-
----QUESTION_START---
-26. While researching a topic, a student has taken the following notes:
-*   The Columbia Trail is a rail trail.
-*   It is located in New Jersey.
-*   The Flint Hills Trail is a rail trail.
-*   It is located in Kansas.
-*   Rail trails are former railroad corridors that have been converted into public paths.
-
-The student wants to emphasize a similarity between the Columbia Trail and the Flint Hills Trail. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) The Columbia Trail is in New Jersey, whereas the Flint Hills Trail is in Kansas.
-B) A former railroad corridor, the Columbia Trail is located in New Jersey.
-C) Both the Columbia Trail and the Flint Hills Trail are rail trails.
-D) A public path created from a former railroad corridor can be found in Kansas.
-CORRECT ANSWER: C
-
----QUESTION_START---
-27. While researching a topic, a student has taken the following notes:
-*   *On Earth We're Briefly Gorgeous* (2019) is an epistolary novel by American author Ocean Vuong.
-*   Epistolary novels are novels written primarily as a series of fictional documents.
-*   These documents can be letters, journal entries, newspaper clippings, and more.
-*   *On Earth We're Briefly Gorgeous* consists primarily of letters.
-*   The letters are sent from a young man named Little Dog to his mother, Rose.
-
-The student wants to provide an example of an epistolary novel. Which choice most effectively uses relevant information from the notes to accomplish this goal?
-A) In 2019, American author Ocean Vuong published a novel of letters sent from a young man named Little Dog to his mother, Rose.
-B) Consisting primarily of letters sent from a young man named Little Dog to his mother, Rose, Ocean Vuong's *On Earth We're Briefly Gorgeous* is an epistolary novel.
-C) It was Ocean Vuong who published the novel *On Earth We're Briefly Gorgeous* in 2019.
-D) An epistolary novel is a novel written primarily as a series of fictional documents, such as letters, journal entries, or newspaper clippings.
-CORRECT ANSWER: B
+27.
+While researching a topic, a student has taken the following notes:
+• Auteur theory is a view of filmmaking that positions the director as the primary author of a
+film.
+• This now dominant theory was coined by film critic Andrew Sarris.
+• In a 1963 rebuttal, film critic Pauline Kael argued that film authorship should be shared
+among screenwriters, directors, and others involved in the filmmaking process.
+• In a 2006 book, film critic David Kipen proposed "schreiber theory."
+• Schreiber theory repositions the screenwriter as the primary author of a film.
+The student wants to compare Kipen's theory of film authorship with Sarris's. Which choice
+most effectively uses relevant information from the notes to accomplish this goal?
+A In repositioning the screenwriter (not the director) as the primary author of a film,
+schreiber theory presents an alternative to the dominant auteur theory.
+B Film critics Andrew Sarris and David Kipen hold the view that film authorship
+should be shared among those involved in the filmmaking process.
+C In a 1963 rebuttal to Sarris's theory that a director is the primary author of a film,
+Kael proposed that screenwriters should instead be given sole authorship.
+D Kipen's theory of film authorship contrasts with that of Kael, who famously argued
+against Sarris's auteur theory in 1963.
+[Page: 21]
+CORRECT ANSWER: [A]
