@@ -74,6 +74,17 @@ export const authApi = {
         return data;
     },
 
+    async resend({ email, type }: any) {
+        const res = await fetch(`${getApiBase()}/api/auth/resend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, type })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Resend failed');
+        return data;
+    },
+
     async signInWithOAuth({ provider, options }: any) {
         return supabase.auth.signInWithOAuth({ provider, options });
     },

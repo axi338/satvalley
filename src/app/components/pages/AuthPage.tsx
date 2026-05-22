@@ -14,6 +14,7 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'login' ? 'register' : 'login'));
@@ -71,6 +72,36 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
     } catch (err) {
       console.error("DEBUG: handleVerify error:", err);
       setError(err instanceof Error ? err.message : 'Verification failed. Please check your code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const { data, error } = await authApi.resend({
+        email,
+        type: 'signup'
+      });
+      if (error) throw error;
+      setSuccess('A new 6-digit code has been sent to your email.');
+      setResendCooldown(60);
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      console.error("DEBUG: handleResendOtp error:", err);
+      setError(err instanceof Error ? err.message : 'Failed to resend code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -254,6 +285,15 @@ export function AuthPage({ onSuccess }: { onSuccess: () => void }) {
                 <p className="text-[10px] text-indigo-200/30 text-center font-bold uppercase tracking-widest mt-4">
                   Enter the 6-digit code sent to <span className="text-indigo-400">{email}</span>
                 </p>
+                <div className="flex justify-center mt-2">
+                  <button
+                    onClick={handleResendOtp}
+                    disabled={loading || resendCooldown > 0}
+                    className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest transition-colors disabled:text-white/20"
+                  >
+                    {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : 'Resend Code'}
+                  </button>
+                </div>
               </div>
 
               {error && (

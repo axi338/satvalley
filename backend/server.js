@@ -246,6 +246,26 @@ app.post("/api/auth/verify-otp", async (req, res) => {
   }
 });
 
+app.post("/api/auth/resend", async (req, res) => {
+  try {
+    const { email, type } = req.body;
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const { data, error } = await supabase.auth.resend({
+      email,
+      type: type || 'signup',
+      options: {
+        emailRedirectTo: req.headers.origin || 'http://localhost:5173'
+      }
+    });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.post("/api/auth/logout", async (req, res) => {
   try {
     const { error } = await supabase.auth.signOut();
