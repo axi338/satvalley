@@ -14,6 +14,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 
 import { normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI, logAiActivity } from "./satvalley-ai/src/processor.js";
+import { fixQuestionFormatting } from "./services/formattingFixer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -873,6 +874,217 @@ app.delete("/api/questions/:id", async (req, res) => {
     res.json({ success: true, id });
   } catch (err) {
     res.status(500).json({ error: "delete_failed", message: err.message });
+  }
+});
+
+// --- QUESTION FORMATTING FIXER ENDPOINTS ---
+
+app.get("/api/admin/questions/formatting/pending", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { status = 'pending', limit = 50, testId } = req.query;
+
+    let query = supabase
+      .from("questions")
+      .select("*")
+      .eq("formatting_status", status);
+
+    if (testId) {
+      if (testId === 'independent') {
+        query = query.is("test_id", null);
+      } else {
+        query = query.eq("test_id", testId);
+      }
+    }
+
+    const { data, error } = await query
+      .order("created_at", { ascending: false })
+      .limit(Number(limit));
+
+    if (error) throw error;
+    res.json({ questions: data });
+  } catch (err) {
+    res.status(500).json({ error: "failed_to_list_pending_formatting", message: err.message });
+  }
+});
+
+app.post("/api/admin/questions/:id/fix-formatting", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+
+    const { data: question, error: fetchError } = await supabase
+      .from("questions")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const fixResult = await fixQuestionFormatting(question);
+
+    const { error: updateError } = await supabase
+      .from("questions")
+      .update({
+        fixed_question_html: fixResult.fixed_question_html,
+        original_question_text: question.text,
+        formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
+        formatting_confidence: fixResult.confidence,
+        formatting_changes: fixResult.changes,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id);
+
+    if (updateError) throw updateError;
+    res.json({ success: true, result: fixResult });
+  } catch (err) {
+    res.status(500).json({ error: "formatting_fix_failed", message: err.message });
+  }
+});
+
+app.post("/api/admin/questions/batch-fix-formatting", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { limit = 10 } = req.body;
+
+    const { data: questions, error: fetchError } = await supabase
+      .from("questions")
+      .select("*")
+      .eq("formatting_status", "pending")
+      .limit(Number(limit));
+
+    if (fetchError) throw fetchError;
+
+    const results = [];
+    for (const q of questions) {
+      try {
+        const fixResult = await fixQuestionFormatting(q);
+        await supabase
+          .from("questions")
+          .update({
+            fixed_question_html: fixResult.fixed_question_html,
+            original_question_text: q.text,
+            formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
+            formatting_confidence: fixResult.confidence,
+            formatting_changes: fixResult.changes,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", q.id);
+        results.push({ id: q.id, status: 'success' });
+      } catch (e) {
+        results.push({ id: q.id, status: 'error', message: e.message });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (err) {
+    res.status(500).json({ error: "batch_formatting_fix_failed", message: err.message });
+  }
+});
+
+app.post("/api/admin/questions/:id/approve-formatting", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+    const { editedText } = req.body;
+
+    const { data: question, error: fetchError } = await supabase
+      .from("questions")
+      .select("fixed_question_html")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const finalText = editedText || question.fixed_question_html;
+
+    const { error: updateError } = await supabase
+      .from("questions")
+      .update({
+        text: finalText,
+        formatting_status: 'reviewed',
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id);
+
+    if (updateError) throw updateError;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "approve_formatting_failed", message: err.message });
+  }
+});
+
+app.post("/api/admin/questions/:id/reject-formatting", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+    const { id } = req.params;
+
+    const { error: updateError } = await supabase
+      .from("questions")
+      .update({
+        formatting_status: 'rejected',
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id);
+
+    if (updateError) throw updateError;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "reject_formatting_failed", message: err.message });
+  }
+});
+
+app.get("/api/admin/questions/formatting/stats", async (req, res) => {
+  try {
+    await verifyAdmin(req);
+
+    // Get all tests first
+    const { data: tests, error: testsError } = await supabase
+      .from("tests")
+      .select("id, title")
+      .order("created_at", { ascending: false });
+
+    if (testsError) throw testsError;
+
+    // Get counts grouped by test_id and formatting_status
+    const { data: counts, error: countsError } = await supabase
+      .from("questions")
+      .select("test_id, formatting_status");
+
+    if (countsError) throw countsError;
+
+    const stats = tests.map(test => {
+      const testQuestions = counts.filter(q => q.test_id === test.id);
+      return {
+        id: test.id,
+        title: test.title,
+        pending: testQuestions.filter(q => q.formatting_status === 'pending').length,
+        auto_fixed: testQuestions.filter(q => q.formatting_status === 'auto_fixed').length,
+        needs_review: testQuestions.filter(q => q.formatting_status === 'needs_review').length,
+        reviewed: testQuestions.filter(q => q.formatting_status === 'reviewed').length,
+        rejected: testQuestions.filter(q => q.formatting_status === 'rejected').length,
+        total: testQuestions.length
+      };
+    });
+
+    // Also handle "Independent" questions (no test_id)
+    const independentQuestions = counts.filter(q => !q.test_id);
+    if (independentQuestions.length > 0) {
+      stats.push({
+        id: 'independent',
+        title: 'Independent Questions',
+        pending: independentQuestions.filter(q => q.formatting_status === 'pending').length,
+        auto_fixed: independentQuestions.filter(q => q.formatting_status === 'auto_fixed').length,
+        needs_review: independentQuestions.filter(q => q.formatting_status === 'needs_review').length,
+        reviewed: independentQuestions.filter(q => q.formatting_status === 'reviewed').length,
+        rejected: independentQuestions.filter(q => q.formatting_status === 'rejected').length,
+        total: independentQuestions.length
+      });
+    }
+
+    res.json({ stats });
+  } catch (err) {
+    res.status(500).json({ error: "stats_fetch_failed", message: err.message });
   }
 });
 

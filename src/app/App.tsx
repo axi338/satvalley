@@ -31,6 +31,7 @@ import { OnboardingPage } from './components/pages/OnboardingPage';
 import { ClassDashboardPage } from './components/pages/ClassDashboardPage';
 import { TeacherPage } from './components/pages/TeacherPage';
 import { TeacherSignupPage } from './components/pages/TeacherSignupPage';
+import { FormattingReview } from './components/pages/FormattingReview';
 import { Toaster } from './components/ui/sonner';
 
 export default function App() {
@@ -307,6 +308,9 @@ export default function App() {
       case 'admin-import-review':
         if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin-import-review')} />;
         return adminUnlocked ? <ImportReview onNavigate={handleNavigate} jobId={currentParams?.jobId} /> : <HomePage onNavigate={handleNavigate} />;
+      case 'admin-formatting-review':
+        if (!user) return <AuthPage onSuccess={() => setCurrentPage('admin-formatting-review')} />;
+        return adminUnlocked ? <FormattingReview onNavigate={handleNavigate} /> : <HomePage onNavigate={handleNavigate} />;
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }

@@ -820,6 +820,14 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             <h1 className="text-5xl lg:text-6xl text-white">Admin Panel</h1>
             <div className="flex gap-4">
               <Button
+                onClick={() => onNavigate('admin-formatting-review')}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-6 rounded-xl text-lg relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <Sparkles className="w-6 h-6 mr-3 relative z-10" />
+                <span className="relative z-10">Formatting Fixer</span>
+              </Button>
+              <Button
                 onClick={() => onNavigate('admin-import')}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-6 rounded-xl text-lg relative overflow-hidden group"
               >
