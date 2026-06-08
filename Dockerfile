@@ -1,22 +1,22 @@
 # Stage 1: Build the frontend
-FROM node:20-alpine AS frontend-builder
+FROM node:20-slim AS frontend-builder
 WORKDIR /build
 COPY package*.json ./
-# Using legacy-peer-deps to avoid dependency resolution conflicts
+# Slim images might need some build essentials for certain packages
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN npm install --legacy-peer-deps
 COPY . .
-# We pass empty env vars during build so the app uses relative paths/env at runtime if needed
 RUN npm run build
 
 # Stage 2: Setup the backend
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
 
-# Copy backend package files
+# Copy backend package files first for caching
 COPY backend/package*.json ./
 RUN npm install --production --legacy-peer-deps
 
-# Copy backend source
+# Copy the rest of the backend source
 COPY backend/ .
 
 # Copy frontend build from Stage 1
