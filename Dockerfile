@@ -2,9 +2,8 @@
 FROM node:20-slim AS frontend-builder
 WORKDIR /build
 COPY package*.json ./
-# Slim images might need some build essentials for certain packages
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
-RUN npm install --legacy-peer-deps
+# Added --ignore-scripts to bypass the postinstall script which fails because backend/ isn't copied yet
+RUN npm install --legacy-peer-deps --ignore-scripts
 COPY . .
 RUN npm run build
 
