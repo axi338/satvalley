@@ -1,0 +1,20 @@
+{
+    "name": "satvalley",
+    "build": {
+        "dockerfile": {
+            "path": "Dockerfile",
+            "context": "."
+        }
+    },
+    "deployment": {
+        "instances": 1,
+        "ports": [
+            {
+                "name": "http",
+                "port": 10000,
+                "protocol": "TCP",
+                "public": true
+            }
+        ]
+    }
+}
