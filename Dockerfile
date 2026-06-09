@@ -4,6 +4,15 @@ WORKDIR /build
 COPY package*.json ./
 # Added --ignore-scripts to bypass the postinstall script which fails because backend/ isn't copied yet
 RUN npm install --legacy-peer-deps --ignore-scripts
+
+# Added ARG/ENV to pass build-time variables from Northflank to Vite
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_BACKEND_URL=""
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+
 COPY . .
 RUN npm run build
 
