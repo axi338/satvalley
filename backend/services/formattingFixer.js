@@ -23,7 +23,7 @@ function getModel() {
 
         vertexAI = new VertexAI({ project, location });
         generativeModel = vertexAI.getGenerativeModel({
-            model: 'gemini-1.5-pro',
+            model: 'gemini-2.5-pro',
             generationConfig: {
                 temperature: 0.1,
                 topP: 0.95,
