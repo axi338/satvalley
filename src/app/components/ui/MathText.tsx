@@ -75,12 +75,52 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
 
     if (!text || typeof text !== 'string') return null;
 
-    const renderTextWithBold = (content: string) => {
-        const boldParts = content.split(/(\*\*[\s\S]*?\*\*)/g);
-        return boldParts.map((part, idx) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={idx} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>;
+    const renderRichText = (content: string) => {
+        // This is a simplified multi-pass parser for bold, italic, and underline.
+        // It handles bold (\textbf{}, <b>, **), italic (\textit{}, <i>, *), and underline (\underline{}, <u>).
+
+        // Match all supported tags in one regex
+        const pattern = /(\*\*[\s\S]*?\*\*|\*[\s\S]*?\*|<strong[^>]*>[\s\S]*?<\/strong>|<b[^>]*>[\s\S]*?<\/b>|<i[^>]*>[\s\S]*?<\/i>|<u[^>]*>[\s\S]*?<\/u>|&lt;strong[^&]*&gt;[\s\S]*?&lt;\/strong&gt;|&lt;b[^&]*&gt;[\s\S]*?&lt;\/b&gt;|&lt;i[^&]*&gt;[\s\S]*?&lt;\/i&gt;|&lt;u[^&]*&gt;[\s\S]*?&lt;\/u&gt;|\\textbf\{[\s\S]*?\}|\\textit\{[\s\S]*?\}|\\underline\{[\s\S]*?\})/gi;
+
+        const parts = content.split(pattern);
+
+        return parts.map((part, idx) => {
+            if (!part) return null;
+
+            // BOLD
+            if ((part.startsWith('**') && part.endsWith('**')) ||
+                (/^<(b|strong)[^>]*>/i.test(part) && /<\/(b|strong)>$/i.test(part)) ||
+                (/^&lt;(b|strong)[^&]*&gt;/i.test(part) && /&lt;\/(b|strong)&gt;$/i.test(part)) ||
+                (part.toLowerCase().startsWith('\\textbf{') && part.endsWith('}'))) {
+                const inner = part.startsWith('**') ? part.slice(2, -2) :
+                    part.startsWith('\\') ? part.slice(8, -1) :
+                        part.startsWith('&') ? part.replace(/^&lt;(b|strong)[^&]*&gt;/i, '').replace(/&lt;\/(b|strong)&gt;$/i, '') :
+                            part.replace(/^<(b|strong)[^>]*>/i, '').replace(/<\/(b|strong)>$/i, '');
+                return <strong key={idx} className="font-extrabold text-slate-900">{inner}</strong>;
             }
+
+            // ITALIC
+            if ((part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) ||
+                (/^<i[^>]*>/i.test(part) && /<\/i>$/i.test(part)) ||
+                (/^&lt;i[^&]*&gt;/i.test(part) && /&lt;\/i&gt;$/i.test(part)) ||
+                (part.toLowerCase().startsWith('\\textit{') && part.endsWith('}'))) {
+                const inner = part.startsWith('*') ? part.slice(1, -1) :
+                    part.startsWith('\\') ? part.slice(8, -1) :
+                        part.startsWith('&') ? part.replace(/^&lt;i[^&]*&gt;/i, '').replace(/&lt;\/i&gt;$/i, '') :
+                            part.replace(/^<i[^>]*>/i, '').replace(/<\/i>$/i, '');
+                return <em key={idx} className="italic text-slate-800">{inner}</em>;
+            }
+
+            // UNDERLINE
+            if ((/^<u[^>]*>/i.test(part) && /<\/u>$/i.test(part)) ||
+                (/^&lt;u[^&]*&gt;/i.test(part) && /&lt;\/u&gt;$/i.test(part)) ||
+                (part.toLowerCase().startsWith('\\underline{') && part.endsWith('}'))) {
+                const inner = part.startsWith('\\') ? part.slice(11, -1) :
+                    part.startsWith('&') ? part.replace(/^&lt;u[^&]*&gt;/i, '').replace(/&lt;\/u&gt;$/i, '') :
+                        part.replace(/^<u[^>]*>/i, '').replace(/<\/u>$/i, '');
+                return <u key={idx} className="underline decoration-slate-400 decoration-1 underline-offset-2">{inner}</u>;
+            }
+
             return <React.Fragment key={idx}>{part}</React.Fragment>;
         });
     };
@@ -93,8 +133,8 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                 } else if (segment.type === 'inlineMath') {
                     return <InlineMath key={idx} math={segment.content} />;
                 }
-                // Regular Text with Bold support
-                return <React.Fragment key={idx}>{renderTextWithBold(segment.content)}</React.Fragment>;
+                // Regular Text with formatting support
+                return <React.Fragment key={idx}>{renderRichText(segment.content)}</React.Fragment>;
             })}
         </span>
     );

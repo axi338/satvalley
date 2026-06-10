@@ -1,6 +1,7 @@
 import { VertexAI } from '@google-cloud/vertexai';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,17 @@ function getModel() {
         });
     }
     return generativeModel;
+}
+
+function logAiActivity(type, action, status) {
+    console.log(`[AI_${type}] ${action}: ${status}`);
+    try {
+        const logPath = path.join(__dirname, '../ai-history.log');
+        const entry = `${new Date().toISOString()} | ${type} | ${action} | ${status}\n`;
+        fs.appendFileSync(logPath, entry);
+    } catch (e) {
+        // Ignore log errors
+    }
 }
 
 // ---- Rate limiting + retry ----
@@ -185,9 +197,12 @@ Output ONLY the JSON object with no surrounding text or markdown fences.
             data.needs_review = true;
         }
 
+        logAiActivity('SUCCESS', 'FORMAT_FIX', `Fixed question: ${question.id}`);
+
         return data;
     } catch (error) {
         console.error('[formattingFixer] Error:', error.message);
+        logAiActivity('ERROR', 'FORMAT_FIX', `Error for ${question.id}: ${error.message}`);
         return {
             fixed_question_html: question.text || '',
             fixed_passage_html: question.passage || '',
