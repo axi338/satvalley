@@ -162,6 +162,17 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static('public/uploads'));
+app.use('/memes', express.static('public/memes'));
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
+    envLoaded: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+  });
+});
 
 // --- AUTHENTICATION ENDPOINTS ---
 
@@ -170,9 +181,14 @@ app.post("/api/auth/signup", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and password required" });
 
+    console.log(`[AUTH] Attempting signup for: ${email}`);
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    if (error) {
+      console.error(`[AUTH] Signup error for ${email}:`, error.message);
+      throw error;
+    }
 
+    console.log(`[AUTH] Signup successful for: ${email}`);
     res.json(data);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -233,13 +249,19 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     const { email, token, type } = req.body;
     if (!email || !token) return res.status(400).json({ error: "Email and token required" });
 
+    console.log(`[AUTH] Verifying OTP for: ${email}, type: ${type || 'signup'}`);
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token,
       type: type || 'signup'
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`[AUTH] OTP verification error for ${email}:`, error.message);
+      throw error;
+    }
+
+    console.log(`[AUTH] OTP verification successful for: ${email}`);
     res.json(data);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -943,16 +965,24 @@ app.post("/api/admin/questions/:id/fix-formatting", async (req, res) => {
 
     const fixResult = await fixQuestionFormatting(question);
 
+    // Build update payload — include fixed_passage_html only if fixer returned one
+    const singleUpdatePayload = {
+      fixed_question_html: fixResult.fixed_question_html,
+      original_question_text: question.text,
+      formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
+      formatting_confidence: fixResult.confidence,
+      formatting_changes: fixResult.changes,
+      requires_manual_edit: fixResult.requires_manual_edit || false,
+      manual_edit_reason: fixResult.manual_edit_reason || null,
+      updated_at: new Date().toISOString()
+    };
+    if (fixResult.fixed_passage_html && fixResult.fixed_passage_html.trim() !== '') {
+      singleUpdatePayload.fixed_passage_html = fixResult.fixed_passage_html;
+    }
+
     const { error: updateError } = await supabase
       .from("questions")
-      .update({
-        fixed_question_html: fixResult.fixed_question_html,
-        original_question_text: question.text,
-        formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
-        formatting_confidence: fixResult.confidence,
-        formatting_changes: fixResult.changes,
-        updated_at: new Date().toISOString()
-      })
+      .update(singleUpdatePayload)
       .eq("id", id);
 
     if (updateError) throw updateError;
@@ -979,16 +1009,22 @@ app.post("/api/admin/questions/batch-fix-formatting", async (req, res) => {
     for (const q of questions) {
       try {
         const fixResult = await fixQuestionFormatting(q);
+        const batchUpdatePayload = {
+          fixed_question_html: fixResult.fixed_question_html,
+          original_question_text: q.text,
+          formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
+          formatting_confidence: fixResult.confidence,
+          formatting_changes: fixResult.changes,
+          requires_manual_edit: fixResult.requires_manual_edit || false,
+          manual_edit_reason: fixResult.manual_edit_reason || null,
+          updated_at: new Date().toISOString()
+        };
+        if (fixResult.fixed_passage_html && fixResult.fixed_passage_html.trim() !== '') {
+          batchUpdatePayload.fixed_passage_html = fixResult.fixed_passage_html;
+        }
         await supabase
           .from("questions")
-          .update({
-            fixed_question_html: fixResult.fixed_question_html,
-            original_question_text: q.text,
-            formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
-            formatting_confidence: fixResult.confidence,
-            formatting_changes: fixResult.changes,
-            updated_at: new Date().toISOString()
-          })
+          .update(batchUpdatePayload)
           .eq("id", q.id);
         results.push({ id: q.id, status: 'success' });
       } catch (e) {
