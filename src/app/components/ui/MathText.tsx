@@ -96,7 +96,7 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                     part.startsWith('\\') ? part.slice(8, -1) :
                         part.startsWith('&') ? part.replace(/^&lt;(b|strong)[^&]*&gt;/i, '').replace(/&lt;\/(b|strong)&gt;$/i, '') :
                             part.replace(/^<(b|strong)[^>]*>/i, '').replace(/<\/(b|strong)>$/i, '');
-                return <strong key={idx} className="font-extrabold text-slate-900">{inner}</strong>;
+                return <strong key={idx} className="font-extrabold">{inner}</strong>;
             }
 
             // ITALIC
@@ -108,7 +108,7 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                     part.startsWith('\\') ? part.slice(8, -1) :
                         part.startsWith('&') ? part.replace(/^&lt;i[^&]*&gt;/i, '').replace(/&lt;\/i&gt;$/i, '') :
                             part.replace(/^<i[^>]*>/i, '').replace(/<\/i>$/i, '');
-                return <em key={idx} className="italic text-slate-800">{inner}</em>;
+                return <em key={idx} className="italic text-inherit">{inner}</em>;
             }
 
             // UNDERLINE

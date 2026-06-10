@@ -965,24 +965,18 @@ app.post("/api/admin/questions/:id/fix-formatting", async (req, res) => {
 
     const fixResult = await fixQuestionFormatting(question);
 
-    // Build update payload — include fixed_passage_html only if fixer returned one
-    const singleUpdatePayload = {
-      fixed_question_html: fixResult.fixed_question_html,
-      original_question_text: question.text,
-      formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
-      formatting_confidence: fixResult.confidence,
-      formatting_changes: fixResult.changes,
-      requires_manual_edit: fixResult.requires_manual_edit || false,
-      manual_edit_reason: fixResult.manual_edit_reason || null,
-      updated_at: new Date().toISOString()
-    };
-    if (fixResult.fixed_passage_html && fixResult.fixed_passage_html.trim() !== '') {
-      singleUpdatePayload.fixed_passage_html = fixResult.fixed_passage_html;
-    }
-
     const { error: updateError } = await supabase
       .from("questions")
-      .update(singleUpdatePayload)
+      .update({
+        fixed_question_html: fixResult.fixed_question_html,
+        original_question_text: question.text,
+        formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
+        formatting_confidence: fixResult.confidence,
+        formatting_changes: fixResult.changes,
+        requires_manual_edit: fixResult.requires_manual_edit || false,
+        manual_edit_reason: fixResult.manual_edit_reason || null,
+        updated_at: new Date().toISOString()
+      })
       .eq("id", id);
 
     if (updateError) throw updateError;
@@ -1009,22 +1003,18 @@ app.post("/api/admin/questions/batch-fix-formatting", async (req, res) => {
     for (const q of questions) {
       try {
         const fixResult = await fixQuestionFormatting(q);
-        const batchUpdatePayload = {
-          fixed_question_html: fixResult.fixed_question_html,
-          original_question_text: q.text,
-          formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
-          formatting_confidence: fixResult.confidence,
-          formatting_changes: fixResult.changes,
-          requires_manual_edit: fixResult.requires_manual_edit || false,
-          manual_edit_reason: fixResult.manual_edit_reason || null,
-          updated_at: new Date().toISOString()
-        };
-        if (fixResult.fixed_passage_html && fixResult.fixed_passage_html.trim() !== '') {
-          batchUpdatePayload.fixed_passage_html = fixResult.fixed_passage_html;
-        }
         await supabase
           .from("questions")
-          .update(batchUpdatePayload)
+          .update({
+            fixed_question_html: fixResult.fixed_question_html,
+            original_question_text: q.text,
+            formatting_status: fixResult.needs_review ? 'needs_review' : 'auto_fixed',
+            formatting_confidence: fixResult.confidence,
+            formatting_changes: fixResult.changes,
+            requires_manual_edit: fixResult.requires_manual_edit || false,
+            manual_edit_reason: fixResult.manual_edit_reason || null,
+            updated_at: new Date().toISOString()
+          })
           .eq("id", q.id);
         results.push({ id: q.id, status: 'success' });
       } catch (e) {
