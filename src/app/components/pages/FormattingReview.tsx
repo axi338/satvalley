@@ -3,6 +3,7 @@ import { ArrowLeft, Check, X, Sparkles, Loader2, AlertCircle, RefreshCw, Chevron
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { MathText } from '../ui/MathText';
 
 interface Question {
     id: string;
@@ -14,6 +15,8 @@ interface Question {
     formatting_confidence?: number;
     formatting_changes?: any[];
     subject?: string;
+    requires_manual_edit?: boolean;
+    manual_edit_reason?: string;
 }
 
 
@@ -375,11 +378,15 @@ export const FormattingReview = ({ onNavigate }: FormattingReviewProps) => {
                         {currentQuestion.passage && (
                             <div className="mb-6 pb-6 border-b border-white/5">
                                 <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-3">Passage</div>
-                                <div className="text-slate-400 leading-relaxed font-serif whitespace-pre-wrap">{currentQuestion.passage}</div>
+                                <div className="text-slate-400 leading-relaxed font-serif whitespace-pre-wrap">
+                                    <MathText text={currentQuestion.passage} />
+                                </div>
                             </div>
                         )}
                         <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-3">Question</div>
-                        <div className="text-lg text-white font-medium leading-relaxed">{currentQuestion.text}</div>
+                        <div className="text-lg text-white font-medium leading-relaxed">
+                            <MathText text={currentQuestion.text} />
+                        </div>
 
                         <div className="mt-8 grid grid-cols-1 gap-2">
                             <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Answer Choices</div>
@@ -426,9 +433,31 @@ export const FormattingReview = ({ onNavigate }: FormattingReviewProps) => {
                                         Preview
                                     </div>
                                     <div
-                                        className="text-lg leading-relaxed font-medium formatting-preview"
-                                        dangerouslySetInnerHTML={{ __html: editedHtml || currentQuestion.text }}
-                                    />
+                                        className="text-lg leading-relaxed font-medium formatting-preview text-slate-900"
+                                    >
+                                        {isEditing ? (
+                                            <div className="whitespace-pre-wrap font-mono text-sm text-indigo-900/60 bg-indigo-50/50 p-4 rounded-lg mb-4">
+                                                {editedHtml}
+                                            </div>
+                                        ) : (
+                                            <MathText
+                                                text={editedHtml || currentQuestion.text}
+                                                colorMode="dark"
+                                            />
+                                        )
+                                        }
+                                    </div>
+                                    {currentQuestion.requires_manual_edit && (
+                                        <div className="mt-8 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                                            <div>
+                                                <div className="text-sm font-bold text-amber-900">Manual Edit Recommended</div>
+                                                <div className="text-xs text-amber-700 leading-relaxed">
+                                                    {currentQuestion.manual_edit_reason || "This question was flagged for manual review by the AI."}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -439,9 +468,9 @@ export const FormattingReview = ({ onNavigate }: FormattingReviewProps) => {
                             <div className="space-y-2">
                                 {currentQuestion.formatting_changes?.map((change: any, i: number) => (
                                     <div key={i} className="flex gap-3 text-xs leading-relaxed">
-                                        <div className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${change.type === 'blank_added' ? 'bg-indigo-400' : 'bg-emerald-400'}`} />
+                                        <div className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${change.type === 'manual_edit_required' ? 'bg-amber-400' : change.type === 'blank_added' ? 'bg-indigo-400' : 'bg-emerald-400'}`} />
                                         <div>
-                                            <span className="text-white/60 font-bold mr-2 uppercase text-[10px]">{change.type.replace('_', ' ')}:</span>
+                                            <span className={`font-bold mr-2 uppercase text-[10px] ${change.type === 'manual_edit_required' ? 'text-amber-400' : 'text-white/60'}`}>{change.type.replace('_', ' ')}:</span>
                                             <span className="text-white/40 mr-2">"{change.text}"</span>
                                             <span className="text-indigo-300/40 italic">— {change.reason}</span>
                                         </div>

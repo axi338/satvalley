@@ -5,13 +5,14 @@ import 'katex/dist/katex.min.css';
 interface MathTextProps {
     text?: string;
     className?: string;
+    colorMode?: 'light' | 'dark' | 'inherit'; // 'light' for dark bgs (white text), 'dark' for light bgs (black text)
 }
 
 /**
  * A utility component that safely parses a raw string and converts 
  * any inline $...$ or block $$...$$ LaTeX definitions into beautifully rendered KaTeX equations.
  */
-export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
+export const MathText: React.FC<MathTextProps> = ({ text, className = '', colorMode = 'inherit' }) => {
     const segments = useMemo(() => {
         if (!text || typeof text !== 'string') return [];
 
@@ -84,6 +85,9 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
 
         const parts = content.split(pattern);
 
+        const boldColor = colorMode === 'dark' ? 'text-slate-950' : colorMode === 'light' ? 'text-white' : '';
+        const italicColor = colorMode === 'dark' ? 'text-slate-800' : colorMode === 'light' ? 'text-slate-100' : '';
+
         return parts.map((part, idx) => {
             if (!part) return null;
 
@@ -96,7 +100,7 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                     part.startsWith('\\') ? part.slice(8, -1) :
                         part.startsWith('&') ? part.replace(/^&lt;(b|strong)[^&]*&gt;/i, '').replace(/&lt;\/(b|strong)&gt;$/i, '') :
                             part.replace(/^<(b|strong)[^>]*>/i, '').replace(/<\/(b|strong)>$/i, '');
-                return <strong key={idx} className="font-extrabold">{inner}</strong>;
+                return <strong key={idx} className={`font-extrabold ${boldColor}`}>{inner}</strong>;
             }
 
             // ITALIC
@@ -108,7 +112,7 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                     part.startsWith('\\') ? part.slice(8, -1) :
                         part.startsWith('&') ? part.replace(/^&lt;i[^&]*&gt;/i, '').replace(/&lt;\/i&gt;$/i, '') :
                             part.replace(/^<i[^>]*>/i, '').replace(/<\/i>$/i, '');
-                return <em key={idx} className="italic text-inherit">{inner}</em>;
+                return <em key={idx} className={`italic ${italicColor}`}>{inner}</em>;
             }
 
             // UNDERLINE
@@ -118,10 +122,12 @@ export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
                 const inner = part.startsWith('\\') ? part.slice(11, -1) :
                     part.startsWith('&') ? part.replace(/^&lt;u[^&]*&gt;/i, '').replace(/&lt;\/u&gt;$/i, '') :
                         part.replace(/^<u[^>]*>/i, '').replace(/<\/u>$/i, '');
-                return <u key={idx} className="underline decoration-slate-400 decoration-1 underline-offset-2">{inner}</u>;
+                const underlineColor = colorMode === 'dark' ? 'decoration-slate-400' : 'decoration-slate-500';
+                return <u key={idx} className={`underline ${underlineColor} decoration-1 underline-offset-2`}>{inner}</u>;
             }
 
-            return <React.Fragment key={idx}>{part}</React.Fragment>;
+            const plainTextColor = colorMode === 'dark' ? 'text-slate-900' : colorMode === 'light' ? 'text-white' : '';
+            return <span key={idx} className={plainTextColor}>{part}</span>;
         });
     };
 
