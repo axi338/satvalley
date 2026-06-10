@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Lazy initialization - only create VertexAI when actually needed
 let vertexAI = null;
@@ -30,7 +30,7 @@ function getModel() {
 
         vertexAI = new VertexAI(vertexInit);
         model = vertexAI.getGenerativeModel({
-            model: 'gemini-2.0-flash-001',
+            model: 'gemini-1.5-flash',
             generationConfig: {
                 temperature: 0.1,
                 topP: 0.95,
@@ -167,59 +167,117 @@ function extractTextFromVertexResponse(response) {
 }
 
 /**
+ * Sanitization safety net to ensure forbidden bold words never enter the database.
+ */
+function stripForbiddenBold(text) {
+    if (!text || typeof text !== 'string') return text;
+    const forbiddenWords = ['best', 'most', 'main', 'least', 'logical', 'logically', 'correctly'];
+    let result = text;
+    for (const word of forbiddenWords) {
+        // Strip LaTeX \textbf{...}
+        const latexRegex = new RegExp(`\\\\textbf\\{(${word}s?)\\}`, 'gi');
+        result = result.replace(latexRegex, '$1');
+        // Strip HTML <b>...</b>
+        const htmlRegex = new RegExp(`<b[^>]*>(${word}s?)<\\/b>`, 'gi');
+        result = result.replace(htmlRegex, '$1');
+    }
+    return result;
+}
+
+function sanitizeData(data) {
+    if (!data) return data;
+    if (data.text) data.text = stripForbiddenBold(data.text);
+    if (data.passage) data.passage = stripForbiddenBold(data.passage);
+    if (Array.isArray(data.options)) {
+        data.options = data.options.map(stripForbiddenBold);
+    }
+    return data;
+}
+
+/**
  * Normalizes a raw question text into a structured JSON format.
  */
 async function normalizeQuestion(rawText, onProgress) {
     const prompt = `
-You are an expert SAT question parser. Your task is to convert the following raw text into a strict JSON object following the schema below.
+You are an expert SAT digital bluebook question extractor. 
+Your job is to extract and normalize the following raw text into a strict JSON object with 100% accuracy.
+Missing a blank or bold formatting is considered a CRITICAL failure.
 
 RAW TEXT:
 """
 ${rawText}
 """
 
-SCHEMA:
+═══════════════════════════════════════
+RULE 1 — BLANK DETECTION (ZERO TOLERANCE)
+═══════════════════════════════════════
+- Scan the sentence carefully.
+- If answer choices are: single words, verb forms, punctuation marks, short phrases (2-3 words) → this sentence HAS a blank, NO EXCEPTIONS.
+- Find where the blank belongs by reading the sentence flow.
+- Insert exactly "______" (6 underscores) at that position.
+- If blank was missing from input but you inserted it → flag: "blank_status": "BLANK_AUTO_INSERTED"
+- If blank was present in input → flag: "blank_status": "BLANK_FOUND"
+- NEVER output a grammar/vocabulary/transition question without "______".
+
+BLANK POSITION LOGIC:
+- Verb tense questions → blank is usually mid-sentence after subject.
+- Vocabulary questions → blank is where the missing word fits grammatically.
+- Transition questions → blank is usually at start of sentence.
+- "Complete the text" → blank is usually at the end.
+
+═══════════════════════════════════════
+RULE 2 — BOLD TEXT DETECTION (CRITICAL)
+═══════════════════════════════════════
+- Wrap ONLY words that are EXPLICITLY BOLD in the source with LaTeX \textbf syntax: \textbf{boldword}.
+- Do NOT auto-bold emphasis words like "most", "best", or "main" unless they are visually bold in the image.
+- If NO bold text found → state "no_bold": true in output.
+
+═══════════════════════════════════════
+RULE 3 — MATH & LaTeX (MANDATORY)
+═══════════════════════════════════════
+- You MUST format ALL mathematical expressions, formulas, isolated variables, coordinates (e.g., $(0, 7)$), and fractions using valid LaTeX syntax wrapped in single dollar signs.
+- Example: output $\frac{1}{2}$ instead of 1/2. Output $x^{2}$ instead of x^2.
+
+═══════════════════════════════════════
+RULE 4 — PEDAGOGICAL EXPLANATIONS
+═══════════════════════════════════════
+- The "explanation" field MUST be a detailed, step-by-step guide.
+- Start by identifying the core concept.
+- For RW: Explain why the correct answer fits and why others don't.
+- For Math: Show the formula and intermediate steps using LaTeX.
+
+═══════════════════════════════════════
+SCHEMA & OUTPUT FORMAT (Strict JSON)
+═══════════════════════════════════════
 {
-  "text": "The core question stem. DO NOT include UI labels like 'Mark for Review', question numbers, or page markers.",
-  "passage": "Any reading passage associated with the question. If there is a graph/table, include a brief description here. EXCLUDE all UI noise.",
-  "type": "multiple-choice or spr",
+  "question_type": "WORDS_IN_CONTEXT | STANDARD_ENGLISH_CONVENTIONS | TRANSITIONS | RHETORICAL_SYNTHESIS | READING_COMPREHENSION | DATA_INTERPRETATION",
+  "passage": "Any reading passage associated. Use \\textbf{} tags for bold focus words.",
+  "text": "The core question stem with \\textbf{} tags and ______ if applicable.",
+  "has_blank": true/false,
+  "blank_status": "BLANK_FOUND / BLANK_AUTO_INSERTED / NO_BLANK_NEEDED",
+  "has_bold": true/false,
+  "no_bold": true/false,
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "correct_answer": "A, B, C, D or numeric value",
-  "explanation": "Brief explanation",
+  "explanation": "Detailed step-by-step pedagogical explanation with LaTeX.",
   "subject": "math or rw",
   "difficulty": "easy, medium, hard",
-  "skill_tags": ["tag1", "tag2"],
-  "bbox": [ymin, xmin, ymax, xmax],
-  "has_image": false
+  "bbox": [ymin, xmin, ymax, xmax], // Extract from [bbox: ...] in raw text
+  "requires_manual_edit": true/false,
+  "manual_edit_reason": "e.g., MISSING_DIAGRAM, MISSING_CHOICES, NEEDS_CHECK",
+  "formatting_changes": [
+    { "type": "manual_edit_required", "text": "[IMAGE]", "reason": "A diagram was detected and needs manual upload." }
+  ]
 }
 
-RULES:
-1. Output ONLY the JSON object.
-2. If raw text contains multiple questions, only process the first one.
-3. Ensure "subject" is lowercase.
-4. If it is a math question without options, set "type" to "spr" and "options" to null.
-5. If options are not clearly labeled, infer them from the text and set "type" to "multiple-choice".
-6. STOP WORDS: You MUST strip the following from the output:
-   - "X Mark for Review" (where X is any number)
-   - "[Page: X]" or "Page X of Y"
-   - Any "Directions" headings
-   - Any random OCR artifacts or page footer/header text
-7. TABLES & FIGURES: Do not transcribe tables in full. Simply note "Table with [summary]" and focus on the question.
-8. EXTRACT the [bbox: ...] tag from raw text and put it in the "bbox" field as an array of integers.
-9. DETERMINE SUBJECT:
-   - If the question involves calculation, algebra, geometry, or data analysis -> "math"
-   - If the question involves reading a passage, grammar, vocabulary, or rhetoric -> "rw"
-10. OPTION PREFIX STRIPPING: You MUST strip the alphabetical letters like "A)", "A.", "(A)", "B)", etc. from the actual string choice in the "options" array. The strings in the "options" array should contain ONLY the text of the option itself. For example, if the text says "A) 5", the option array should just contain "5".
-11. ANSWER KEY MAPPING: Look for an answer key provided by the extraction phase. If "CORRECT ANSWER: [Letter/Value]" is included in the raw text, use that to accurately determine the "correct_answer".
-12. MATH FORMATTING: You MUST format ALL mathematical expressions, formulas, isolated variables, coordinates (e.g., $(0, 7)$), and fractions using valid LaTeX syntax wrapped in single dollar signs. For example, output $\frac{1}{2}$ instead of 1/2. Output $x^{2}$ instead of x^2. Output $x$ instead of just x when referencing a variable in text. ALL coordinate pairs like (0, 7) MUST be wrapped in dollar signs like $(0, 7)$. ALL fractions like -3/2 MUST be wrapped in dollar signs like $-3/2$ or $-\frac{3}{2}$.
-13. DETAILED EXPLANATIONS: The "explanation" field MUST be a detailed, pedagogical, step-by-step guide on how to solve the question.
-    - Start by identifying the core concept being tested.
-    - Break down the logic or calculation into clear, logical steps.
-    - For Reading/Writing: Explain why the correct answer fits the context and why the other options are incorrect.
-    - For Math: Show the formula used and the intermediate steps of the calculation.
-    - Use LaTeX for ALL mathematical notation within the explanation.
-    - Aim for a tone that is helpful, encouraging, and clear.
-14. TEXT BOLDING: Identify specific focus words or phrases in the question stem or passage that are central to the task (e.g., vocabulary tested in context, or the focal point of a grammar question) and wrap them in double asterisks for bolding (e.g., **resilient**). This helps mimic the official SAT style.
+═══════════════════════════════════════
+FINAL DOUBLE-CHECK RULE
+═══════════════════════════════════════
+1. If answer choices are verb forms or single words → text MUST contain "______".
+2. ONLY bold text that is EXPLICITLY BOLD in the source image.
+3. DO NOT auto-bold emphasis words like 'most', 'best', 'main' UNLESS they are visually bold in the image.
+4. All math MUST be in $...$.
+5. "Options" array MUST contain ONLY the text of the option (strip A), B), etc.).
 `;
 
     try {
@@ -230,7 +288,7 @@ RULES:
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No valid JSON found in response");
 
-        const data = JSON.parse(jsonMatch[0]);
+        const data = sanitizeData(JSON.parse(jsonMatch[0]));
 
         if (data.text) data.text = sanitizeAiText(data.text);
         if (data.passage) data.passage = sanitizeAiText(data.passage);
@@ -320,7 +378,7 @@ async function splitTextToCandidates(fileBuffer, mimeType = "application/pdf", o
             console.error("Failed to save debug extraction:", e);
         }
 
-        console.log(`DEBUG: Extracted text length: ${text.length} `);
+        console.log(`DEBUG: Extracted text length: ${text.length}`);
 
         const questions = text
             .split("---QUESTION_START---")
@@ -343,9 +401,9 @@ async function generateVocabularyAI(word, theme = "Standard") {
     const prompt = `
 Generate vocabulary details for the following word:
         WORD: "${word}"
-    THEME: "${theme}"(Standard, GenZ, or Oxford)
+    THEME: "${theme}" (Standard, GenZ, or Oxford)
 
-OUTPUT FORMAT(Strict JSON):
+OUTPUT FORMAT (Strict JSON):
     {
         "definition": "A high-quality, Cambridge-style definition that is clear and pedagogical",
             "example": "A high-quality example sentence illustrating the usage."
@@ -353,8 +411,8 @@ OUTPUT FORMAT(Strict JSON):
 
     RULES:
     1. Output ONLY the JSON object.
-2. The definition MUST follow the Cambridge Dictionary style(pedagogical and clear).
-3. The example should match the theme(e.g., GenZ should use slang like 'vibe', 'no cap', etc.).
+2. The definition MUST follow the Cambridge Dictionary style (pedagogical and clear).
+3. The example should match the theme (e.g., GenZ should use slang like 'vibe', 'no cap', etc.).
 `;
 
     try {
@@ -371,7 +429,7 @@ OUTPUT FORMAT(Strict JSON):
         if (!jsonMatch) throw new Error("No valid JSON found in response");
 
         const data = JSON.parse(jsonMatch[0]);
-        logAiActivity("SUCCESS", "VOCAB_GEN", `Generated for: ${word} `);
+        logAiActivity("SUCCESS", "VOCAB_GEN", `Generated for: ${word}`);
         return data;
     } catch (error) {
         logAiActivity("ERROR", "VOCAB_GEN", error?.message || String(error));
@@ -385,12 +443,12 @@ OUTPUT FORMAT(Strict JSON):
 async function analyzePerformanceAI(responses) {
     const prompt = `
 Analyze the following student SAT practice test performance data. 
-Provide a deep pedagogical synthesis including a skill - by - skill breakdown, a roadmap for improvement, and an overall readiness score.
+Provide a deep pedagogical synthesis including a skill-by-skill breakdown, a roadmap for improvement, and an overall readiness score.
 
         RESPONSES:
 ${JSON.stringify(responses, null, 2)}
 
-OUTPUT FORMAT(Strict JSON):
+OUTPUT FORMAT (Strict JSON):
     {
         "mastery_score": 85, // Scale 0-100 indicating overall readiness
             "encouragement": "A high-energy, motivational one-liner.",
@@ -411,7 +469,7 @@ OUTPUT FORMAT(Strict JSON):
                         ]
     }
 
-CATEGORIES TO ANALYZE(If applicable):
+CATEGORIES TO ANALYZE (If applicable):
     - Information and Ideas
         - Craft and Structure
             - Expression of Ideas
@@ -444,4 +502,103 @@ CATEGORIES TO ANALYZE(If applicable):
     }
 }
 
-export { logAiActivity, normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI };
+/**
+ * Extracts a single SAT question from an image buffer using strict rules.
+ */
+async function extractQuestionFromImage(fileBuffer, mimeType = "image/png", onProgress) {
+    const prompt = `
+You are an expert SAT digital bluebook question extractor. 
+Your job is to extract the question from the provided image with 100% accuracy into a strict JSON object.
+Missing a blank or bold formatting is considered a CRITICAL failure.
+
+═══════════════════════════════════════
+RULE 1 — BLANK DETECTION (ZERO TOLERANCE)
+═══════════════════════════════════════
+- Scan the sentence carefully.
+- If answer choices are: single words, verb forms, punctuation marks, short phrases (2-3 words) → this sentence HAS a blank, NO EXCEPTIONS.
+- Find where the blank belongs by reading the sentence flow.
+- Insert exactly "______" (6 underscores) at that position.
+- If blank was missing from image but you inserted it → flag: "blank_status": "BLANK_AUTO_INSERTED"
+- If blank was present in image → flag: "blank_status": "BLANK_FOUND"
+- NEVER output a grammar/vocabulary/transition question without "______".
+
+BLANK POSITION LOGIC:
+- Verb tense questions → blank is usually mid-sentence after subject.
+- Vocabulary questions → blank is where the missing word fits grammatically.
+- Transition questions → blank is usually at start of sentence.
+- "Complete the text" → blank is usually at the end.
+
+═══════════════════════════════════════
+RULE 2 — BOLD TEXT DETECTION (CRITICAL)
+═══════════════════════════════════════
+- Look carefully at every word in the image.
+- Wrap ONLY words that are EXPLICITLY BOLD in the source with LaTeX \\textbf syntax: \\textbf{boldword}.
+- Do NOT auto-bold emphasis words like "most", "best", or "main" unless they are visually bold in the image.
+- If NO bold text found → state "no_bold": true in output.
+
+═══════════════════════════════════════
+RULE 3 — FULL TEXT EXTRACTION
+═══════════════════════════════════════
+- Extract every single word, comma, period, semicolon exactly.
+- Preserve paragraph breaks if the question has a passage.
+- Keep capitalization exactly as shown.
+- If there is a passage before the question → extract it separately in "passage" field.
+- Extract the instruction line exactly (e.g., "Which choice completes the text...").
+
+═══════════════════════════════════════
+RULE 4 — MATH & LaTeX (MANDATORY)
+═══════════════════════════════════════
+- You MUST format ALL mathematical expressions, formulas, isolated variables, coordinates (e.g., $(0, 7)$), and fractions using valid LaTeX syntax wrapped in single dollar signs.
+
+═══════════════════════════════════════
+SCHEMA & OUTPUT FORMAT (Strict JSON)
+═══════════════════════════════════════
+{
+  "question_type": "WORDS_IN_CONTEXT | STANDARD_ENGLISH_CONVENTIONS | TRANSITIONS | RHETORICAL_SYNTHESIS | READING_COMPREHENSION | DATA_INTERPRETATION",
+  "passage": "Any reading passage associated. Use \\\\textbf{} tags for bold focus words.",
+  "text": "The core question stem with \\\\textbf{} tags and ______ if applicable.",
+  "has_blank": true/false,
+  "blank_status": "BLANK_FOUND / BLANK_AUTO_INSERTED / NO_BLANK_NEEDED",
+  "has_bold": true/false,
+  "no_bold": true/false,
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correct_answer": "A, B, C, D or numeric value",
+  "explanation": "Detailed step-by-step pedagogical explanation with LaTeX.",
+  "subject": "math or rw",
+  "difficulty": "easy, medium, hard",
+  "bbox": [ymin, xmin, ymax, xmax], // Extract from [bbox: ...] in raw text
+  "requires_manual_edit": true/false,
+  "manual_edit_reason": "e.g., MISSING_DIAGRAM, MISSING_CHOICES, NEEDS_CHECK",
+  "formatting_changes": [
+    { "type": "manual_edit_required", "text": "[IMAGE]", "reason": "A diagram was detected and needs manual upload." }
+  ]
+}
+
+═══════════════════════════════════════
+FINAL DOUBLE-CHECK RULE
+═══════════════════════════════════════
+1. ONLY bold text that is EXPLICITLY BOLD in the source image.
+2. DO NOT auto-bold emphasis words like 'most', 'best', 'main' UNLESS they are visually bold in the image.
+3. All math MUST be in $...$.
+4. "Options" array MUST contain ONLY the text of the option (strip A), B), etc.).
+`;
+
+    try {
+        const request = buildPdfRequestOrThrow(fileBuffer, mimeType, prompt); // works for images too
+        const result = await generateWithRetry(request, onProgress);
+        const text = extractTextFromVertexResponse(result);
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No valid JSON found in response");
+
+        const data = sanitizeData(JSON.parse(jsonMatch[0]));
+        logAiActivity("SUCCESS", "IMAGE_EXTRACT", `Extracted: ${String(data.text || "").slice(0, 30)}...`);
+        return data;
+    } catch (error) {
+        logAiActivity("ERROR", "IMAGE_EXTRACT", error?.message || String(error));
+        console.error("Image Extraction Error:", error);
+        throw error;
+    }
+}
+
+export { logAiActivity, normalizeQuestion, splitTextToCandidates, generateVocabularyAI, analyzePerformanceAI, extractQuestionFromImage, stripForbiddenBold };
