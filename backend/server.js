@@ -3412,21 +3412,30 @@ app.get("/api/me/profile", async (req, res) => {
 app.post("/api/me/profile", async (req, res) => {
   try {
     const user = await verifyUser(req);
-    const { full_name, phone, graduation_year, sat_deadline, onboarding_complete } = req.body;
+    const { full_name, phone, graduation_year, sat_deadline, onboarding_complete, email: bodyEmail } = req.body;
 
-    // Build upsert payload — always include id and email (email is NOT NULL in schema)
+    // Build upsert payload — always include id
     const updates = {
       id: user.id,
-      email: user.email || '',
       updated_at: new Date().toISOString()
     };
+
+    // Prioritize email from request body (sent by frontend), fallback to JWT email
+    const emailToUse = bodyEmail || user.email;
+
+    if (emailToUse) {
+      updates.email = emailToUse;
+    } else {
+      console.warn(`[POST /api/me/profile] No email found in request body or JWT for user ${user.id}`);
+    }
+
     if (full_name !== undefined) updates.full_name = full_name;
     if (phone !== undefined) updates.phone = phone;
     if (graduation_year !== undefined) updates.graduation_year = graduation_year;
     if (sat_deadline !== undefined) updates.sat_deadline = sat_deadline;
     if (onboarding_complete !== undefined) updates.onboarding_complete = onboarding_complete;
 
-    console.log(`[POST /api/me/profile] Upserting profile for ${user.email}`, updates);
+    console.log(`[POST /api/me/profile] Upserting profile for user ${user.id}`, updates);
 
     const { data, error } = await supabase
       .from('profiles')
@@ -3435,7 +3444,7 @@ app.post("/api/me/profile", async (req, res) => {
       .single();
 
     if (error) {
-      console.error(`[POST /api/me/profile] DB error for ${user.email}:`, error);
+      console.error(`[POST /api/me/profile] DB error for user ${user.id}:`, error);
       throw error;
     }
     res.json({ success: true, profile: data });

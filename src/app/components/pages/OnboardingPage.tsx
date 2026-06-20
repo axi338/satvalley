@@ -54,6 +54,13 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
         setError(null);
 
         try {
+            console.log('Sending profile update:', {
+                full_name: fullName,
+                phone: phone,
+                graduation_year: gradYear,
+                sat_deadline: satDeadline
+            });
+
             const res = await apiFetch('/api/me/profile', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -62,19 +69,22 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
                     graduation_year: gradYear,
                     sat_deadline: satDeadline,
                     onboarding_complete: true,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    email: user.email
                 })
             });
 
             if (!res.ok) {
                 let errorMessage = 'Failed to save profile. Please try again.';
+                let errorDetails = '';
                 try {
                     const data = await res.json();
-                    errorMessage = data.error || errorMessage;
+                    errorMessage = data.message || data.error || errorMessage;
+                    errorDetails = data.error ? ` (${data.error})` : '';
                 } catch (e) {
                     errorMessage = `Server Error (${res.status}): Please contact support.`;
                 }
-                throw new Error(errorMessage);
+                throw new Error(`${errorMessage}${errorDetails}`);
             }
 
             onComplete(); // Successfully saved, signal to App.tsx to remove lock
@@ -161,9 +171,14 @@ export function OnboardingPage({ user, onComplete }: OnboardingPageProps) {
                     </div>
 
                     {error && (
-                        <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 rounded-xl px-5 py-4 flex items-center gap-3 animate-in fade-in">
-                            <Zap className="w-4 h-4 fill-current flex-shrink-0" />
-                            {error}
+                        <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 rounded-xl px-5 py-4 flex flex-col gap-1 animate-in fade-in">
+                            <div className="flex items-center gap-3">
+                                <Zap className="w-4 h-4 fill-current flex-shrink-0" />
+                                <span>Profile Update Failed</span>
+                            </div>
+                            <div className="pl-7 opacity-80 lowercase font-medium tracking-normal text-[11px] normal-case">
+                                {error}
+                            </div>
                         </div>
                     )}
 
