@@ -3,9 +3,9 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { addMessage, setMessages } from '../store/messageSlice';
 import { io } from 'socket.io-client';
 import { Send, User as UserIcon, MessageSquare, Users as UsersIcon } from 'lucide-react';
-import { authApi, apiFetch } from '../lib/auth';
+import { authApi, apiFetch, getApiBase } from '../lib/auth';
 
-const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
+const socket = io(getApiBase());
 
 export function ClassChat({ user, profile, initialSelectedUserId }: { user: any; profile: any; initialSelectedUserId?: string | null }) {
     const [input, setInput] = useState('');

@@ -17,9 +17,9 @@ import { ClassChat } from '../ClassChat';
 import { ClassLeaderboard } from '../ClassLeaderboard';
 import { ClassPerformance } from '../ClassPerformance';
 import { TeacherDashboard } from '../TeacherDashboard';
-import { authApi, apiFetch } from '../../lib/auth';
+import { authApi, apiFetch, getApiBase } from '../../lib/auth';
 
-const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
+const socket = io(getApiBase());
 
 interface ClassDashboardPageProps {
     user: any;

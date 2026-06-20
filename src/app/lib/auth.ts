@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const getApiBase = () => {
+export const getApiBase = () => {
     const url = (import.meta as any).env.VITE_BACKEND_URL || '';
     // If we're on localhost and the backend URL is remote, we might want to use the local proxy instead
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -11,41 +11,56 @@ const getApiBase = () => {
     return url.replace(/\/$/, ''); // Remove trailing slash if exists
 };
 
+
 export const authApi = {
     async getSession() {
         return supabase.auth.getSession();
     },
 
     async signInWithPassword({ email, password }: any) {
-        const res = await fetch(`${getApiBase()}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Login failed');
+        try {
+            const res = await fetch(`${getApiBase()}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Login failed');
 
-        // Establish the session locally
-        if (data.session) {
-            await supabase.auth.setSession(data.session);
+            // Establish the session locally
+            if (data.session) {
+                await supabase.auth.setSession(data.session);
+            }
+            return data;
+        } catch (err: any) {
+            if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+                throw new Error('Cannot reach backend server. Please check your internet connection or try again later.');
+            }
+            throw err;
         }
-        return data;
     },
 
     async signUp({ email, password }: any) {
-        const res = await fetch(`${getApiBase()}/api/auth/signup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Signup failed');
+        try {
+            const res = await fetch(`${getApiBase()}/api/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Signup failed');
 
-        // If the backend returns a session (e.g. if email confirmation is off), set it
-        if (data.session) {
-            await supabase.auth.setSession(data.session);
+            // If the backend returns a session (e.g. if email confirmation is off), set it
+            if (data.session) {
+                await supabase.auth.setSession(data.session);
+            }
+            return data;
+        } catch (err: any) {
+            if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+                throw new Error('Cannot reach backend server. Signup failed.');
+            }
+            throw err;
         }
-        return data;
     },
 
     async signInWithOtp({ email, options }: any) {
@@ -60,18 +75,25 @@ export const authApi = {
     },
 
     async verifyOtp({ email, token, type }: any) {
-        const res = await fetch(`${getApiBase()}/api/auth/verify-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, token, type })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Verification failed');
+        try {
+            const res = await fetch(`${getApiBase()}/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, token, type })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Verification failed');
 
-        if (data.session) {
-            await supabase.auth.setSession(data.session);
+            if (data.session) {
+                await supabase.auth.setSession(data.session);
+            }
+            return data;
+        } catch (err: any) {
+            if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+                throw new Error('Cannot reach backend server. Verification failed.');
+            }
+            throw err;
         }
-        return data;
     },
 
     async resend({ email, type }: any) {
